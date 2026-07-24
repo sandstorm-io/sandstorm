@@ -198,12 +198,12 @@ Template.grainClonePopup.onCreated(function() {
   }
 
   Meteor.call("backupGrain", oldGrain.grainId(), (err, token) => {
-    if(err !== undefined) {
+    if (err) {
       setError("backup", err);
       return;
     }
     Meteor.call("restoreGrain", token, (err, newGrainId) => {
-      if(err !== undefined) {
+      if (err) {
         setError("restore", err);
         return;
       }

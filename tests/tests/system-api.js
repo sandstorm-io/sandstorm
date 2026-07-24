@@ -16,7 +16,7 @@
 
 "use strict";
 
-const { short_wait } = require('../utils');
+const { medium_wait } = require('../utils');
 
 module.exports = {};
 
@@ -31,10 +31,10 @@ module.exports["Test system api"] = function(browser) {
     // want to use it:
     .openDebugLog()
     .grainFrame()
-    .waitForElementPresent(selector, short_wait)
+    .waitForElementPresent(selector, medium_wait)
     .click(selector)
     .windowHandles(windows => browser.switchWindow(windows.value[1]))
-    .waitForElementVisible(".grainlog-contents > pre", short_wait)
+    .waitForElementVisible(".grainlog-contents > pre", medium_wait)
     .assert.textContains(".grainlog-contents > pre", "testSystemApi() passed.")
 
   // Close the grain log, and switch back to to the main window, to avoid

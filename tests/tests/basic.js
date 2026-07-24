@@ -56,6 +56,16 @@ module.exports = {
     browser.end();
   },
 
+  "Test replica migration coordination": function (browser) {
+    browser
+      .url(browser.launch_url + "/")
+      .timeouts("script", utils.medium_wait);
+
+    utils.callMeteorTestMethod(browser, "testRegressionReplicaMigrationCoordination");
+
+    browser.end();
+  },
+
 };
 if (run_xfail) {
   // https://github.com/sandstorm-io/sandstorm/issues/3615

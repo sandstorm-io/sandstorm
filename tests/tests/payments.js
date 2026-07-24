@@ -19,6 +19,16 @@
 var utils = require("../utils"),
     medium_wait = utils.medium_wait;
 
+module.exports["Test payment customer, card, and subscription methods"] = function (browser) {
+  browser
+    .url(browser.launch_url + "/")
+    .timeouts("script", medium_wait);
+
+  utils.callMeteorTestMethod(browser, "testRegressionPaymentMethods");
+
+  browser.end();
+};
+
 module.exports["Test payment webhooks and Mailchimp refresh"] = function (browser) {
   browser
     .url(browser.launch_url + "/")

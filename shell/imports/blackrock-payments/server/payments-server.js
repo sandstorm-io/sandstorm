@@ -565,13 +565,13 @@ globalThis.BlackrockPayments.makeConnectHandler = function (db) {
   };
 }
 
-async function createUser(token, email) {
+async function createUser(userId, token, email) {
   const data = await stripe.customers.create({
     source: token,
     email: email,
-    description: Meteor.userId()  // TODO(soon): Do we want to store backrefs to our database in stripe?
+    description: userId  // TODO(soon): Do we want to store backrefs to our database in stripe?
   });
-  await Meteor.users.updateAsync({_id: Meteor.userId()}, {$set: {payments: {id: data.id}}});
+  await Meteor.users.updateAsync({_id: userId}, {$set: {payments: {id: data.id}}});
   return data;
 }
 
@@ -610,14 +610,14 @@ var methods = {
     check(token, String);
     check(email, String);
 
-    var user = Meteor.user();
+    const user = await Meteor.users.findOneAsync(this.userId);
 
     if (user.payments && user.payments.id) {
       return sanitizeSource(await stripe.customers.createSource(
-        user.payments.id,
-        {source: token}), false);
+          user.payments.id,
+          {source: token}), false);
     } else {
-      const data = await createUser(token, email);
+      const data = await createUser(this.userId, token, email);
       if (data.sources && data.sources.data && data.sources.data.length >= 1) {
         return sanitizeSource(data.sources.data[0], true);
       } else {
@@ -632,7 +632,8 @@ var methods = {
     }
     check(id, String);
 
-    var customerId = Meteor.user().payments.id;
+    const user = await Meteor.users.findOneAsync(this.userId);
+    var customerId = user.payments.id;
     const data = await stripe.customers.retrieve(customerId);
     if (data.sources && data.sources.data && data.subscriptions && data.subscriptions.data) {
       var sources = data.sources.data;
@@ -657,7 +658,8 @@ var methods = {
     }
     check(id, String);
 
-    var customerId = Meteor.user().payments.id;
+    const user = await Meteor.users.findOneAsync(this.userId);
+    var customerId = user.payments.id;
     id = await findOriginalSourceIdAsync(id, customerId);
 
     await stripe.customers.update(
@@ -670,7 +672,8 @@ var methods = {
     if (!this.userId) {
       throw new Meteor.Error(403, "Must be logged in to get stripe data");
     }
-    var payments = Meteor.user().payments;
+    const user = await Meteor.users.findOneAsync(this.userId);
+    var payments = user.payments;
     if (!payments || !payments.id) {
       return {};
     }
@@ -713,13 +716,14 @@ var methods = {
     }
     check(newPlan, String);
 
-    var planInfo = this.connection.sandstormDb.getPlan(newPlan);
+    const user = await Meteor.users.findOneAsync(this.userId);
+    var planInfo = await this.connection.sandstormDb.getPlanAsync(newPlan, user);
 
     if (planInfo.hidden) {
       throw new Meteor.Error(403, "Can't choose discontinued plan.");
     }
 
-    var payments = Meteor.user().payments;
+    var payments = user.payments;
     if (payments && payments.id) {
       if (newPlan === "free") {
         return await cancelSubscription(this.userId, payments.id);
@@ -762,11 +766,12 @@ var methods = {
     check(email, String);
     check(plan, String);
 
-    var payments = Meteor.user().payments;
+    const user = await Meteor.users.findOneAsync(this.userId);
+    var payments = user.payments;
     var customerId;
     var sanitizedSource;
     if (!payments || !payments.id) {
-      const data = await createUser(token, email);
+      const data = await createUser(this.userId, token, email);
       customerId = data.id;
       if (data.sources && data.sources.data && data.sources.data.length >= 1) {
         sanitizedSource = sanitizeSource(data.sources.data[0]);
@@ -784,7 +789,8 @@ var methods = {
   },
 
   unsubscribeMailingList: async function () {
-    var emails = (await SandstormDb.getUserEmailsAsync(Meteor.user())).filter(function (entry) {
+    const user = await Meteor.users.findOneAsync(this.userId);
+    var emails = (await SandstormDb.getUserEmailsAsync(user)).filter(function (entry) {
       return entry.verified;
     }).map(function (entry) {
       return canonicalizeEmail(entry.email);
@@ -811,12 +817,12 @@ var methods = {
       await MailchimpSubscribers.updateAsync({_id: entry._id}, {$set: {subscribed: false}});
     }
 
-    await updateBonuses(Meteor.user());
+    await updateBonuses(user);
   },
 
   subscribeMailingList: async function () {
-
-    var emails = (await SandstormDb.getUserEmailsAsync(Meteor.user())).filter(function (entry) {
+    const user = await Meteor.users.findOneAsync(this.userId);
+    var emails = (await SandstormDb.getUserEmailsAsync(user)).filter(function (entry) {
       return entry.primary;
     });
 
@@ -853,9 +859,11 @@ var methods = {
 
     await MailchimpSubscribers.upsertAsync({_id: email},
         {$set: {canonical: canonicalizeEmail(email), subscribed: true}});
-    await updateBonuses(Meteor.user());
+    await updateBonuses(user);
   }
 };
+export const paymentMethodsForTests = methods;
+
 if (Meteor.settings.public.stripePublicKey) {
   Meteor.methods(methods);
 }

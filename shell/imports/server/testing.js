@@ -21,6 +21,7 @@ import { Accounts } from "meteor/accounts-base";
 import { Random } from "meteor/random";
 import { SHA256 } from "meteor/sha";
 import { ServiceConfiguration } from "meteor/service-configuration";
+import "/imports/oidc/oidc-server";
 import { globalDb } from "/imports/db-deprecated";
 import { httpCallAsync } from "/imports/server/http-helpers";
 import { checkAuthAsync, clearAdminToken } from "/imports/server/auth";
@@ -28,6 +29,7 @@ import { setAccountSuspensionEmailSenderForTests } from "/imports/server/account
 import { setAdminEmailSenderForTests } from "/imports/server/admin-server";
 import {
   handleWebhookEvent,
+  paymentMethodsForTests,
   setPaymentsHttpCallForTests,
   stripe as testStripe,
   updateMailchimp,
@@ -40,6 +42,10 @@ import {
   setTokenEmailSenderForTests,
 } from "/imports/server/accounts/email-token/token-server";
 import { reconcileOidcUsersIndex } from "/imports/server/migrations";
+import {
+  waitForMigrationDocument,
+  waitForReplicaMigrations,
+} from "/imports/server/migration-coordination";
 import { runDueJobs } from "/imports/server/scheduled-job";
 import {
   Downloader,
@@ -141,6 +147,7 @@ function makeOidcIndexTestDb(indexes, duplicates) {
   const rawCollection = {
     async indexes() {
       calls.push(["indexes"]);
+      if (indexes instanceof Error) throw indexes;
       return indexes;
     },
 
@@ -180,6 +187,57 @@ function makeOidcIndexTestDb(indexes, duplicates) {
 
 function hasCall(calls, predicate) {
   return calls.some(predicate);
+}
+
+function makeMigrationObserverTestCollection() {
+  const observers = [];
+  const collection = {
+    find(selector) {
+      return {
+        async observeAsync(callbacks) {
+          const observer = {
+            callbacks,
+            selector,
+            stopCalls: 0,
+            stopped: false,
+          };
+          observers.push(observer);
+          await new Promise((resolve) => Meteor.setTimeout(resolve, 5));
+          return {
+            stop() {
+              observer.stopCalls += 1;
+              observer.stopped = true;
+            },
+          };
+        },
+      };
+    },
+  };
+
+  return {
+    collection,
+    observers,
+    emit(callbackName, doc) {
+      observers.forEach((observer) => {
+        if (!observer.stopped &&
+            observer.selector._id === doc._id &&
+            observer.callbacks[callbackName]) {
+          observer.callbacks[callbackName](doc);
+        }
+      });
+    },
+  };
+}
+
+async function waitForTestCondition(predicate, description) {
+  const deadline = Date.now() + 1000;
+  while (!predicate()) {
+    if (Date.now() > deadline) {
+      throw new Meteor.Error("test-condition-timeout", "Timed out waiting for " + description);
+    }
+
+    await new Promise((resolve) => Meteor.setTimeout(resolve, 5));
+  }
 }
 
 function getLastLine(text) {
@@ -466,7 +524,20 @@ if(isTesting) {
           if (!/Service oidc not configured/i.test(err.message || "")) throw err;
         }
 
-        let testDb = makeOidcIndexTestDb([{ name: "_id_", key: { _id: 1 } }]);
+        const namespaceNotFound = new Error("ns does not exist: meteor.users");
+        namespaceNotFound.code = 26;
+        namespaceNotFound.codeName = "NamespaceNotFound";
+        let testDb = makeOidcIndexTestDb(namespaceNotFound);
+        await reconcileOidcUsersIndex(testDb.db, null);
+        if (!hasCall(testDb.calls, (call) =>
+          call[0] === "createIndex" &&
+          call[1]["services.oidc.id"] === 1 &&
+          call[2].name === indexName)) {
+          throw new Meteor.Error("oidc-index-fresh-install",
+              "Fresh install did not create the OIDC index.");
+        }
+
+        testDb = makeOidcIndexTestDb([{ name: "_id_", key: { _id: 1 } }]);
         await reconcileOidcUsersIndex(testDb.db, null);
         if (!hasCall(testDb.calls, (call) =>
           call[0] === "createIndex" &&
@@ -514,6 +585,96 @@ if(isTesting) {
       } finally {
         await configurations.removeAsync({ service: "oidc" });
       }
+    },
+
+    testRegressionReplicaMigrationCoordination: async function () {
+      let earlyStopCalls = 0;
+      const earlyCollection = {
+        find() {
+          return {
+            observeAsync(callbacks) {
+              callbacks.added({ _id: "migrations_applied", value: 42 });
+              return new Promise((resolve) => {
+                Meteor.setTimeout(() => resolve({
+                  stop() {
+                    earlyStopCalls += 1;
+                  },
+                }), 10);
+              });
+            },
+          };
+        },
+      };
+
+      await waitForMigrationDocument(
+        earlyCollection,
+        { _id: "migrations_applied" },
+        (doc) => doc.value >= 42,
+        { label: "test-observer-ready-race" }
+      );
+      await waitForTestCondition(() => earlyStopCalls === 1, "early observer cleanup");
+
+      const fake = makeMigrationObserverTestCollection();
+      const db = { collections: { migrations: fake.collection } };
+      let completedReplicas = 0;
+      const replicas = [
+        waitForReplicaMigrations(db, 42).then(() => { completedReplicas += 1; }),
+        waitForReplicaMigrations(db, 42).then(() => { completedReplicas += 1; }),
+      ];
+
+      await waitForTestCondition(() => fake.observers.length === 2, "replica migration observers");
+      fake.emit("added", { _id: "migrations_applied", value: 41 });
+      await new Promise((resolve) => Meteor.setTimeout(resolve, 10));
+      if (completedReplicas !== 0) {
+        throw new Meteor.Error("replica-finished-early",
+            "A replica continued before the primary completed migrations.");
+      }
+
+      fake.emit("changed", { _id: "migrations_applied", value: 42 });
+      await waitForTestCondition(() => fake.observers.length === 4, "new-server observers");
+      fake.emit("added", { _id: "new_server_migrations_applied", value: false });
+      await new Promise((resolve) => Meteor.setTimeout(resolve, 10));
+      if (completedReplicas !== 0) {
+        throw new Meteor.Error("replica-new-server-finished-early",
+            "A replica continued before new-server initialization completed.");
+      }
+
+      fake.emit("changed", { _id: "new_server_migrations_applied", value: true });
+      await Promise.all(replicas);
+      await waitForTestCondition(
+        () => fake.observers.every((observer) => observer.stopCalls === 1),
+        "replica observer cleanup"
+      );
+      if (completedReplicas !== 2 || fake.observers.length !== 4) {
+        throw new Meteor.Error("replica-coordination-count",
+            "Replica migration coordination did not release both replicas exactly once.");
+      }
+
+      const observerError = new Error("synthetic observer failure");
+      const failingCollection = {
+        find() {
+          return {
+            observeAsync() {
+              return Promise.reject(observerError);
+            },
+          };
+        },
+      };
+
+      try {
+        await waitForMigrationDocument(
+          failingCollection,
+          { _id: "migrations_applied" },
+          () => false,
+          { label: "test-observer-failure" }
+        );
+        throw new Meteor.Error("observer-failure-ignored",
+            "A replica observer failure did not reject startup.");
+      } catch (err) {
+        if (err !== observerError) throw err;
+      }
+
+      return true;
     },
 
     testRegressionEmailTokenCreationAndLogin: async function () {
@@ -1710,6 +1871,408 @@ if(isTesting) {
         await globalDb.collections.activityStats.removeAsync(activityStatId);
         await globalDb.collections.apiTokens.removeAsync(apiTokenId);
         await Meteor.users.removeAsync({ _id: { $in: [adminId, targetUserId, credentialId] } });
+      }
+    },
+
+    testRegressionPaymentMethods: async function () {
+      const newUserId = "test-payments-new-" + Random.id();
+      const existingUserId = "test-payments-existing-" + Random.id();
+      const lastCardUserId = "test-payments-last-card-" + Random.id();
+      const noSubscriptionUserId = "test-payments-no-subscription-" + Random.id();
+      const cancelUserId = "test-payments-cancel-" + Random.id();
+      const noPaymentsUserId = "test-payments-no-customer-" + Random.id();
+      const cardErrorUserId = "test-payments-card-error-" + Random.id();
+      const userIds = [
+        newUserId,
+        existingUserId,
+        lastCardUserId,
+        noSubscriptionUserId,
+        cancelUserId,
+        noPaymentsUserId,
+        cardErrorUserId,
+      ];
+      const planOne = "testPlan" + Random.id();
+      const planTwo = "testPlan" + Random.id();
+      const hiddenPlan = "testHiddenPlan" + Random.id();
+      const planIds = [planOne, planTwo, hiddenPlan];
+      const customers = {};
+      const customerCreates = [];
+      const sourceCreates = [];
+      const sourceDeletes = [];
+      const customerUpdates = [];
+      const subscriptionCreates = [];
+      const subscriptionUpdates = [];
+      let failNextSubscriptionCreate = false;
+      let nextSubscriptionNumber = 1;
+
+      const originalCustomersCreate = testStripe.customers.create;
+      const originalCustomersCreateSource = testStripe.customers.createSource;
+      const originalCustomersDeleteSource = testStripe.customers.deleteSource;
+      const originalCustomersRetrieve = testStripe.customers.retrieve;
+      const originalCustomersUpdate = testStripe.customers.update;
+      const originalSubscriptionsCreate = testStripe.subscriptions.create;
+      const originalSubscriptionsUpdate = testStripe.subscriptions.update;
+      const originalFreePlan = await globalDb.collections.plans.findOneAsync("free");
+
+      const clone = (value) => JSON.parse(JSON.stringify(value));
+      const makeSource = (id, last4) => ({
+        id,
+        last4,
+        brand: "Visa",
+        exp_year: 2035,
+        exp_month: 12,
+      });
+      const makeSubscription = (id, plan, options = {}) => ({
+        id,
+        plan: { id: plan },
+        cancel_at_period_end: !!options.cancelAtPeriodEnd,
+        current_period_end: options.currentPeriodEnd || 2000000000,
+        items: { data: [{ id: "item_" + id, plan: { id: plan } }] },
+      });
+      const addUser = async (id, extraFields) => {
+        await Meteor.users.insertAsync({
+          _id: id,
+          type: "account",
+          signupKey: "admin",
+          loginCredentials: [],
+          nonloginCredentials: [],
+          profile: { name: "Payments method test account" },
+          plan: "free",
+          ...extraFields,
+        });
+      };
+      const contextFor = (userId) => ({
+        userId,
+        connection: { sandstormDb: globalDb },
+      });
+      const callPaymentMethod = async (name, userId, args) =>
+        await paymentMethodsForTests[name].apply(contextFor(userId), args);
+      const expectMeteorError = async (expectedCode, expectedMessage, callback) => {
+        let error;
+        try {
+          await callback();
+        } catch (err) {
+          error = err;
+        }
+
+        if (!error ||
+            String(error.error) !== String(expectedCode) ||
+            !String(error.reason || error.message).includes(expectedMessage)) {
+          throw new Meteor.Error("payments-unexpected-error",
+              "Expected " + expectedCode + " (" + expectedMessage + "), got: " +
+              (error && (error.stack || error.message || error)));
+        }
+      };
+
+      await Promise.all(planIds.map((id) => globalDb.collections.plans.upsertAsync(id, {
+        $set: {
+          title: id,
+          storage: 10 * 1024 * 1024,
+          compute: 100,
+          grains: 100,
+          hidden: id === hiddenPlan,
+        },
+      })));
+      if (!originalFreePlan) {
+        await globalDb.collections.plans.insertAsync({
+          _id: "free",
+          title: "Free",
+          storage: 10 * 1024 * 1024,
+          compute: 100,
+          grains: 100,
+        });
+      }
+
+      await addUser(newUserId);
+      await addUser(existingUserId, { payments: { id: "cus_existing" }, plan: planOne });
+      await addUser(lastCardUserId, { payments: { id: "cus_last_card" }, plan: planOne });
+      await addUser(noSubscriptionUserId, {
+        payments: { id: "cus_no_subscription" },
+        plan: planOne,
+      });
+      await addUser(cancelUserId, { payments: { id: "cus_cancel" }, plan: planOne });
+      await addUser(noPaymentsUserId);
+      await addUser(cardErrorUserId, {
+        payments: { id: "cus_card_error" },
+        plan: planOne,
+      });
+
+      customers.cus_existing = {
+        id: "cus_existing",
+        email: "existing@example.com",
+        account_balance: -125,
+        default_source: "card_existing_a",
+        sources: {
+          data: [
+            makeSource("card_existing_a", "1111"),
+            makeSource("card_existing_b", "2222"),
+          ],
+        },
+        subscriptions: {
+          data: [makeSubscription("sub_existing", "pro-beta", {
+            cancelAtPeriodEnd: true,
+            currentPeriodEnd: 1900000000,
+          })],
+        },
+      };
+      customers.cus_last_card = {
+        id: "cus_last_card",
+        sources: { data: [makeSource("card_last", "3333")] },
+        subscriptions: { data: [makeSubscription("sub_last", planOne)] },
+      };
+      customers.cus_no_subscription = {
+        id: "cus_no_subscription",
+        sources: { data: [makeSource("card_no_subscription", "4444")] },
+        subscriptions: { data: [] },
+      };
+      customers.cus_cancel = {
+        id: "cus_cancel",
+        sources: { data: [makeSource("card_cancel", "5555")] },
+        subscriptions: {
+          data: [makeSubscription("sub_cancel", planOne, { currentPeriodEnd: 1950000000 })],
+        },
+      };
+      customers.cus_card_error = {
+        id: "cus_card_error",
+        sources: { data: [makeSource("card_error", "6666")] },
+        subscriptions: { data: [] },
+      };
+
+      testStripe.customers.create = async function (options) {
+        customerCreates.push(clone(options));
+        const customer = {
+          id: "cus_created",
+          email: options.email,
+          account_balance: 0,
+          default_source: "card_created",
+          sources: { data: [makeSource("card_created", "0001")] },
+          subscriptions: { data: [] },
+        };
+        customers[customer.id] = customer;
+        return clone(customer);
+      };
+      testStripe.customers.createSource = async function (customerId, options) {
+        sourceCreates.push({ customerId, options: clone(options) });
+        const source = makeSource("card_added_" + sourceCreates.length, "700" + sourceCreates.length);
+        customers[customerId].sources.data.push(source);
+        return clone(source);
+      };
+      testStripe.customers.retrieve = async function (customerId) {
+        if (!customers[customerId]) {
+          throw new Error("Unexpected Stripe customer: " + customerId);
+        }
+
+        return clone(customers[customerId]);
+      };
+      testStripe.customers.deleteSource = async function (customerId, sourceId) {
+        sourceDeletes.push({ customerId, sourceId });
+        customers[customerId].sources.data =
+            customers[customerId].sources.data.filter((source) => source.id !== sourceId);
+        return {};
+      };
+      testStripe.customers.update = async function (customerId, options) {
+        customerUpdates.push({ customerId, options: clone(options) });
+        if (options.default_source) {
+          customers[customerId].default_source = options.default_source;
+        }
+
+        return clone(customers[customerId]);
+      };
+      testStripe.subscriptions.create = async function (options) {
+        if (failNextSubscriptionCreate) {
+          failNextSubscriptionCreate = false;
+          const error = new Error("Your card was declined.");
+          error.raw = { type: "card_error", message: "Your card was declined." };
+          throw error;
+        }
+
+        subscriptionCreates.push(clone(options));
+        const subscription = makeSubscription(
+            "sub_created_" + nextSubscriptionNumber++, options.items[0].plan);
+        customers[options.customer].subscriptions.data.push(subscription);
+        return clone(subscription);
+      };
+      testStripe.subscriptions.update = async function (subscriptionId, options) {
+        subscriptionUpdates.push({ subscriptionId, options: clone(options) });
+        for (const customer of Object.values(customers)) {
+          const subscription = customer.subscriptions.data
+              .find((candidate) => candidate.id === subscriptionId);
+          if (subscription) {
+            if (options.cancel_at_period_end) {
+              subscription.cancel_at_period_end = true;
+            }
+
+            if (options.items) {
+              subscription.plan.id = options.items[0].plan;
+              subscription.items.data[0].plan.id = options.items[0].plan;
+            }
+
+            return clone(subscription);
+          }
+        }
+
+        throw new Error("Unexpected Stripe subscription: " + subscriptionId);
+      };
+
+      try {
+        await expectMeteorError(403, "Must be logged in", async () =>
+          await paymentMethodsForTests.getStripeData.apply(contextFor(null), []));
+
+        const createdSource = await callPaymentMethod(
+            "createUserSubscription", newUserId, ["tok_new", "new@example.com", planOne]);
+        const newUser = await Meteor.users.findOneAsync(newUserId);
+        if (customerCreates.length !== 1 ||
+            customerCreates[0].description !== newUserId ||
+            customerCreates[0].source !== "tok_new" ||
+            newUser.payments.id !== "cus_created" ||
+            newUser.plan !== planOne ||
+            subscriptionCreates.length !== 1 ||
+            subscriptionCreates[0].customer !== "cus_created" ||
+            subscriptionCreates[0].items[0].plan !== planOne ||
+            !createdSource ||
+            createdSource.id === "card_created" ||
+            createdSource.last4 !== "0001") {
+          throw new Meteor.Error("payments-create-subscription",
+              "Creating a customer subscription did not persist or sanitize the expected data.");
+        }
+
+        const addedSource = await callPaymentMethod(
+            "addCardForUser", existingUserId, ["tok_added", "existing@example.com"]);
+        if (sourceCreates.length !== 1 ||
+            sourceCreates[0].customerId !== "cus_existing" ||
+            addedSource.id === "card_added_1" ||
+            addedSource.last4 !== "7001" ||
+            addedSource.isPrimary !== false) {
+          throw new Meteor.Error("payments-add-source",
+              "Adding a card did not use the existing customer and sanitize the source.");
+        }
+
+        await callPaymentMethod("makeCardPrimary", existingUserId, [addedSource.id]);
+        if (customerUpdates.length !== 1 ||
+            customerUpdates[0].customerId !== "cus_existing" ||
+            customerUpdates[0].options.default_source !== "card_added_1") {
+          throw new Meteor.Error("payments-primary-source",
+              "Changing the primary card did not resolve the sanitized source ID.");
+        }
+
+        const stripeData = await callPaymentMethod("getStripeData", existingUserId, []);
+        const primarySource = stripeData.sources.find((source) => source.last4 === "7001");
+        const removableSource = stripeData.sources.find((source) => source.last4 === "2222");
+        if (stripeData.email !== "existing@example.com" ||
+            stripeData.subscription !== "pro" ||
+            !(stripeData.subscriptionEnds instanceof Date) ||
+            stripeData.subscriptionEnds.getTime() !== 1900000000 * 1000 ||
+            stripeData.credit !== 125 ||
+            !primarySource ||
+            primarySource.isPrimary !== true ||
+            !removableSource ||
+            stripeData.sources.some((source) => source.id.startsWith("card_"))) {
+          throw new Meteor.Error("payments-get-stripe-data",
+              "Stripe customer data was not sanitized and normalized correctly.");
+        }
+
+        await callPaymentMethod("deleteCardForUser", existingUserId, [removableSource.id]);
+        if (sourceDeletes.length !== 1 ||
+            sourceDeletes[0].customerId !== "cus_existing" ||
+            sourceDeletes[0].sourceId !== "card_existing_b") {
+          throw new Meteor.Error("payments-delete-source",
+              "Deleting a card did not resolve the sanitized source ID.");
+        }
+
+        const lastSourceData = await callPaymentMethod("getStripeData", lastCardUserId, []);
+        await expectMeteorError(400, "Can't delete last card", async () =>
+          await callPaymentMethod(
+              "deleteCardForUser", lastCardUserId, [lastSourceData.sources[0].id]));
+        if (sourceDeletes.length !== 1) {
+          throw new Meteor.Error("payments-delete-last-source",
+              "The final source of an active subscription was deleted.");
+        }
+
+        customers.cus_existing.subscriptions.data[0].cancel_at_period_end = false;
+        await callPaymentMethod("updateUserSubscription", existingUserId, [planTwo]);
+        const updatedExistingUser = await Meteor.users.findOneAsync(existingUserId);
+        const existingUpdate = subscriptionUpdates.find(
+            (entry) => entry.subscriptionId === "sub_existing" && entry.options.items);
+        if (!existingUpdate ||
+            existingUpdate.options.items[0].id !== "item_sub_existing" ||
+            existingUpdate.options.items[0].plan !== planTwo ||
+            updatedExistingUser.plan !== planTwo) {
+          throw new Meteor.Error("payments-update-subscription",
+              "Changing an existing subscription did not update Stripe and the account plan.");
+        }
+
+        const createsBeforeNewPlan = subscriptionCreates.length;
+        await callPaymentMethod("updateUserSubscription", noSubscriptionUserId, [planTwo]);
+        const noSubscriptionUser = await Meteor.users.findOneAsync(noSubscriptionUserId);
+        if (subscriptionCreates.length !== createsBeforeNewPlan + 1 ||
+            subscriptionCreates.slice(-1)[0].customer !== "cus_no_subscription" ||
+            subscriptionCreates.slice(-1)[0].items[0].plan !== planTwo ||
+            noSubscriptionUser.plan !== planTwo) {
+          throw new Meteor.Error("payments-new-subscription",
+              "Changing a customer without a subscription did not create one.");
+        }
+
+        const cancelResult = await callPaymentMethod(
+            "updateUserSubscription", cancelUserId, ["free"]);
+        let cancelUser = await Meteor.users.findOneAsync(cancelUserId);
+        const cancelUpdates = subscriptionUpdates.filter(
+            (entry) => entry.subscriptionId === "sub_cancel" &&
+              entry.options.cancel_at_period_end);
+        if (!(cancelResult.subscriptionEnds instanceof Date) ||
+            cancelResult.subscriptionEnds.getTime() !== 1950000000 * 1000 ||
+            cancelUser.plan !== planOne ||
+            cancelUpdates.length !== 1) {
+          throw new Meteor.Error("payments-cancel-subscription",
+              "Canceling a subscription did not retain the paid plan through period end.");
+        }
+
+        const alreadyCanceledResult = await callPaymentMethod(
+            "updateUserSubscription", cancelUserId, ["free"]);
+        if (alreadyCanceledResult.subscriptionEnds.getTime() !== 1950000000 * 1000 ||
+            subscriptionUpdates.filter((entry) =>
+              entry.subscriptionId === "sub_cancel" &&
+              entry.options.cancel_at_period_end).length !== 1) {
+          throw new Meteor.Error("payments-repeat-cancel",
+              "Canceling an already-canceled subscription performed a second Stripe update.");
+        }
+
+        customers.cus_no_subscription.subscriptions.data = [];
+        await callPaymentMethod("updateUserSubscription", noSubscriptionUserId, ["free"]);
+        const downgradedUser = await Meteor.users.findOneAsync(noSubscriptionUserId);
+        if (downgradedUser.plan !== "free") {
+          throw new Meteor.Error("payments-cancel-missing-subscription",
+              "A customer without a Stripe subscription was not downgraded to free.");
+        }
+
+        await expectMeteorError(403, "Can't choose discontinued plan", async () =>
+          await callPaymentMethod("updateUserSubscription", existingUserId, [hiddenPlan]));
+        await expectMeteorError(403, "must have stripe data", async () =>
+          await callPaymentMethod("updateUserSubscription", noPaymentsUserId, [planOne]));
+
+        failNextSubscriptionCreate = true;
+        await expectMeteorError("cardError", "Your card was declined", async () =>
+          await callPaymentMethod("updateUserSubscription", cardErrorUserId, [planTwo]));
+        const cardErrorUser = await Meteor.users.findOneAsync(cardErrorUserId);
+        if (cardErrorUser.plan !== planOne) {
+          throw new Meteor.Error("payments-card-error-plan",
+              "A failed Stripe update changed the account plan.");
+        }
+
+        return true;
+      } finally {
+        testStripe.customers.create = originalCustomersCreate;
+        testStripe.customers.createSource = originalCustomersCreateSource;
+        testStripe.customers.deleteSource = originalCustomersDeleteSource;
+        testStripe.customers.retrieve = originalCustomersRetrieve;
+        testStripe.customers.update = originalCustomersUpdate;
+        testStripe.subscriptions.create = originalSubscriptionsCreate;
+        testStripe.subscriptions.update = originalSubscriptionsUpdate;
+        await globalDb.collections.plans.removeAsync({ _id: { $in: planIds } });
+        if (!originalFreePlan) {
+          await globalDb.collections.plans.removeAsync("free");
+        }
+
+        await Meteor.users.removeAsync({ _id: { $in: userIds } });
       }
     },
 

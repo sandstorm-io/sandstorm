@@ -1,19 +1,15 @@
 import { Meteor } from 'meteor/meteor';
 import { Tracker } from 'meteor/tracker';
-import $ from 'jquery';
 
 document.title = "testapp";
-$("body").append(
-  '<p id="id"></p>',
-  '<p id="name"></p>',
-  '<p id="picture"></p>',
-  '<p id="preferredHandle"></p>',
-  '<p id="pronouns"></p>',
-  '<p id="serverRuntime"></p>',
-);
+["id", "name", "picture", "preferredHandle", "pronouns", "serverRuntime"].forEach((id) => {
+  const paragraph = document.createElement("p");
+  paragraph.id = id;
+  document.body.append(paragraph);
+});
 
 function setField(id, label, value) {
-  $(id).text(`${label}: ${value || ""}`);
+  document.querySelector(id).textContent = `${label}: ${value || ""}`;
 }
 
 Meteor.call("getServerRuntime", (err, result) => {

@@ -9,6 +9,41 @@ runtime_dir="$stage_dir/runtime"
 bundle_dir="$stage_dir/bundle"
 package_dirs="$repo_dir/shell/packages"
 
+audit_runtime() {
+  local attempt audit_log
+  audit_log=$(mktemp)
+
+  # Validate the installed tree locally before consulting npm's advisory
+  # service. This keeps an advisory-service outage distinguishable from a
+  # malformed or incomplete runtime.
+  meteor npm ls --omit=dev --all >/dev/null
+
+  for attempt in 1 2 3; do
+    if npm_config_fetch_retries=0 npm_config_fetch_timeout=15000 \
+        meteor npm audit --omit=dev --audit-level=high 2>&1 | tee "$audit_log"; then
+      rm -f "$audit_log"
+      return 0
+    fi
+
+    # A completed audit with findings is a real failure, not a transient
+    # advisory-service error.
+    if grep -q "^# npm audit report" "$audit_log"; then
+      rm -f "$audit_log"
+      return 1
+    fi
+
+    if [ "$attempt" -lt 3 ]; then
+      echo "npm audit failed on attempt $attempt; retrying in 5 seconds..." >&2
+      sleep 5
+    fi
+  done
+
+  echo "WARNING: npm's advisory service is unavailable; the locally valid runtime" >&2
+  echo "could not be re-audited during this build." >&2
+  rm -f "$audit_log"
+  return 0
+}
+
 rm -rf "$runtime_dir" "$bundle_dir"
 mkdir -p "$runtime_dir/bin"
 
@@ -23,7 +58,7 @@ mkdir -p "$runtime_dir/bin"
     dependencies.node-gyp=12.4.0 \
     dependencies.@mapbox/node-pre-gyp=2.0.3
   meteor npm install --omit=dev --no-audit
-  meteor npm audit --omit=dev --audit-level=high
+  audit_runtime
 )
 
 node_path=$(cd "$app_dir" && meteor node -p process.execPath)

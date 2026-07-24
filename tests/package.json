@@ -5,7 +5,7 @@
   "devDependencies": {
     "@puppeteer/browsers": "^2.12.1",
     "chromedriver": "145.0.1",
-    "nightwatch": "^3.15.0"
+    "nightwatch": "^3.16.0"
   },
   "repository": {
     "type": "git",
@@ -16,13 +16,13 @@
   },
   "dependencies": {
     "chai": "^4.5.0",
-    "es6-promise": "4.2.8",
-    "firefox-profile": "4.7.0",
     "jszip": "^3.10.1",
-    "mailcomposer": "^4.0.2",
-    "mailparser": "3.9.3",
-    "selenium-standalone": "10.0.2",
-    "simplesmtp": "0.3.35",
-    "underscore": "^1.13.1"
+    "mailparser": "^3.9.14",
+    "nodemailer": "^9.0.3",
+    "smtp-server": "^3.18.1"
+  },
+  "overrides": {
+    "serialize-javascript": "^7.0.7",
+    "uuid": "^11.1.1"
   }
 }

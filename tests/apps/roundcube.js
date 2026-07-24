@@ -79,7 +79,10 @@ module.exports["Sending Mail"] = function (browser) {
     .assertReceiveEmail(".send", {
       to: to,
       subject: subject,
-      text: text + "\n.."
+      // Roundcube appends a line containing ".". smtp-server correctly
+      // reverses SMTP dot-stuffing; the old simplesmtp harness exposed the
+      // doubled wire representation instead.
+      text: text + "\n.\n"
     })
     .end();
 };

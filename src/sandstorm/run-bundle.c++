@@ -2558,7 +2558,7 @@ private:
                    "bailing out now. For troubleshooting, read "
                    "/opt/sandstorm/var/log/mongo.log (or var/log/mongo.log within your Sandstorm "
                    "if installed to a different place) and visit: "
-                   "https://docs.sandstorm.io/en/latest/search.html?q=mongod+failed+to+start");
+                   "https://docs.sandstorm.org/en/latest/search.html?q=mongod+failed+to+start");
     return 0;
   }
 
@@ -3007,7 +3007,7 @@ private:
   }
 
   bool checkForUpdates(kj::StringPtr channel, kj::StringPtr type, const Config& config) {
-    // GET install.sandstorm.io/$channel?from=$oldBuild&type=[manual|startup|daily]
+    // GET install.sandstorm.org/$channel?from=$oldBuild&type=[manual|startup|daily]
     //     -> result is build number
     context.warning(kj::str("Checking for updates on channel ", channel, "..."));
 
@@ -3020,7 +3020,7 @@ private:
       }
 
       CurlRequest updateCheck(
-          kj::str("https://install.sandstorm.io/", channel, "?", from, "type=", type));
+          kj::str("https://install.sandstorm.org/", channel, "?", from, "type=", type));
       buildStr = readAll(updateCheck.getPipe());
     }
 
@@ -3032,7 +3032,7 @@ private:
     }
 
     // Download bundle to temporary file.
-    auto url = kj::str("https://dl.sandstorm.io/sandstorm-", targetBuild, ".tar.xz");
+    auto url = kj::str("https://dl.sandstorm.org/sandstorm-", targetBuild, ".tar.xz");
     auto file = openTemporary("/var/tmp/sandstorm-update");
     context.warning(kj::str("Downloading: ", url));
     CurlRequest(url, file);
@@ -3043,7 +3043,7 @@ private:
       context.warning("Checking signature...");
       KJ_ON_SCOPE_FAILURE(context.warning(
           "*** Aborting update because signature check failed! Most likely this is due to a "
-          "network glitch, but if you suspect an attack, notify security@sandstorm.io."));
+          "network glitch, but if you suspect an attack, notify security@sandstorm.org."));
 
       // Download and parse signature file for this update.
       capnp::StreamFdMessageReader signatureMessage(

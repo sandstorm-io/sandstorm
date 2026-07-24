@@ -21,7 +21,7 @@
           "withoutAppDemo": "Start »"
         },
         "explanation": "<p>Sandstorm maakt het makkelijk om apps op uw eigen server te draaien. Naast het verbeteren van privacy en controle, <a href=\"https://sandstorm.org/news/2014-07-21-open-source-web-apps-require-federated-hosting\" target=\"_blank\">brengt dit Open Source apps naar een groter publiek.</a></p>",
-        "securityOverview": "<p>Sandstorm is daarnaast ook belachelijk veilig. Als u beveiliging interessant vindt, kijk dan eens naar<a href=\"https://docs.sandstorm.io/en/latest/developing/security-practices/\" target=\"_blank\">een overzicht van Sandstorm's beveiligingsmodel.</a>.</p>"
+        "securityOverview": "<p>Sandstorm is daarnaast ook belachelijk veilig. Als u beveiliging interessant vindt, kijk dan eens naar<a href=\"https://docs.sandstorm.org/en/latest/developing/security-practices/\" target=\"_blank\">een overzicht van Sandstorm's beveiligingsmodel.</a>.</p>"
       }
     },
     "notifications": {
@@ -525,8 +525,8 @@
     "admin": {
       "newAdmin": {
         "title": "Admin panel",
-        "wildcardHostBroken": "WAARSCHUWING: het lijkt erop dat de WILDCARD_HOST van deze server niet goed is ingesteld. Totdat u dit probleem oplost kunt u geen gebruik maken van apps. U kunt meer informatie lezen in <a target=\"_blank\" href=\"https://docs.sandstorm.io/en/latest/administering/faq/#why-do-i-see-an-error-when-i-try-to-launch-an-app-even-when-the-sandstorm-interface-works-fine\"> de Sandstorm documentatie</a> en in de JavaScript console van uw browser. U moet DNS en SSL/TLS certificaten aanpassen of het sandstorm.conf bestand bewerken. Als u geen informatie in de JS console kunt zien of wilt testen of u het probleem hebt opgelost, herlaad dan deze pagina om de test opnieuw uit te voeren. als u nogsteeds problemen heeft <a href=\"https://github.com/sandstorm-io/sandstorm/issues\">open dan alstublieft een issue..</a>",
-        "websocketBroken": "WAARSCHUWING: deze server lijkt niet in staat te zijn om een WebSocket aan te maken. Sandstorm zal lijken te werken zonder problemen, maar veel apps zullen niet goed worden uitgevoerd. <a target=\"_blank\" href=\"https://docs.sandstorm.io/en/latest/administering/faq/#how-do-i-enable-websockets-proxying-or-why-do-some-apps-seem-to-crash-reload\">Meer informatie.</a> Meestal wordt dit veroorzaakt door een reverse proxy zoals nginx of Apache die opnieuw geconfigureerd moet worden. Als u denkt dat dit een fout is, herlaad dan deze pagina of <a href=\"https://github.com/sandstorm-io/sandstorm/issues\">open een issue.</a>",
+        "wildcardHostBroken": "WAARSCHUWING: het lijkt erop dat de WILDCARD_HOST van deze server niet goed is ingesteld. Totdat u dit probleem oplost kunt u geen gebruik maken van apps. U kunt meer informatie lezen in <a target=\"_blank\" href=\"https://docs.sandstorm.org/en/latest/administering/faq/#why-do-i-see-an-error-when-i-try-to-launch-an-app-even-when-the-sandstorm-interface-works-fine\"> de Sandstorm documentatie</a> en in de JavaScript console van uw browser. U moet DNS en SSL/TLS certificaten aanpassen of het sandstorm.conf bestand bewerken. Als u geen informatie in de JS console kunt zien of wilt testen of u het probleem hebt opgelost, herlaad dan deze pagina om de test opnieuw uit te voeren. als u nogsteeds problemen heeft <a href=\"https://github.com/sandstorm-io/sandstorm/issues\">open dan alstublieft een issue..</a>",
+        "websocketBroken": "WAARSCHUWING: deze server lijkt niet in staat te zijn om een WebSocket aan te maken. Sandstorm zal lijken te werken zonder problemen, maar veel apps zullen niet goed worden uitgevoerd. <a target=\"_blank\" href=\"https://docs.sandstorm.org/en/latest/administering/faq/#how-do-i-enable-websockets-proxying-or-why-do-some-apps-seem-to-crash-reload\">Meer informatie.</a> Meestal wordt dit veroorzaakt door een reverse proxy zoals nginx of Apache die opnieuw geconfigureerd moet worden. Als u denkt dat dit een fout is, herlaad dan deze pagina of <a href=\"https://github.com/sandstorm-io/sandstorm/issues\">open een issue.</a>",
         "hasSetupToken": "U bent niet ingelogd als een administrator, maar u heeft wel een setup token. U kunt <a href=\"/setup\">de setup wizard bezoeken</a> of <a href=\"/admin/status\">de systeemlog bekijken</a>.",
         "hasNoSetupToken": "U bent niet ingelogd als een administrator. Log in als een administrator om het administrator panel te bezoeken of genereer een token vanaf de opdrachtregel door `sandstorm admin-token` uit te voeren."
       },
@@ -750,7 +750,7 @@
         },
         "howItWorks": {
           "title": "Hoe Sandstorm email gebruikt",
-          "explanation": "Sandstorm en Sandstorm apps kunnen email notificaties verzenden. Elke app krijgt een uniek email adres, dus Sandstorm moet email kunnen verzenden van meerdere \"Van:\" adressen. Gmail SMTP zal daarom niet werken, maar er zijn andere gratis diensten beschikbaar. Bekijk voor meer informatie <a href=\"https://docs.sandstorm.io/en/latest/administering/email/#outgoing-smtp\">de documentatie</a>."
+          "explanation": "Sandstorm en Sandstorm apps kunnen email notificaties verzenden. Elke app krijgt een uniek email adres, dus Sandstorm moet email kunnen verzenden van meerdere \"Van:\" adressen. Gmail SMTP zal daarom niet werken, maar er zijn andere gratis diensten beschikbaar. Bekijk voor meer informatie <a href=\"https://docs.sandstorm.org/en/latest/administering/email/#outgoing-smtp\">de documentatie</a>."
         },
         "success": "Veranderingen opgeslagen.",
         "error": "Veranderingen opslaan mislukt: %s",
@@ -1718,7 +1718,7 @@
     "setupWizardEmailConfig": {
       "title": "Email bezorging",
       "explanation": "Sandstorm heeft een manier nodig om email te verzenden.  U kunt deze stap overslaan (tenzij u gebruik maakt van email login), maar email gerelateerde functionaliteit zal niet beschikbaar zijn totdat u email in de toekomst configureert.",
-      "moreDetail": "<strong>Hoe Sandstorm email gebruikt:</strong> Sandstorm en Sandstorm apps kunnen email notificaties verzenden. Elke app kriijgt een uniek email adres, dus Sandstorm moet email kunnen verzenden van meerdere \"Van:\" adressen. Gmail SMTP zal daarom niet werken, maar er zijn andere gratis diensten beschikbaar. Bekijk voor meer informatie <a href=\"https://docs.sandstorm.io/en/latest/administering/email/#outgoing-smtp\">de documentatie</a>.",
+      "moreDetail": "<strong>Hoe Sandstorm email gebruikt:</strong> Sandstorm en Sandstorm apps kunnen email notificaties verzenden. Elke app kriijgt een uniek email adres, dus Sandstorm moet email kunnen verzenden van meerdere \"Van:\" adressen. Gmail SMTP zal daarom niet werken, maar er zijn andere gratis diensten beschikbaar. Bekijk voor meer informatie <a href=\"https://docs.sandstorm.org/en/latest/administering/email/#outgoing-smtp\">de documentatie</a>.",
       "error": "Opslaan van veranderingen mislukt: %s",
       "hostPort": {
         "host": "SMTP host",

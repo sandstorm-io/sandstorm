@@ -28,7 +28,7 @@ module.exports = {};
 module.exports["Test appdemo link"] = function (browser) {
   browser
     .loginDevAccount()
-    .installApp("http://sandstorm.io/apps/ssjekyll8.spk",
+    .installApp("https://dl.sandstorm.org/testapps/ssjekyll8.spk",
                 "ca690ad886bf920026f8b876c19539c1",
                 "nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh",
                 true)

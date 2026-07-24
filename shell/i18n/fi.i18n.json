@@ -21,7 +21,7 @@
           "withoutAppDemo": "Käynnistä »"
         },
         "explanation": "<p>Sandstorm tekee helpoksi ajaa ohjelmia omalla palvelimellasi. Sen lisäksi että tämä lisää tietosuojaa ja hallintaa, <a href=\"https://sandstorm.org/news/2014-07-21-open-source-web-apps-require-federated-hosting\" target=\"_blank\">tämä tuo Avoimen Lähdekoodin ohjelmat laajemmalle yleisölle.</a></p>",
-        "securityOverview": "<p>Sandstorm on myös älyttömän turvallinen. Jos tietoturva kiinnostaa sinua, katso <a href=\"https://docs.sandstorm.io/en/latest/developing/security-practices/\" target=\"_blank\">Sandstorm tietoturvamallin yleiskatsaus</a>.</p>"
+        "securityOverview": "<p>Sandstorm on myös älyttömän turvallinen. Jos tietoturva kiinnostaa sinua, katso <a href=\"https://docs.sandstorm.org/en/latest/developing/security-practices/\" target=\"_blank\">Sandstorm tietoturvamallin yleiskatsaus</a>.</p>"
       }
     },
     "notifications": {
@@ -525,8 +525,8 @@
     "admin": {
       "newAdmin": {
         "title": "Hallintapaneeli",
-        "wildcardHostBroken": "VAROITUS: Tällä palvelimella näyttää olevan WILDCARD_HOST väärät asetukset.  Ennenkuin korjaat sen, et pysty käyttämään mitään ohjelmia. Voit lukea tästä <a target=\"_blank\" href=\"https://docs.sandstorm.io/en/latest/administering/faq/#why-do-i-see-an-error-when-i-try-to-launch-an-app-even-when-the-sandstorm-interface-works-fine\"> enemmän tietoja Sandstorm ohjeista</a> ja selaimesi Javascript konsolista. Sinun tarvitsee säätää DNS, SSL/TLS sertifikaatteja, tai muokata sandstorm.conf tiedostoa. Jos et näe mitään tietoja JS konsolissa, tai haluat testata jos olet jo korjannut ongelman, lataa tämä sivu uudelleen ajaaksesi testin uudelleen. Jos sinulla on yhä ongelmia, <a href=\"https://github.com/sandstorm-io/sandstorm/issues\">ole hyvä ja avaa issue.</a>",
-        "websocketBroken": "VAROITUS: Tämä palvelin ei näytä pystyvän luomaan WebSockettia. Sandstorm voi näyttää toimivan hyvin, mutta monet ohjelmat eivät toimi kunnolla. <a target=\"_blank\" href=\"https://docs.sandstorm.io/en/latest/administering/faq/#how-do-i-enable-websockets-proxying-or-why-do-some-apps-seem-to-crash-reload\"> Lue lisää.</a>  Tavallisesti tämä johtuu reverse proxystä kuten nginx tai Apache jonka asetukset pitää määrittää uudelleen. Jos arvelet näkeväsi tämän viestin virheellisesti, ole hyvä ja lataa tämä sivu uudelleen tai <a href=\"https://github.com/sandstorm-io/sandstorm/issues\">avaa issue.</a>",
+        "wildcardHostBroken": "VAROITUS: Tällä palvelimella näyttää olevan WILDCARD_HOST väärät asetukset.  Ennenkuin korjaat sen, et pysty käyttämään mitään ohjelmia. Voit lukea tästä <a target=\"_blank\" href=\"https://docs.sandstorm.org/en/latest/administering/faq/#why-do-i-see-an-error-when-i-try-to-launch-an-app-even-when-the-sandstorm-interface-works-fine\"> enemmän tietoja Sandstorm ohjeista</a> ja selaimesi Javascript konsolista. Sinun tarvitsee säätää DNS, SSL/TLS sertifikaatteja, tai muokata sandstorm.conf tiedostoa. Jos et näe mitään tietoja JS konsolissa, tai haluat testata jos olet jo korjannut ongelman, lataa tämä sivu uudelleen ajaaksesi testin uudelleen. Jos sinulla on yhä ongelmia, <a href=\"https://github.com/sandstorm-io/sandstorm/issues\">ole hyvä ja avaa issue.</a>",
+        "websocketBroken": "VAROITUS: Tämä palvelin ei näytä pystyvän luomaan WebSockettia. Sandstorm voi näyttää toimivan hyvin, mutta monet ohjelmat eivät toimi kunnolla. <a target=\"_blank\" href=\"https://docs.sandstorm.org/en/latest/administering/faq/#how-do-i-enable-websockets-proxying-or-why-do-some-apps-seem-to-crash-reload\"> Lue lisää.</a>  Tavallisesti tämä johtuu reverse proxystä kuten nginx tai Apache jonka asetukset pitää määrittää uudelleen. Jos arvelet näkeväsi tämän viestin virheellisesti, ole hyvä ja lataa tämä sivu uudelleen tai <a href=\"https://github.com/sandstorm-io/sandstorm/issues\">avaa issue.</a>",
         "hasSetupToken": "Et ole kirjautunut sisään adminina, mutta sinulla on asetus token. Voit joko <a href=\"/setup\">käyttää ohjattua asennustoimintoa</a> tai <a href=\"/admin/status\">katsoa järjestelmän lokeja</a>.",
         "hasNoSetupToken": "Et ole kirjautunut sisäänn adminina. Käyttääksesi hallintapaneelia, kirjaudu sisään admin käyttäjänä tai luo token komentorivillä komennolla `sandstorm admin-token`."
       },
@@ -750,7 +750,7 @@
         },
         "howItWorks": {
           "title": "Kuinka Sandstorm käyttää sähköpostia",
-          "explanation": "Sandstorm lähettää sähköposti ilmoituksia, ja Sandstorm ohjelmat voivat myös lähettää sähköposti ilmoituksia. Jokainen ohjelma saa oman eri sähköpostiosoitteensa, joten Sandstormin täytyy pystyä lähettämään sähköpostia eri \"Lähettäjä:\" osoitteista. Tämän takia Gmail SMTP ei toimi, mutta on muita ilmaisia palveluita. Katso <a href=\"https://docs.sandstorm.io/en/latest/administering/email/#outgoing-smtp\">saadaksesi lisäohjeita</a>."
+          "explanation": "Sandstorm lähettää sähköposti ilmoituksia, ja Sandstorm ohjelmat voivat myös lähettää sähköposti ilmoituksia. Jokainen ohjelma saa oman eri sähköpostiosoitteensa, joten Sandstormin täytyy pystyä lähettämään sähköpostia eri \"Lähettäjä:\" osoitteista. Tämän takia Gmail SMTP ei toimi, mutta on muita ilmaisia palveluita. Katso <a href=\"https://docs.sandstorm.org/en/latest/administering/email/#outgoing-smtp\">saadaksesi lisäohjeita</a>."
         },
         "success": "Tiedot tallennettu.",
         "error": "Tietojen tallentaminen epäonnistui: %s",
@@ -1718,7 +1718,7 @@
     "setupWizardEmailConfig": {
       "title": "Sähköpostin lähetys",
       "explanation": "Sandstorm tarvitsee tavan lähettää sähköpostia. Voit ohittaa tämän vaiheen (paitsi jos käytät sähköpostikirjautumista), mutta sähköpostiin liittyvät ominaisuudet eivät ole käytössä kunnes määrität sähköpostin joskus tulevaisuudessa.",
-      "moreDetail": "<strong>Kuinka Sandstorm käyttää sähköpostia:</strong> Sandstorm lähettää sähköposti ilmoituksia, ja Sandstorm ohjelmat voivat myös lähettää sähköposti ilmoituksia. Jokainen ohjelma saa oman eri sähköpostiosoitteensa, joten Sandstormin täytyy pystyä lähettämään sähköpostia eri \"Lähettäjä:\" osoitteista. Tämän takia Gmail SMTP ei toimi, mutta on muita ilmaisia palveluita. Katso <a href=\"https://docs.sandstorm.io/en/latest/administering/email/#outgoing-smtp\">saadaksesi lisäohjeita</a>",
+      "moreDetail": "<strong>Kuinka Sandstorm käyttää sähköpostia:</strong> Sandstorm lähettää sähköposti ilmoituksia, ja Sandstorm ohjelmat voivat myös lähettää sähköposti ilmoituksia. Jokainen ohjelma saa oman eri sähköpostiosoitteensa, joten Sandstormin täytyy pystyä lähettämään sähköpostia eri \"Lähettäjä:\" osoitteista. Tämän takia Gmail SMTP ei toimi, mutta on muita ilmaisia palveluita. Katso <a href=\"https://docs.sandstorm.org/en/latest/administering/email/#outgoing-smtp\">saadaksesi lisäohjeita</a>",
       "error": "Muutosten tallentaminen epäonnistui: %s",
       "hostPort": {
         "host": "SMTP isäntä",

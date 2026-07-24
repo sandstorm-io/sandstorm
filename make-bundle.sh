@@ -325,7 +325,7 @@ a chroot.
 This bundle is intended to be installed using the Sandstorm installer or
 updater. To install Sandstorm, please run:
 
-    curl https://install.sandstorm.io | bash
+    curl https://install.sandstorm.org | bash
 
 If you have already installed Sandstorm, you can update your installation to
 this version by running:

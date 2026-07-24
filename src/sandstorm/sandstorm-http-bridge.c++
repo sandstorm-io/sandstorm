@@ -807,7 +807,7 @@ private:
     } else {
       KJ_LOG(ERROR, "HTTP protocol error, dropping ETag: app returned invalid ETag data", input);
       KJ_LOG(ERROR, "See Sandstorm documentation: "
-             "https://docs.sandstorm.io/en/latest/search.html?q=invalid+etag+data");
+             "https://docs.sandstorm.org/en/latest/search.html?q=invalid+etag+data");
       alreadyLoggedMessage = true;
     }
   }

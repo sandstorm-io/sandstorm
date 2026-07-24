@@ -37,7 +37,7 @@ module.exports["Test powerbox request contact"] = function (browser) {
 
   browser
     .loginDevAccount(aliceName)
-    .installApp("http://sandstorm.io/apps/david/sandstorm-test-python7.spk",
+    .installApp("https://dl.sandstorm.org/testapps/sandstorm-test-python7.spk",
                 "b06dc34b21ba3e8dcedc6d8bab351eac",
                 APP_ID)
     .assert.textContains("#grainTitle", "Untitled Test App test page")

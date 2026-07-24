@@ -21,7 +21,7 @@
           "withoutAppDemo": "Начать »"
         },
         "explanation": "<p>Sandstorm позволяет легко запускать приложения на вашем собственном сервере.  В дополнение к улучшению конфиденциальности и контроля, <a href=\"https://sandstorm.org/news/2014-07-21-open-source-web-apps-require-federated-hosting\" target=\"_blank\">это позволяет установить приложения с открытым исходным кодом для более широкой аудитории.</a></p>",
-        "securityOverview": "<p>Sandstorm также смехотворно безопасен. Если вас интересует безопасность, ознакомьтесь с <a href=\"https://docs.sandstorm.io/en/latest/developing/security-practices/\" target=\"_blank\">обзором модели безопасности Sandstorm</a>.</p>"
+        "securityOverview": "<p>Sandstorm также смехотворно безопасен. Если вас интересует безопасность, ознакомьтесь с <a href=\"https://docs.sandstorm.org/en/latest/developing/security-practices/\" target=\"_blank\">обзором модели безопасности Sandstorm</a>.</p>"
       }
     },
     "notifications": {
@@ -558,8 +558,8 @@
     "admin": {
       "newAdmin": {
         "title": "Панель админа",
-        "wildcardHostBroken": "ПРЕДУПРЕЖДЕНИЕ: Кажется на этом сервере произошла ошибка в настройке WILDCARD_HOST.  Пока Вы не исправите её, Вы не сможете пользоваться какими-либо приложениями. Вы можете прочитать <a target=\"_blank\" href=\"https://docs.sandstorm.io/en/latest/administering/faq/#why-do-i-see-an-error-when-i-try-to-launch-an-app-even-when-the-sandstorm-interface-works-fine\">больше информации в документации Sandstorm</a> и в Вашей браузерной консоли Javascript. Вам нужно будет изменить настройки DNS, сертификатов SSL/TLS, или редактировать файл sandstorm.conf. Если Вы не нашли информацию в консоле JS, или желаете проверить исправили ли Вы проблему, перезагрузите страницу чтобы перезапустить тест. Если у Вас ещё остались проблемы, пожалуйста <a href=\"https://github.com/sandstorm-io/sandstorm/issues\">зафиксируйте проблему</a>.",
-        "websocketBroken": "ПРЕДУПРЕЖДЕНИЕ: Кажется этот сервер не может создать WebSocket. Sandstorm выглядеть нормально, но множество приложений будут запускаться с ошибками. <a target=\"_blank\" href=\"https://docs.sandstorm.io/en/latest/administering/faq/#how-do-i-enable-websockets-proxying-or-why-do-some-apps-seem-to-crash-reload\">Узнать больше.</a>  Обычно это случается из-за обратного прокси как nginx или Apache, которые должны быть перенастроены. Если Вам кажется, что Вы видите сообщение об ошибке, которой не должно быть, пожалуйста перезагрузите эту страницу или <a href=\"https://github.com/sandstorm-io/sandstorm/issues\">зафиксируйте проблему</a>.",
+        "wildcardHostBroken": "ПРЕДУПРЕЖДЕНИЕ: Кажется на этом сервере произошла ошибка в настройке WILDCARD_HOST.  Пока Вы не исправите её, Вы не сможете пользоваться какими-либо приложениями. Вы можете прочитать <a target=\"_blank\" href=\"https://docs.sandstorm.org/en/latest/administering/faq/#why-do-i-see-an-error-when-i-try-to-launch-an-app-even-when-the-sandstorm-interface-works-fine\">больше информации в документации Sandstorm</a> и в Вашей браузерной консоли Javascript. Вам нужно будет изменить настройки DNS, сертификатов SSL/TLS, или редактировать файл sandstorm.conf. Если Вы не нашли информацию в консоле JS, или желаете проверить исправили ли Вы проблему, перезагрузите страницу чтобы перезапустить тест. Если у Вас ещё остались проблемы, пожалуйста <a href=\"https://github.com/sandstorm-io/sandstorm/issues\">зафиксируйте проблему</a>.",
+        "websocketBroken": "ПРЕДУПРЕЖДЕНИЕ: Кажется этот сервер не может создать WebSocket. Sandstorm выглядеть нормально, но множество приложений будут запускаться с ошибками. <a target=\"_blank\" href=\"https://docs.sandstorm.org/en/latest/administering/faq/#how-do-i-enable-websockets-proxying-or-why-do-some-apps-seem-to-crash-reload\">Узнать больше.</a>  Обычно это случается из-за обратного прокси как nginx или Apache, которые должны быть перенастроены. Если Вам кажется, что Вы видите сообщение об ошибке, которой не должно быть, пожалуйста перезагрузите эту страницу или <a href=\"https://github.com/sandstorm-io/sandstorm/issues\">зафиксируйте проблему</a>.",
         "hasSetupToken": "Вы не вошли как админ, но у Вас есть токен настроек. Вы можете либо <a href=\"/setup\">посетить мастера установки</a> или <a href=\"/admin/status\">посмотреть журнал системы</a>.",
         "hasNoSetupToken": "Вы не вошли как админ. Чтобы получить доступ к панели админа, войдите в качестве админа или создайте токен с помощью коммандной строки по запуску `sandstorm admin-token`."
       },
@@ -807,7 +807,7 @@
         },
         "howItWorks": {
           "title": "Как Sandstorm использует электронную почту",
-          "explanation": "Sandstorm отправляет оповещения по эл. почте, а также песчинки тоже могут отправлять оповещения. Каждая песчинка имеет уникальный адрес эл. почты, поэтому Sandstorm придётся отправлять эл. почту от множества адресов \"From:\". Тем не менее, Gmail SMTP не будет работать, но в любом случае есть множество слежб в свободном доступе. Посмотреть <a href=\"https://docs.sandstorm.io/en/latest/administering/email/#outgoing-smtp\">больше информации в документах</a>."
+          "explanation": "Sandstorm отправляет оповещения по эл. почте, а также песчинки тоже могут отправлять оповещения. Каждая песчинка имеет уникальный адрес эл. почты, поэтому Sandstorm придётся отправлять эл. почту от множества адресов \"From:\". Тем не менее, Gmail SMTP не будет работать, но в любом случае есть множество слежб в свободном доступе. Посмотреть <a href=\"https://docs.sandstorm.org/en/latest/administering/email/#outgoing-smtp\">больше информации в документах</a>."
         },
         "success": "Изменения сохраняются.",
         "error": "Не удалось сохранить изменения: %s",
@@ -1780,7 +1780,7 @@
     "setupWizardEmailConfig": {
       "title": "Отправка электронной почты",
       "explanation": "Sandstorm'у нужен путь для отправки писем. Вы можете пропустить этот шаг (пока Вы не пользуетесь входом через e-mail), но функции доступные для e-mail будут недоступны Вам, пока Вы не настроете e-mail.",
-      "moreDetail": "<strong>Как Sandstorm использует электронную почту:</strong> Sandstorm отправляет оповещения по эл. почте, а также песчинки тоже могут отправлять оповещения. Каждая песчинка имеет уникальный адрес эл. почты, поэтому Sandstorm придётся отправлять эл. почту от множества адресов \"From:\". Тем не менее, Gmail SMTP не будет работать, но в любом случае есть множество слежб в свободном доступе. Посмотреть <a href=\"https://docs.sandstorm.io/en/latest/administering/email/#outgoing-smtp\">больше информации в документах</a>.",
+      "moreDetail": "<strong>Как Sandstorm использует электронную почту:</strong> Sandstorm отправляет оповещения по эл. почте, а также песчинки тоже могут отправлять оповещения. Каждая песчинка имеет уникальный адрес эл. почты, поэтому Sandstorm придётся отправлять эл. почту от множества адресов \"From:\". Тем не менее, Gmail SMTP не будет работать, но в любом случае есть множество слежб в свободном доступе. Посмотреть <a href=\"https://docs.sandstorm.org/en/latest/administering/email/#outgoing-smtp\">больше информации в документах</a>.",
       "error": "Не удалось сохранить изменения: %s",
       "hostPort": {
         "host": "Хост SMTP",

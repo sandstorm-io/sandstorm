@@ -78,7 +78,7 @@ module.exports["Test open direct share link"] = function (browser) {
       var devAccountId2 = result.value;
       waitForLogout(browser)
         .loginDevAccount()
-        .installApp("http://sandstorm.io/apps/ssjekyll8.spk", "ca690ad886bf920026f8b876c19539c1",
+        .installApp("https://dl.sandstorm.org/testapps/ssjekyll8.spk", "ca690ad886bf920026f8b876c19539c1",
                     hackerCmsAppId)
         .waitForElementVisible("#grainTitle", medium_wait)
         .assert.textContains("#grainTitle", expectedHackerCMSGrainTitle)
@@ -224,7 +224,7 @@ module.exports["Test open direct share link"] = function (browser) {
 module.exports["Test revoked share link"] = function (browser) {
   browser
     .loginDevAccount()
-    .installApp("http://sandstorm.io/apps/ssjekyll8.spk", "ca690ad886bf920026f8b876c19539c1",
+    .installApp("https://dl.sandstorm.org/testapps/ssjekyll8.spk", "ca690ad886bf920026f8b876c19539c1",
                 hackerCmsAppId)
     .waitForElementVisible("#grainTitle", medium_wait)
     .assert.textContains("#grainTitle", expectedHackerCMSGrainTitle)
@@ -263,7 +263,7 @@ module.exports["Test share popup no permission"] = function (browser) {
   var sharePopupSelector = ".topbar .share > .show-popup";
   browser
     .loginDevAccount()
-    .installApp("http://sandstorm.io/apps/ssjekyll8.spk", "ca690ad886bf920026f8b876c19539c1",
+    .installApp("https://dl.sandstorm.org/testapps/ssjekyll8.spk", "ca690ad886bf920026f8b876c19539c1",
                 hackerCmsAppId)
     .waitForElementVisible("#grainTitle", medium_wait)
     .assert.textContains("#grainTitle", expectedHackerCMSGrainTitle)

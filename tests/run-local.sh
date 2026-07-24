@@ -122,11 +122,6 @@ MAIL_URL=smtp://127.0.0.1:${SMTP_OUTGOING_PORT}
 UPDATE_CHANNEL=none
 " >> "$SANDSTORM_DIR/sandstorm.conf"
 
-# For fresh installs, configure MongoDB 7 directly (no migration needed)
-# The version file tells Sandstorm which MongoDB to use
-mkdir -p "$SANDSTORM_DIR/var/mongo"
-echo "7" > "$SANDSTORM_DIR/var/mongo/version"
-
 "$SANDSTORM_DIR/sandstorm" start
 
 echo -n "Waiting for sandstorm to start."

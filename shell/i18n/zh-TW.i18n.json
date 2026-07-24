@@ -21,7 +21,7 @@
           "withoutAppDemo": "Start »"
         },
         "explanation": "<p>Sandstorm makes it easy to run apps on your own server. In addition to improving privacy and control, <a href=\"https://sandstorm.org/news/2014-07-21-open-source-web-apps-require-federated-hosting\" target=\"_blank\">this brings Open Source apps to a wide audience.</a></p>",
-        "securityOverview": "<p>Sandstorm is also ridiculously secure. If security interests you, check out <a href=\"https://docs.sandstorm.io/en/latest/developing/security-practices/\" target=\"_blank\">Sandstorm's security model overview</a>.</p>"
+        "securityOverview": "<p>Sandstorm is also ridiculously secure. If security interests you, check out <a href=\"https://docs.sandstorm.org/en/latest/developing/security-practices/\" target=\"_blank\">Sandstorm's security model overview</a>.</p>"
       }
     },
     "notifications": {
@@ -479,8 +479,8 @@
     "admin": {
       "newAdmin": {
         "title": "管理面板",
-        "wildcardHostBroken": "警告：本伺服器似乎把 WILDCARD_HOST 設定錯了。在修復此問題前，您無法使用任何應用程式。您可以參照<a target=\"_blank\" href=\"https://docs.sandstorm.io/en/latest/administering/faq/#why-do-i-see-an-error-when-i-try-to-launch-an-app-even-when-the-sandstorm-interface-works-fine\">本篇沙聚雲文件</a>和您瀏覽器的 Javascript 記錄取得更多資訊。您必須調整 DNS、SSL/TLS certificates，或編輯 sandstorm.conf 檔案。如果您想要測試問題是否已修復，請重新整理此頁面。如果您仍然有問題，請<a href=\"https://github.com/sandstorm-io/sandstorm/issues\">在此開一個 issue</a>。",
-        "websocketBroken": "警告：本伺服器似乎無法建立 WebSocket。沙聚雲也許看起來沒有問題，但許多應用程式會無法正常執行。<a target=\"_blank\" href=\"https://docs.sandstorm.io/en/latest/administering/faq/#how-do-i-enable-websockets-proxying-or-why-do-some-apps-seem-to-crash-reload\">更多資訊在此。</a>通常這是因為上層的 reverse proxy （比如 nginx 或 Apache）需要被重新設定。如果您認為不是，請重新整理此頁面或<a href=\"https://github.com/sandstorm-io/sandstorm/issues\">在此開一個 issue</a>。",
+        "wildcardHostBroken": "警告：本伺服器似乎把 WILDCARD_HOST 設定錯了。在修復此問題前，您無法使用任何應用程式。您可以參照<a target=\"_blank\" href=\"https://docs.sandstorm.org/en/latest/administering/faq/#why-do-i-see-an-error-when-i-try-to-launch-an-app-even-when-the-sandstorm-interface-works-fine\">本篇沙聚雲文件</a>和您瀏覽器的 Javascript 記錄取得更多資訊。您必須調整 DNS、SSL/TLS certificates，或編輯 sandstorm.conf 檔案。如果您想要測試問題是否已修復，請重新整理此頁面。如果您仍然有問題，請<a href=\"https://github.com/sandstorm-io/sandstorm/issues\">在此開一個 issue</a>。",
+        "websocketBroken": "警告：本伺服器似乎無法建立 WebSocket。沙聚雲也許看起來沒有問題，但許多應用程式會無法正常執行。<a target=\"_blank\" href=\"https://docs.sandstorm.org/en/latest/administering/faq/#how-do-i-enable-websockets-proxying-or-why-do-some-apps-seem-to-crash-reload\">更多資訊在此。</a>通常這是因為上層的 reverse proxy （比如 nginx 或 Apache）需要被重新設定。如果您認為不是，請重新整理此頁面或<a href=\"https://github.com/sandstorm-io/sandstorm/issues\">在此開一個 issue</a>。",
         "hasSetupToken": "您並非以管理者身份登入，但您的設置 token 是正確的。您現在可以<a href=\"/setup\">啟動設置精靈</a>或<a href=\"/admin/status\">檢視系統記錄</a>。",
         "hasNoSetupToken": "您並非以管理者身份登入，無法使用管理面板。請以管理者身份登入，或在主機終端上執行`sandstorm admin-token`來取得管理 token。"
       },
@@ -704,7 +704,7 @@
         },
         "howItWorks": {
           "title": "沙聚雲如何使用電郵",
-          "explanation": "沙聚雲寄送通知郵件，並且也允許應用程式寄送。每個應用程式都有一個獨自的電郵位址，所以沙聚雲需要能從可變的「來自」位置寄信。所以 Gmail SMTP 不管用，請採用別的免費服務。更多資訊請<a href=\"https://docs.sandstorm.io/en/latest/administering/email/#outgoing-smtp\">參見此處</a>。"
+          "explanation": "沙聚雲寄送通知郵件，並且也允許應用程式寄送。每個應用程式都有一個獨自的電郵位址，所以沙聚雲需要能從可變的「來自」位置寄信。所以 Gmail SMTP 不管用，請採用別的免費服務。更多資訊請<a href=\"https://docs.sandstorm.org/en/latest/administering/email/#outgoing-smtp\">參見此處</a>。"
         },
         "success": "變更已儲存。",
         "error": "無法儲存變更：%s",
@@ -1665,7 +1665,7 @@
     "setupWizardEmailConfig": {
       "title": "電郵寄送",
       "explanation": "沙聚雲需要知道如何寄送電郵。除非您使用電郵登入，否則可以跳過此步驟。若您跳過此步驟，直到您設定完成為止電郵相關的功能皆無法使用。",
-      "moreDetail": "<strong>沙聚雲使用電郵的方法：</strong>沙聚雲寄送通知郵件，並且也允許應用程式寄送。每個應用程式都有一個獨自的電郵位址，所以沙聚雲需要能從可變的「來自」位置寄信。所以 Gmail SMTP 不管用，請採用別的免費服務。更多資訊請<a href=\"https://docs.sandstorm.io/en/latest/administering/email/#outgoing-smtp\">參見此處</a>。",
+      "moreDetail": "<strong>沙聚雲使用電郵的方法：</strong>沙聚雲寄送通知郵件，並且也允許應用程式寄送。每個應用程式都有一個獨自的電郵位址，所以沙聚雲需要能從可變的「來自」位置寄信。所以 Gmail SMTP 不管用，請採用別的免費服務。更多資訊請<a href=\"https://docs.sandstorm.org/en/latest/administering/email/#outgoing-smtp\">參見此處</a>。",
       "error": "無法儲存變更：%s",
       "hostPort": {
         "host": "SMTP 主機位址",

@@ -43,7 +43,7 @@ const pkgdef :Spk.PackageDefinition = (
     metadata = (
       # Data which is not needed specifically to execute the app, but is useful
       # for purposes like marketing and display.  These fields are documented at
-      # https://docs.sandstorm.io/en/latest/developing/publishing-apps/#add-required-metadata
+      # https://docs.sandstorm.org/en/latest/developing/publishing-apps/#add-required-metadata
       # and (in deeper detail) in the sandstorm source code, in the Metadata section of
       # https://github.com/sandstorm-io/sandstorm/blob/master/src/sandstorm/package.capnp
       icons = (
@@ -63,12 +63,12 @@ const pkgdef :Spk.PackageDefinition = (
 
       license = (none = void),
       # The license this package is distributed under.  See
-      # https://docs.sandstorm.io/en/latest/developing/publishing-apps/#license
+      # https://docs.sandstorm.org/en/latest/developing/publishing-apps/#license
 
       categories = [],
       # A list of categories/genres to which this app belongs, sorted with best fit first.
       # See the list of categories at
-      # https://docs.sandstorm.io/en/latest/developing/publishing-apps/#categories
+      # https://docs.sandstorm.org/en/latest/developing/publishing-apps/#categories
 
       author = (
         # Fields relating to the author of this app.
@@ -90,7 +90,7 @@ const pkgdef :Spk.PackageDefinition = (
         #     echo -n "I am the author of the Sandstorm.io app with the following ID: <app-id>" | gpg --sign > pgp-signature
         #
         # Further details including how to set up GPG and how to use keybase.io can be found
-        # at https://docs.sandstorm.io/en/latest/developing/publishing-apps/#verify-your-identity
+        # at https://docs.sandstorm.org/en/latest/developing/publishing-apps/#verify-your-identity
 
         upstreamAuthor = "Example App Team",
         # Name of the original primary author of this app, if it is different from the person who
@@ -173,7 +173,7 @@ const pkgdef :Spk.PackageDefinition = (
     # Uncomment this block and adjust the permissions and roles to make
     # sense for your app.
     # For more information, see high-level documentation at
-    # https://docs.sandstorm.io/en/latest/developing/auth/
+    # https://docs.sandstorm.org/en/latest/developing/auth/
     # and advanced details in the "BridgeConfig" section of
     # https://github.com/sandstorm-io/sandstorm/blob/master/src/sandstorm/package.capnp
     expectAppHooks = true,

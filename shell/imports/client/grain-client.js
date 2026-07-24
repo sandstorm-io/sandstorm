@@ -1559,7 +1559,7 @@ Meteor.startup(function () {
         } catch (err) {
           console.error(err);
           console.error("startSharing data is not the expected shape.");
-          console.error("See https://docs.sandstorm.io/en/latest/developing/path/#helping-the-user-share-access");
+          console.error("See https://docs.sandstorm.org/en/latest/developing/path/#helping-the-user-share-access");
           return;
         }
         senderGrain.setShareData(event.data.startSharing);

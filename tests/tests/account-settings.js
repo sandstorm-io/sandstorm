@@ -108,6 +108,7 @@ module.exports["Test profile changes passing to testapp"] = function (browser) {
     .assert.textContains('#picture', 'sandstorm.io')
     .assert.textContains('#preferredHandle', devName2.toLowerCase())
     .assert.textContains('#pronouns', 'robot')
+    .assert.textContains('#serverRuntime', 'classic')
 
     .frameParent()
     .execute("window.Meteor.logout()")

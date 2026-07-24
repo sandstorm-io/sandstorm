@@ -4,27 +4,27 @@ So you want to contribute to Sandstorm. Awesome! This document will help you get
 
 ## Talk to us!
 
-Before you start making changes to Sandstorm, you should join [the sandstorm-dev mailing list](https://groups.google.com/group/sandstorm-dev) and tell us what you're up to. We might be able to give you tips or warn you if someone is already working on the same thing.
+Before you start making changes to Sandstorm, you should join [the sandstorm-dev mailing list](https://groups.io/g/sandstorm-dev-group) and tell us what you're up to. We might be able to give you tips or warn you if someone is already working on the same thing.
 
-You can also [chat with us on IRC](https://kiwiirc.com/client/irc.libera.chat/?channel=#sandstorm) at #sandstorm on libera.chat -- but don't be discouraged if no one answers; sometimes we're busy. :)
+You can also [chat with us on Zulip](https://sandstorm.zulipchat.com) -- but don't be discouraged if no one answers; sometimes we're busy. :)
 
 ## Non-code contributions
 
-There are many ways to contribute without writing code. Check out the [Sandstorm community page](https://sandstorm.io/community) for some ideas. The rest of this document focuses on code, since this is the code repository.
+There are many ways to contribute without writing code. Check out the [Sandstorm community page](https://sandstorm.org/community) for some ideas. The rest of this document focuses on code, since this is the code repository.
 
 ## How to hack on the code
 
-To learn how to set up a dev environment and hack on the code, check out the documentation on [installing Sandstorm from source](https://docs.sandstorm.io/en/latest/install/#option-4-installing-from-source).
+To learn how to set up a dev environment and hack on the code, check out the documentation on [installing Sandstorm from source](https://docs.sandstorm.org/en/latest/install/#option-4-installing-from-source).
 
 ## What to work on
 
 Here are a list of projects and smaller tasks that YOU can do to help Sandstorm!
 
-If you'd like to work on one of these tasks, [join the sandstorm-dev mailing list](https://groups.google.com/group/sandstorm-dev) and let us know! We'll let you know if anyone else is already working on the task and help you figure out what to do.
+If you'd like to work on one of these tasks, [join the sandstorm-dev mailing list](https://groups.io/g/sandstorm-dev-group) and let us know! We'll let you know if anyone else is already working on the task and help you figure out what to do.
 
 ### Apps!
 
-The easiest way to help Sandstorm is to write and/or package apps! See [the developer hub in the Sandstorm documentation](https://docs.sandstorm.io/en/latest/developing/) for how to get started.
+The easiest way to help Sandstorm is to write and/or package apps! See [the developer hub in the Sandstorm documentation](https://docs.sandstorm.org/en/latest/developing/) for how to get started.
 
 If you want to package *something* but don't know what, look for [issues labeled "app-requests"](https://github.com/sandstorm-io/sandstorm/issues?q=is%3Aissue+is%3Aopen+label%3Aapp-requests)
 on the issue tracker.
@@ -33,7 +33,7 @@ on the issue tracker.
 
 We need help translating the Sandstorm interface into multiple languages.
 
-The easiest way to help is to write translation tables for your language. Check out the [shell/i18n](https://github.com/sandstorm-io/sandstorm/tree/master/shell/i18n) directory to see existing tables. To add support for your language, start by copying en.i18n.json, then go through and change each piece of text to your own language. Check out the [Dutch translation](https://github.com/sandstorm-io/sandstorm/pull/2999) for an example. Don't forget to check with [the sandstorm-dev mailing list](https://groups.google.com/group/sandstorm-dev) before you start, to see if anyone else is already working on the same language.
+The easiest way to help is to write translation tables for your language. Check out the [shell/i18n](https://github.com/sandstorm-io/sandstorm/tree/master/shell/i18n) directory to see existing tables. To add support for your language, start by copying en.i18n.json, then go through and change each piece of text to your own language. Check out the [Dutch translation](https://github.com/sandstorm-io/sandstorm/pull/2999) for an example. Don't forget to check with [the sandstorm-dev mailing list](https://groups.io/g/sandstorm-dev-group) before you start, to see if anyone else is already working on the same language.
 
 As a more advanced project, we also need help improving our i18n framework.
 
@@ -121,7 +121,7 @@ We'd like to develop similar tools -- or maybe one combined tool -- which unders
 
 ### Documentation
 
-Sandstorm maintains detailed documentation at [docs.sandstorm.io](https://docs.sandstorm.io), which is generated from [a directory in the source tree](https://github.com/sandstorm-io/sandstorm/tree/master/docs).
+Sandstorm maintains detailed documentation at [docs.sandstorm.org](https://docs.sandstorm.org), which is generated from [the docs repository](https://github.com/sandstorm-org/docs).
 
 In theory, whenever someone adds a new feature to Sandstorm, they should add documentation.
 

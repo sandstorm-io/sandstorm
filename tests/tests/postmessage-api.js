@@ -32,7 +32,7 @@ module.exports['Install and launch test app'] = function (browser) {
     .init()
     // test-3 introduces the JSON-formatted renderTemplate output
     .loginDevAccount()
-    .installApp("https://alpha-hlngxit86q1mrs2iplnx.sandstorm.io/test-7.spk", "281d3ffbc93933001d6b28e44ffac615", "rwyva77wj1pnj01cjdj2kvap7c059n9ephyyg5k4s5enh5yw9rxh")
+    .installApp("https://dl.sandstorm.org/testapps/test-7.spk", "281d3ffbc93933001d6b28e44ffac615", "rwyva77wj1pnj01cjdj2kvap7c059n9ephyyg5k4s5enh5yw9rxh")
 
     .assert.textContains('#grainTitle', 'Untitled Test App test page')
     .grainFrame()

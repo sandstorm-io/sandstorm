@@ -7,7 +7,7 @@
 #
 # If `curl|bash` makes you uncomfortable, see other options here:
 #
-#     https://docs.sandstorm.io/en/latest/install/
+#     https://docs.sandstorm.org/en/latest/install/
 #
 # This script only modifies your system in the following ways:
 # - Install Sandstorm into the directory you choose, typically /opt/sandstorm.
@@ -458,7 +458,7 @@ assert_linux_x86_64() {
     fail "E_NON_LINUX" "Sandstorm requires Linux. If you want to run Sandstorm on a Windows or
 Mac system, you can use Vagrant or another virtualization tool. See our install documentation:
 
-- https://docs.sandstorm.io/en/latest/install/"
+- https://docs.sandstorm.org/en/latest/install/"
   fi
 
   if [ "$(uname -m)" != x86_64 ]; then
@@ -533,6 +533,64 @@ __EOF__
     sysctl -wq "kernel.unprivileged_userns_clone=$OLD_VALUE" || true
     return
   fi
+}
+
+maybe_install_apparmor_userns_profile() {
+  # Ubuntu 24.04 restricts unprivileged user namespaces through AppArmor by
+  # default. Give Sandstorm the userns permission.
+
+  if [ "yes" != "$CURRENTLY_UID_ZERO" ]; then
+    return
+  fi
+
+  if [ ! -e /proc/sys/kernel/apparmor_restrict_unprivileged_userns ]; then
+    return
+  fi
+
+  if [ ! -d /etc/apparmor.d ]; then
+    return
+  fi
+
+  if ! which apparmor_parser > /dev/null; then
+    echo "NOTE: AppArmor restricts unprivileged user namespaces, but apparmor_parser was not found."
+    return
+  fi
+
+  local PROFILE_PATH="/etc/apparmor.d/sandstorm"
+  if ! cat > "$PROFILE_PATH" << __EOF__
+# Allow Sandstorm to create user namespaces on systems that restrict
+# unprivileged user namespaces through AppArmor.
+profile sandstorm ${DIR}/sandstorm flags=(unconfined) {
+  userns,
+}
+
+profile sandstorm-latest ${DIR}/latest/sandstorm flags=(unconfined) {
+  userns,
+}
+
+profile sandstorm-build ${DIR}/sandstorm-*/sandstorm flags=(unconfined) {
+  userns,
+}
+
+profile sandstorm-custom-build ${DIR}/sandstorm-custom.*/sandstorm flags=(unconfined) {
+  userns,
+}
+
+profile sandstorm-usr-local-bin /usr/local/bin/sandstorm flags=(unconfined) {
+  userns,
+}
+
+profile spk-usr-local-bin /usr/local/bin/spk flags=(unconfined) {
+  userns,
+}
+__EOF__
+  then
+    echo "NOTE: Could not install AppArmor profile for Sandstorm."
+    return
+  fi
+
+  apparmor_parser -r "$PROFILE_PATH" 2>/dev/null ||
+    echo "NOTE: Installed AppArmor profile for Sandstorm, but could not load it."
 }
 
 test_if_dev_tcp_works() {
@@ -819,6 +877,9 @@ full_server_install() {
     else
       echo "* Configure Sandstorm to start on system boot (with $INIT_SYSTEM)"
     fi
+    if [ -e /proc/sys/kernel/apparmor_restrict_unprivileged_userns ]; then
+      echo "* Configure AppArmor to allow Sandstorm to create unprivileged user namespaces."
+    fi
     echo "* Listen for inbound email on port ${PLANNED_SMTP_PORT}."
     echo ""
 
@@ -848,7 +909,7 @@ full_server_install() {
       echo "      without HTTPS. This makes sense if you're OK with typing the port number"
       echo "      into your browser whenever you access Sandstorm and you don't need"
       echo "      security. This also makes sense if you are going to set up a reverse proxy;"
-      echo "      if so, see https://docs.sandstorm.io/en/latest/administering/reverse-proxy/"
+      echo "      if so, see https://docs.sandstorm.org/en/latest/administering/reverse-proxy/"
       echo ""
       echo "      If you want, you can quit this script with Ctrl-C now, and go uninstall"
       echo "      your other web server, and then run this script again. It is also OK to"
@@ -1054,10 +1115,10 @@ choose_install_dir() {
     error "You seem to already have a ${DIR} directory with a Sandstorm installation inside. You should either:"
     error ""
     error "1. Reconfigure that Sandstorm install using its configuration file -- ${DIR}/sandstorm.conf -- or the admin interface. See docs at:"
-    error "https://docs.sandstorm.io/en/latest/administering/"
+    error "https://docs.sandstorm.org/en/latest/administering/"
     error ""
     error "2. Uninstall Sandstorm before attempting to perform a new install. Even if you created a sandcats.io hostname, it is safe to uninstall so long as you do not need the data in your Sandstorm install. When you re-install Sandstorm, you can follow a process to use the old hostname with the new install. See uninstall docs at:"
-    error "https://docs.sandstorm.io/en/latest/install/#uninstall"
+    error "https://docs.sandstorm.org/en/latest/install/#uninstall"
     error ""
     error "3. Use a different target directory for the new Sandstorm install. Try running install.sh with the -d option."
     error ""
@@ -1431,6 +1492,12 @@ make_runtime_directories() {
   # Make var directories.
   mkdir -p var/{log,pid,mongo} var/sandstorm/{apps,grains,downloads}
 
+  # Fresh installs should initialize directly on MongoDB 7. Existing installs are rejected by
+  # choose_install_dir(), so this does not mark an old MongoDB 2.6 database as migrated.
+  if [ ! -e var/mongo/version ]; then
+    echo "7" > var/mongo/version
+  fi
+
   # Create useful symlinks.
   ln -sfT $BUILD_DIR latest
   ln -sfT latest/sandstorm sandstorm
@@ -1674,7 +1741,7 @@ sandcats_provide_help() {
   echo "You can:"
   echo ""
   echo "* Read more about it at:"
-  echo "  https://docs.sandstorm.io/en/latest/administering/sandcats/"
+  echo "  https://docs.sandstorm.org/en/latest/administering/sandcats/"
   echo ""
   echo "* Recover access to a domain you once registered with sandcats"
   echo ""
@@ -2123,6 +2190,7 @@ make_runtime_directories
 generate_admin_token
 set_permissions
 install_sandstorm_symlinks
+maybe_install_apparmor_userns_profile
 ask_about_starting_at_boot
 configure_start_at_boot_if_desired
 wait_for_server_bind_to_its_port

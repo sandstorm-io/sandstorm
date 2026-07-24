@@ -11,26 +11,26 @@ phone.
 Sandstorm is open source and can be installed on any x86-64 Linux
 system.
 
-* Read more at: https://sandstorm.io/
+* Read more at: https://sandstorm.org/
 * Try the demo: https://demo.sandstorm.io/
-* Documentation available at: https://docs.sandstorm.io/
+* Documentation available at: https://docs.sandstorm.org/
 
 ## Installing
 
-See [installation instructions in the Sandstorm documentation](https://docs.sandstorm.io/en/latest/install/).
+See [installation instructions in the Sandstorm documentation](https://docs.sandstorm.org/en/latest/install/).
 
 ## Using Sandstorm
 
-See [the overview in the Sandstorm documentation](https://docs.sandstorm.io/en/latest/using/).
+See [the overview in the Sandstorm documentation](https://docs.sandstorm.org/en/latest/using/).
 
 ## How It Works
 
-See [how it works](https://sandstorm.io/how-it-works) and [security practices](https://docs.sandstorm.io/en/latest/using/security-practices/) in the Sandstorm documentation.
+See [how it works](https://sandstorm.io/how-it-works) and [security practices](https://docs.sandstorm.org/en/latest/using/security-practices/) in the Sandstorm documentation.
 
 ## How to Package Apps
 
-See [the developer hub in the Sandstorm documentation](https://docs.sandstorm.io/en/latest/developing/).
+See [the developer hub in the Sandstorm documentation](https://docs.sandstorm.org/en/latest/developing/).
 
 ## Contribute
 
-Want to help? Check out [CONTRIBUTING.md](https://github.com/sandstorm-io/sandstorm/blob/master/CONTRIBUTING.md). Also see our [community page](https://sandstorm.io/community) or get on our [discussion group](https://groups.google.com/group/sandstorm-dev) and let us know!
+Want to help? Check out [CONTRIBUTING.md](https://github.com/sandstorm-io/sandstorm/blob/master/CONTRIBUTING.md). Also see our [community page](https://sandstorm.org/community) or get on our [discussion group](https://groups.io/g/sandstorm-dev-group) and let us know!

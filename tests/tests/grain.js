@@ -109,7 +109,7 @@ module.exports = utils.testAllLogins({
 
   "Test remote install" : function (browser) {
     browser
-      .url(browser.launch_url + "/install/ca690ad886bf920026f8b876c19539c1?url=http://sandstorm.io/apps/ssjekyll8.spk")
+      .url(browser.launch_url + "/install/ca690ad886bf920026f8b876c19539c1?url=https://dl.sandstorm.org/testapps/ssjekyll8.spk")
       .disableGuidedTour()
       .waitForElementVisible('#step-confirm', very_long_wait)
       .click('#confirmInstall')
@@ -211,7 +211,7 @@ module.exports["Test clone grain title"] = function(browser) {
 module.exports["Sign in at grain URL"] = function (browser) {
   browser
     .loginDevAccount()
-    .installApp("http://sandstorm.io/apps/ssjekyll8.spk", "ca690ad886bf920026f8b876c19539c1", "nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh")
+    .installApp("https://dl.sandstorm.org/testapps/ssjekyll8.spk", "ca690ad886bf920026f8b876c19539c1", "nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh")
     .waitForElementVisible("#grainTitle", medium_wait)
     .assert.textContains("#grainTitle", expectedHackerCMSGrainTitle)
     .getDevName(function (devName) {
@@ -298,7 +298,7 @@ module.exports["Sign in at grain URL"] = function (browser) {
 module.exports["Logging out closes grain"] = function (browser) {
   browser
     .loginDevAccount()
-    .installApp("http://sandstorm.io/apps/ssjekyll8.spk", "ca690ad886bf920026f8b876c19539c1", "nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh")
+    .installApp("https://dl.sandstorm.org/testapps/ssjekyll8.spk", "ca690ad886bf920026f8b876c19539c1", "nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh")
     .waitForElementVisible("#grainTitle", medium_wait)
     .assert.textContains("#grainTitle", expectedHackerCMSGrainTitle)
     .execute("window.Meteor.logout()")
@@ -317,7 +317,7 @@ module.exports["Test grain anonymous user"] = function (browser) {
   browser
     // Upload app as normal user
     .loginDevAccount()
-    .installApp("http://sandstorm.io/apps/ssjekyll8.spk", "ca690ad886bf920026f8b876c19539c1", "nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh")
+    .installApp("https://dl.sandstorm.org/testapps/ssjekyll8.spk", "ca690ad886bf920026f8b876c19539c1", "nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh")
     .waitForElementVisible('#grainTitle', medium_wait)
     .assert.textContains('#grainTitle', expectedHackerCMSGrainTitle)
     .click('.topbar .share > .show-popup')
@@ -361,7 +361,7 @@ module.exports["Test roleless sharing"] = function (browser) {
   browser
   // Upload app as 1st user
     .loginDevAccount()
-    .installApp("http://sandstorm.io/apps/ssjekyll8.spk", "ca690ad886bf920026f8b876c19539c1", "nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh")
+    .installApp("https://dl.sandstorm.org/testapps/ssjekyll8.spk", "ca690ad886bf920026f8b876c19539c1", "nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh")
     .getDevName(function (result) {
       firstUserName = result.value;
     })
@@ -438,7 +438,7 @@ module.exports["Test role sharing"] = function (browser) {
   browser
     // Upload app as 1st user
     .loginDevAccount()
-    .installApp("http://sandstorm.io/apps/david/gitweb5.spk",
+    .installApp("https://dl.sandstorm.org/testapps/gitweb5.spk",
                 "26eb486a44085512a678c543fc7c1fdd",
                 "6va4cjamc21j0znf5h5rrgnv0rpyvh1vaxurkrgknefvj0x63ash")
     .waitForElementVisible('.grain-frame', medium_wait)
@@ -499,7 +499,7 @@ module.exports["Test grain reveal identity interstitial"] = function (browser) {
   browser
      // Upload app as normal user
     .loginDevAccount()
-    .installApp("http://sandstorm.io/apps/ssjekyll8.spk", "ca690ad886bf920026f8b876c19539c1", "nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh")
+    .installApp("https://dl.sandstorm.org/testapps/ssjekyll8.spk", "ca690ad886bf920026f8b876c19539c1", "nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh")
     .waitForElementVisible('.grain-frame', medium_wait)
     .assert.textContains('#grainTitle', expectedHackerCMSGrainTitle)
     .click('.topbar .share > .show-popup')

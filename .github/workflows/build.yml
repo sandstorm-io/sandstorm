@@ -40,7 +40,7 @@ jobs:
             which go || (sudo apt-get update && sudo apt-get install golang-go)
 
             sudo apt-get update && sudo apt-get install -y --no-install-recommends \
-                build-essential libcap-dev xz-utils zip unzip strace curl discount git python3 zlib1g-dev cmake ccache
+                build-essential libcap-dev xz-utils zip unzip strace curl discount git python3 zlib1g-dev cmake ccache apparmor
 
             # Install OpenSSL 1.1 (required for Meteor/Node compatibility)
             # Ubuntu 24.04 only ships OpenSSL 3.x, so we need to install 1.1 from older release
@@ -48,10 +48,40 @@ jobs:
             sudo dpkg -i libssl1.1_1.1.1f-1ubuntu2_amd64.deb
             rm libssl1.1_1.1.1f-1ubuntu2_amd64.deb
 
-            # Ubuntu 24.04 restricts unprivileged user namespaces by default via AppArmor
-            # Sandstorm requires user namespaces for sandboxing, so disable this restriction
-            echo "kernel.apparmor_restrict_unprivileged_userns = 0" | sudo tee /etc/sysctl.d/99-userns.conf
-            sudo sysctl --system
+            # Ubuntu 24.04 restricts unprivileged user namespaces by default via AppArmor.
+            # Sandstorm requires user namespaces for sandboxing, so grant that permission
+            # to the binaries used by this CI run.
+            cat > /tmp/sandstorm-ci-apparmor <<EOF
+            profile sandstorm-ci-bin $GITHUB_WORKSPACE/bin/sandstorm flags=(unconfined) {
+              userns,
+            }
+
+            profile spk-ci-bin $GITHUB_WORKSPACE/bin/spk flags=(unconfined) {
+              userns,
+            }
+
+            profile sandstorm-ci-bundle $GITHUB_WORKSPACE/bundle/sandstorm flags=(unconfined) {
+              userns,
+            }
+
+            profile sandstorm-ci-test $GITHUB_WORKSPACE/tests/tmp-sandstorm/sandstorm flags=(unconfined) {
+              userns,
+            }
+
+            profile sandstorm-ci-test-latest $GITHUB_WORKSPACE/tests/tmp-sandstorm/latest/sandstorm flags=(unconfined) {
+              userns,
+            }
+
+            profile sandstorm-ci-test-build $GITHUB_WORKSPACE/tests/tmp-sandstorm/sandstorm-*/sandstorm flags=(unconfined) {
+              userns,
+            }
+
+            profile sandstorm-ci-test-custom-build $GITHUB_WORKSPACE/tests/tmp-sandstorm/sandstorm-custom.*/sandstorm flags=(unconfined) {
+              userns,
+            }
+            EOF
+            sudo mv /tmp/sandstorm-ci-apparmor /etc/apparmor.d/sandstorm-ci
+            sudo apparmor_parser -r /etc/apparmor.d/sandstorm-ci
       - name: install meteor
         run: |
             curl https://install.meteor.com/ | sh

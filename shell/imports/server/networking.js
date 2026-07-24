@@ -18,6 +18,8 @@ import { Meteor } from "meteor/meteor";
 import Dns from "dns";
 import { Address4, Address6 } from "ip-address";
 import Url from "url";
+import Agent from "undici/lib/dispatcher/agent";
+import ProxyAgent from "undici/lib/dispatcher/proxy-agent";
 
 import { SPECIAL_IPV4_ADDRESSES, SPECIAL_IPV6_ADDRESSES } from "/imports/constants";
 
@@ -128,9 +130,16 @@ async function selectSafeAddress(db, parsedUrl, addresses) {
 
     if (ok) {
       const host = parsedUrl.host;
+      const servername = parsedUrl.hostname;
       delete parsedUrl.host;
       parsedUrl.hostname = address.address;
-      return { url: Url.format(parsedUrl), host };
+      return {
+        url: Url.format(parsedUrl),
+        host,
+        address: address.address,
+        family: address.family,
+        servername,
+      };
     }
   }
 
@@ -182,41 +191,127 @@ async function ssrfSafeLookupOrProxy(db, url) {
   }
 }
 
-function ssrfSafeHttp(originalHttpCall, db, method, url, options, callback) {
-  if (typeof options === "function") {
-    callback = options;
-    options = undefined;
+async function fetchWithTimeout(url, init = {}, timeoutMs = 30000) {
+  const fetchInit = { ...init };
+  delete fetchInit.timeoutMs;
+  const timeoutController = new AbortController();
+  const signal = init.signal
+    ? AbortSignal.any([init.signal, timeoutController.signal])
+    : timeoutController.signal;
+  const timeout = timeoutMs > 0
+    ? setTimeout(() => timeoutController.abort(new Error("HTTP request timed out")), timeoutMs)
+    : undefined;
+
+  try {
+    return await fetch(url, { ...fetchInit, signal });
+  } finally {
+    if (timeout) clearTimeout(timeout);
+  }
+}
+
+function redirectedRequest(response, currentUrl, method, headers, body) {
+  const location = response.headers.get("location");
+  if (!location) return null;
+
+  const nextUrl = new URL(location, currentUrl);
+  const currentOrigin = new URL(currentUrl).origin;
+  if (nextUrl.origin !== currentOrigin) {
+    headers.delete("authorization");
+    headers.delete("cookie");
+    headers.delete("proxy-authorization");
   }
 
-  if (!options) options = {};
-  if (typeof callback !== "function") {
-    throw new Error("Synchronous HTTP.call() is unsupported; use callback/promise-based HTTP calls.");
+  if (response.status === 303 && method !== "HEAD" ||
+      (response.status === 301 || response.status === 302) && method === "POST") {
+    method = "GET";
+    body = undefined;
+    headers.delete("content-length");
+    headers.delete("content-type");
   }
 
-  if (options.npmRequestOptions && options.npmRequestOptions.proxy) {
-    // Request already specifies a different proxy.
-    return originalHttpCall(method, url, options, callback);
+  return { url: nextUrl.href, method, headers, body };
+}
+
+async function withSsrfSafeFetch(db, url, init = {}, consume) {
+  if (typeof consume !== "function") {
+    throw new TypeError("withSsrfSafeFetch() requires a response consumer");
   }
 
-  return ssrfSafeLookupOrProxy(db, url).then((safe) => {
-    if (safe.proxy) {
-      if (!options.npmRequestOptions) options.npmRequestOptions = {};
-      options.npmRequestOptions.proxy = safe.proxy;
-      return originalHttpCall(method, url, options, callback);
+  const timeoutMs = init.timeoutMs === undefined ? 30000 : init.timeoutMs;
+  const timeoutController = new AbortController();
+  const callerSignal = init.signal;
+  const signal = callerSignal
+    ? AbortSignal.any([callerSignal, timeoutController.signal])
+    : timeoutController.signal;
+  const timeout = timeoutMs > 0
+    ? setTimeout(() => timeoutController.abort(new Error("HTTP request timed out")), timeoutMs)
+    : undefined;
+
+  let currentUrl = new URL(url).href;
+  let method = (init.method || "GET").toUpperCase();
+  let headers = new Headers(init.headers);
+  let body = init.body;
+
+  try {
+    for (let redirects = 0; redirects <= 5; redirects++) {
+      const safe = await ssrfSafeLookupOrProxy(db, currentUrl);
+      let dispatcher;
+      if (safe.proxy) {
+        dispatcher = new ProxyAgent(safe.proxy);
+      } else {
+        dispatcher = new Agent({
+          connect: {
+            servername: safe.servername,
+            lookup(_hostname, _options, callback) {
+              callback(null, safe.address, safe.family);
+            },
+          },
+        });
+      }
+
+      let response;
+      try {
+        response = await fetchWithTimeout(currentUrl, {
+          ...init,
+          body,
+          dispatcher,
+          headers,
+          method,
+          redirect: "manual",
+          signal,
+        }, 0);
+
+        if (![301, 302, 303, 307, 308].includes(response.status)) {
+          return await consume(response);
+        }
+
+        if (redirects === 5) {
+          throw new Error("HTTP redirect limit exceeded");
+        }
+
+        const redirected = redirectedRequest(response, currentUrl, method, headers, body);
+        if (!redirected) return await consume(response);
+        await response.body.cancel();
+        ({ url: currentUrl, method, headers, body } = redirected);
+      } finally {
+        if (response && !response.bodyUsed) {
+          await response.body.cancel().catch(() => {});
+        }
+
+        await dispatcher.close();
+      }
     }
-
-    if (!options.headers) options.headers = {};
-    options.headers.host = safe.host;
-    options.servername = safe.host.split(":")[0];
-    return originalHttpCall(method, safe.url, options, callback);
-  }, (err) => {
-    callback(err);
-  });
+  } finally {
+    if (timeout) clearTimeout(timeout);
+  }
 }
 
-function monkeyPatchHttp(db, HTTP) {
-  const original = HTTP.call.bind(HTTP);
-  HTTP.call = ssrfSafeHttp.bind(this, original, db);
-}
-
-export { ssrfSafeLookup, ssrfSafeLookupOrProxy, monkeyPatchHttp };
+export {
+  fetchWithTimeout,
+  parseCidr,
+  redirectedRequest,
+  selectSafeAddress,
+  ssrfSafeLookup,
+  ssrfSafeLookupOrProxy,
+  withSsrfSafeFetch,
+};

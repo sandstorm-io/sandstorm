@@ -16,7 +16,7 @@
 
 import { Meteor } from "meteor/meteor";
 import { check } from "meteor/check";
-import { _ } from "meteor/underscore";
+import { pick } from "/imports/shared/collection-utils";
 import { Random } from "meteor/random";
 
 import Crypto from "crypto";
@@ -55,7 +55,7 @@ class PersistentImpl {
 
       const db = this[privateDb];
 
-      const newToken = _.clone(this[privateTemplate]);
+      const newToken = { ...this[privateTemplate] };
       newToken.owner = params.sealFor;
       if (newToken.owner.user) {
         if (!newToken.accountId || !newToken.grainId) {
@@ -63,7 +63,7 @@ class PersistentImpl {
         }
 
         // Only "accountId" and "title" are allowed to be passed to save().
-        const userOwner = _.pick(newToken.owner.user, "accountId", "title");
+        const userOwner = pick(newToken.owner.user, "accountId", "title");
 
         const grain = await db.getGrainAsync(newToken.grainId);
         if (!grain) {

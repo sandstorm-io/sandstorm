@@ -16,7 +16,7 @@
 
 import { Meteor } from "meteor/meteor";
 import { check } from "meteor/check";
-import { _ } from "meteor/underscore";
+import { pick } from "/imports/shared/collection-utils";
 import { Random } from "meteor/random";
 import { Router } from "meteor/vlasky:galvanized-iron-router";
 
@@ -69,7 +69,7 @@ export const createGrainBackup = async (userId, grainId, async) => {
 
   // TODO(soon): does the grain need to be offline?
 
-  const grainInfo = _.pick(grain, "appId", "appVersion", "title");
+  const grainInfo = pick(grain, "appId", "appVersion", "title");
   grainInfo.ownerIdentityId = grain.identityId;
   grainInfo.users = grain.oldUsers || [];
 
@@ -83,7 +83,7 @@ export const createGrainBackup = async (userId, grainId, async) => {
 
   const accounts = await Meteor.users.find({ _id: { $in: [...Object.keys(users)] } }).fetchAsync();
   accounts.forEach((account) => {
-    let credentialIds = _.pluck(account.loginCredentials, "id");
+    let credentialIds = account.loginCredentials.map((credential) => credential.id);
 
     grainInfo.users.push({
       identityId: users[account._id],

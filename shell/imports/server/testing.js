@@ -18,12 +18,11 @@
 
 import { Meteor } from "meteor/meteor";
 import { Accounts } from "meteor/accounts-base";
-import { HTTP } from "meteor/http";
 import { Random } from "meteor/random";
 import { SHA256 } from "meteor/sha";
 import { ServiceConfiguration } from "meteor/service-configuration";
 import { globalDb } from "/imports/db-deprecated";
-import { httpCallAsync } from "/imports/http-helpers";
+import { httpCallAsync } from "/imports/server/http-helpers";
 import { checkAuthAsync, clearAdminToken } from "/imports/server/auth";
 import { setAccountSuspensionEmailSenderForTests } from "/imports/server/account-suspension";
 import { setAdminEmailSenderForTests } from "/imports/server/admin-server";
@@ -1968,7 +1967,6 @@ if(isTesting) {
       const userId = "test-transfer-account-" + Random.id();
       const unsignedUserId = "test-transfer-unsigned-" + Random.id();
       const otherUserId = "test-transfer-other-" + Random.id();
-      const originalHttpDel = HTTP.del;
       const transferIds = [];
       const outgoingIds = [];
       const revokedUrls = [];
@@ -2008,13 +2006,14 @@ if(isTesting) {
         profile: { name: "Transfer unsigned account" },
       });
 
-      HTTP.del = function (url, _options, callback) {
-        revokedUrls.push(url);
-        if (callback) callback(null, { statusCode: 200 });
-      };
       setTransferDownloaderDisabledForTests(true);
 
       setTransferHttpCallForTests(async function (method, url, options) {
+        if (method === "DELETE" && url === "https://source.example/transfers/cancel") {
+          revokedUrls.push(url);
+          return { statusCode: 200 };
+        }
+
         if (method !== "GET" ||
             url !== "https://source.example/transfers/list" ||
             !options ||
@@ -2187,7 +2186,6 @@ if(isTesting) {
 
         return true;
       } finally {
-        HTTP.del = originalHttpDel;
         setTransferDownloaderDisabledForTests(false);
         setTransferHttpCallForTests(null);
         await globalDb.collections.incomingTransfers.removeAsync({

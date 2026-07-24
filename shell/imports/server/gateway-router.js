@@ -20,7 +20,7 @@ import Dns from "dns";
 
 import { Meteor } from "meteor/meteor";
 import { Match, check } from "meteor/check";
-import { _ } from "meteor/underscore";
+import { omit } from "/imports/shared/collection-utils";
 import { Random } from "meteor/random";
 
 import Capnp from "/imports/server/capnp";
@@ -259,7 +259,7 @@ async function getUiViewAndUserInfo(grainId, vertex, accountId, identityId, sess
   });
 
   if (viewInfo) {
-    const cachedViewInfo = _.omit(viewInfo, "appTitle", "grainIcon");
+    const cachedViewInfo = omit(viewInfo, "appTitle", "grainIcon");
     await globalDb.collections.grains.updateAsync(grainId, { $set: { cachedViewInfo: cachedViewInfo } });
   }
 

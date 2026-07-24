@@ -1,7 +1,6 @@
 import { Meteor } from "meteor/meteor";
 import { Router } from "meteor/vlasky:galvanized-iron-router";
 import { Random } from "meteor/random";
-import { _ } from "meteor/underscore";
 
 import Crypto from "crypto";
 import Fs from "fs";
@@ -105,7 +104,7 @@ Meteor.publish("systemStatus", async function () {
         }
 
         userIdToSessionHashes[session.userId] =
-            _.union(userIdToSessionHashes[session.userId], [hashedSessionId]);
+            Array.from(new Set([...userIdToSessionHashes[session.userId], hashedSessionId]));
       }
 
       // Update grainId cache.
@@ -116,9 +115,9 @@ Meteor.publish("systemStatus", async function () {
       }
 
       grainIdToSessionHashes[session.grainId] =
-          _.union(grainIdToSessionHashes[session.grainId], [hashedSessionId]);
+          Array.from(new Set([...grainIdToSessionHashes[session.grainId], hashedSessionId]));
 
-      if (!_.isEmpty(changed)) {
+      if (Object.keys(changed).length > 0) {
         _this.changed("systemStatus", "globalStatus", changed);
       }
     },
@@ -129,7 +128,7 @@ Meteor.publish("systemStatus", async function () {
 
       if (session.userId) {
         userIdToSessionHashes[session.userId] =
-            _.without(userIdToSessionHashes[session.userId], hashedSessionId);
+            userIdToSessionHashes[session.userId].filter(value => value !== hashedSessionId);
 
         if (userIdToSessionHashes[session.userId].length === 0) {
           delete userIdToSessionHashes[session.userId];
@@ -139,7 +138,7 @@ Meteor.publish("systemStatus", async function () {
       }
 
       grainIdToSessionHashes[session.grainId] =
-          _.without(grainIdToSessionHashes[session.grainId], hashedSessionId);
+          grainIdToSessionHashes[session.grainId].filter(value => value !== hashedSessionId);
 
       if (grainIdToSessionHashes[session.grainId].length === 0) {
         delete grainIdToSessionHashes[session.grainId];
@@ -147,7 +146,7 @@ Meteor.publish("systemStatus", async function () {
         changed.activeGrains = grainIdCount;
       }
 
-      if (!_.isEmpty(changed)) {
+      if (Object.keys(changed).length > 0) {
         _this.changed("systemStatus", "globalStatus", changed);
       }
     },

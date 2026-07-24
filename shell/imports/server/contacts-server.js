@@ -15,7 +15,7 @@
 // limitations under the License.
 
 import { Meteor } from "meteor/meteor";
-import { _ } from "meteor/underscore";
+import { pick } from "/imports/shared/collection-utils";
 
 Meteor.publish("contactProfiles", async function (showAll) {
   const db = this.connection.sandstormDb;
@@ -50,7 +50,7 @@ Meteor.publish("contactProfiles", async function (showAll) {
       }
 
       if (user) {
-        const filteredUser = _.pick(user, "_id", "profile");
+        const filteredUser = pick(user, "_id", "profile");
         filteredUser.intrinsicNames = await db.getAccountIntrinsicNamesAsync(user, false);
         _this.added("contactProfiles", user._id, filteredUser);
       }

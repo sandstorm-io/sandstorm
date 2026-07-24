@@ -17,7 +17,7 @@
 import { Meteor } from "meteor/meteor";
 import { Template } from "meteor/templating";
 import { ReactiveVar } from "meteor/reactive-var";
-import { _ } from "meteor/underscore";
+import { findWhere } from "/imports/shared/collection-utils";
 
 import { SandstormDb } from "/imports/sandstorm-db/db";
 import { updateStripeData }
@@ -95,7 +95,7 @@ Template.stripeAddPaymentSourcePowerboxConfiguration.helpers({
 
   checkoutData: function () {
     var template = Template.instance();
-    var primaryEmail = _.findWhere(SandstormDb.getUserEmails(Meteor.user()), {primary: true});
+    var primaryEmail = findWhere(SandstormDb.getUserEmails(Meteor.user()), {primary: true});
     if (!primaryEmail) return;
     return encodeURIComponent(JSON.stringify({
       name: 'Sandstorm Oasis',

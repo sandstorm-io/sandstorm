@@ -19,12 +19,19 @@
 import { Meteor } from "meteor/meteor";
 import { Mongo } from "meteor/mongo";
 import { Match, check } from "meteor/check";
-import { _ } from "meteor/underscore";
 import { Random } from "meteor/random";
 import { SHA256 } from "meteor/sha";
-import { HTTP } from "meteor/http";
 import { iconSrcForPackage } from "/imports/sandstorm-identicons/helpers";
-import { httpCallAsync } from "/imports/http-helpers";
+
+let appIndexHttpCallForTests;
+let serverHttpCall;
+function setAppIndexHttpCallForTests(call) {
+  appIndexHttpCallForTests = call;
+}
+
+function setSandstormDbServerHttpCall(call) {
+  serverHttpCall = call;
+}
 
 // Useful for debugging: Set the env variable LOG_MONGO_QUERIES to have the server write every
 // query it makes, so you can see if it's doing queries too often, etc.
@@ -1396,7 +1403,7 @@ class SandstormDb {
 // TODO(cleanup): These methods should not be defined freestanding and should use collection
 //   objects created in SandstormDb's constructor rather than globals.
 
-_.extend(SandstormDb.prototype, {
+Object.assign(SandstormDb.prototype, {
   findAdminUserForToken: findAdminUserForToken,
   matchWildcardHost: matchWildcardHost,
   makeWildcardHost: makeWildcardHost,
@@ -1477,7 +1484,7 @@ if (Meteor.isServer) {
       let oldUserInfos = {};
       const accounts = await Meteor.users.find({ _id: { $in: [...oldAccountIds] } }).fetchAsync();
       accounts.forEach(account => {
-        let credentialIds = _.pluck(account.loginCredentials, "id");
+        let credentialIds = account.loginCredentials.map(credential => credential.id);
 
         oldUserInfos[account._id] = {
           credentialIds,
@@ -1522,7 +1529,7 @@ if (Meteor.isServer) {
 // =======================================================================================
 // Below this point are newly-written or refactored functions.
 
-_.extend(SandstormDb.prototype, {
+Object.assign(SandstormDb.prototype, {
   async getUser(userId) {
     check(userId, Match.OneOf(String, undefined, null));
     if (userId) {
@@ -1658,7 +1665,7 @@ _.extend(SandstormDb.prototype, {
 
     if (user && user.experiments && user.experiments.freeGrainLimit &&
         id === "free" && plan._id === "free") {
-      const augmentedPlan = _.clone(plan);
+      const augmentedPlan = { ...plan };
       augmentedPlan.grains = user.experiments.freeGrainLimit;
       return augmentedPlan;
     }
@@ -2120,7 +2127,11 @@ _.extend(SandstormDb.prototype, {
     const appIndexUrl = appIndexUrlSetting && appIndexUrlSetting.value;
     if (!appIndexUrl) return;
     const appIndex = this.collections.appIndex;
-    const data = (await httpCallAsync("GET", appIndexUrl + "/apps/index.json")).data;
+    const call = appIndexHttpCallForTests || serverHttpCall;
+    if (!call) throw new Error("Sandstorm server HTTP client is not configured.");
+    const data = (await call("GET", appIndexUrl + "/apps/index.json", {
+      ssrfSafeDb: this,
+    })).data;
     const preinstalledAppIds = await this.getAllPreinstalledAppIds();
     // We make sure to get all preinstalled appIds, even ones that are currently
     // downloading/failed.
@@ -2130,7 +2141,7 @@ _.extend(SandstormDb.prototype, {
       const oldApp = await appIndex.findOneAsync({ _id: app.appId });
       app.hasSentNotifications = false;
       await appIndex.upsertAsync({ _id: app._id }, app);
-      const isAppPreinstalled = _.contains(preinstalledAppIds, app.appId);
+      const isAppPreinstalled = preinstalledAppIds.includes(app.appId);
       if ((!oldApp || app.versionNumber > oldApp.versionNumber) &&
           (await this.collections.userActions.findOneAsync({ appId: app.appId }) ||
           isAppPreinstalled)) {
@@ -2211,16 +2222,13 @@ _.extend(SandstormDb.prototype, {
   async getReadyPreinstalledAppIds() {
     const setting = await this.collections.settings.findOneAsync({ _id: "preinstalledApps" });
     const ret = setting && setting.value || [];
-    return _.chain(ret)
-            .filter((app) => { return app.status === "ready"; })
-            .map((app) => { return app.appId; })
-            .value();
+    return ret.filter((app) => app.status === "ready").map((app) => app.appId);
   },
 
   async getAllPreinstalledAppIds() {
     const setting = await this.collections.settings.findOneAsync({ _id: "preinstalledApps" });
     const ret = setting && setting.value || [];
-    return _.map(ret, (app) => { return app.appId; });
+    return ret.map((app) => app.appId);
   },
 
   async preinstallAppsForUser(userId) {
@@ -2312,7 +2320,7 @@ _.extend(SandstormDb.prototype, {
       return true;
     }
 
-    const packageIds = _.pluck(setting.value, "packageId");
+    const packageIds = setting.value.map(app => app.packageId);
     const readyApps = this.collections.packages.find({
       _id: {
         $in: packageIds,
@@ -2669,7 +2677,7 @@ function nounPhraseForActionAndAppTitle(action, appTitle) {
 
 // Static methods on SandstormDb that don't need an instance.
 // Largely things that deal with backwards-compatibility.
-_.extend(SandstormDb, {
+Object.assign(SandstormDb, {
   appNameFromActionName,
   appNameFromPackage,
   appShortDescriptionFromPackage,
@@ -2786,7 +2794,7 @@ if (Meteor.isServer) {
       return existing._id;
     }
 
-    return await this.collections.staticAssets.insertAsync(_.extend({
+    return await this.collections.staticAssets.insertAsync(Object.assign({
       hash: hash,
       content: content,
       refcount: 1,
@@ -3011,7 +3019,7 @@ if (Meteor.isServer) {
         timestamp: new Date(),
         isUnread: true,
       };
-      const inserter = _.extend({ userId, appUpdates: {} }, updater);
+      const inserter = Object.assign({ userId, appUpdates: {} }, updater);
 
       // Set only the appId that we care about. Use mongo's dot notation to specify only a single
       // field inside of an object to update
@@ -3093,22 +3101,21 @@ if (Meteor.isServer) {
     return !!keyFingerprint.match(/^[0-9A-F]{40}$/);
   });
 
-  SandstormDb.prototype.updateKeybaseProfileAsync = function (keyFingerprint) {
+  SandstormDb.prototype.updateKeybaseProfileAsync = async function (keyFingerprint) {
     // Asynchronously fetch the given Keybase profile and populate the KeybaseProfiles collection.
 
     check(keyFingerprint, ValidKeyFingerprint);
 
     console.log("fetching keybase", keyFingerprint);
 
-    HTTP.get(
-        "https://keybase.io/_/api/1.0/user/lookup.json?key_fingerprint=" + keyFingerprint +
-        "&fields=basics,profile,proofs_summary", {
-      timeout: 5000,
-    }, (err, keybaseResponse) => {
-      if (err) {
-        console.log("keybase lookup error:", err.stack);
-        return;
-      }
+    if (!serverHttpCall) throw new Error("Sandstorm server HTTP client is not configured.");
+    try {
+      const keybaseResponse = await serverHttpCall("GET",
+          "https://keybase.io/_/api/1.0/user/lookup.json?key_fingerprint=" + keyFingerprint +
+          "&fields=basics,profile,proofs_summary", {
+        ssrfSafeDb: this,
+        timeout: 5000,
+      });
 
       if (!keybaseResponse.data) {
         console.log("keybase didn't return JSON? Headers:", keybaseResponse.headers);
@@ -3144,10 +3151,8 @@ if (Meteor.isServer) {
           proof.status = "unverified";
         });
 
-        this.collections.keybaseProfiles.updateAsync(
-            keyFingerprint, { $set: record }, { upsert: true }).catch((err) => {
-          console.error("Failed updating keybase profile cache:", err);
-        });
+        await this.collections.keybaseProfiles.updateAsync(
+            keyFingerprint, { $set: record }, { upsert: true });
       } else {
         // Keybase reports no match, so remove what we know of this user. We don't want to remove
         // the item entirely from the cache as this will cause us to repeatedly re-fetch the data
@@ -3155,14 +3160,13 @@ if (Meteor.isServer) {
         //
         // TODO(someday): We could perhaps keep the proofs if we can still verify them directly,
         //   but at present we don't have the ability to verify proofs.
-        this.collections.keybaseProfiles.updateAsync(
+        await this.collections.keybaseProfiles.updateAsync(
             keyFingerprint,
-            { $unset: { displayName: "", handle: "", proofs: "" } }, { upsert: true })
-            .catch((err) => {
-              console.error("Failed clearing keybase profile cache fields:", err);
-            });
+            { $unset: { displayName: "", handle: "", proofs: "" } }, { upsert: true });
       }
-    });
+    } catch (err) {
+      console.log("keybase lookup error:", err.stack);
+    }
   };
 
   SandstormDb.prototype.deleteUnusedAccount = function (backend, credentialId) {
@@ -3465,4 +3469,4 @@ Meteor.methods({
   },
 });
 
-export { SandstormDb };
+export { SandstormDb, setAppIndexHttpCallForTests, setSandstormDbServerHttpCall };

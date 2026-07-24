@@ -2,7 +2,7 @@ import { Meteor } from "meteor/meteor";
 import { Template } from "meteor/templating";
 import { ReactiveVar } from "meteor/reactive-var";
 import { Router } from "meteor/vlasky:galvanized-iron-router";
-import { _ } from "meteor/underscore";
+import { sortBy } from "/imports/shared/collection-utils";
 
 import { SandstormDb } from "/imports/sandstorm-db/db"
 import { globalDb } from "/imports/db-deprecated";
@@ -51,10 +51,7 @@ const compileMatchFilter = function (searchString) {
 
   return function matchFilter(item) {
     if (searchKeys.length === 0) return true;
-    return _.chain(searchKeys)
-        .map((searchKey) => { return matchesUser(searchKey, item); })
-        .reduce((a, b) => a && b)
-        .value();
+    return searchKeys.every(searchKey => matchesUser(searchKey, item));
   };
 };
 
@@ -99,11 +96,11 @@ Template.newAdminUserTable.helpers({
 
     const multiplier = sortOrder.order === "ascending" ? 1 : -1;
     if (sortOrder.key === "createdAt") {
-      return _.sortBy(users, (user) => {
+      return sortBy(users, (user) => {
         return multiplier * (user.account.createdAt);
       });
     } else if (sortOrder.key === "lastActive") {
-      return _.sortBy(users, (user) => {
+      return sortBy(users, (user) => {
         // If the account has a lastActive time, use that.
         if (user.account.lastActive) return multiplier * user.account.lastActive;
         // If not, check any of the credentials for a lastActive time.
@@ -213,7 +210,7 @@ Template.newAdminUsers.onCreated(function () {
   };
 
   this.filterUsers = (users) => {
-    const filteredAccounts = _.filter(users, this.currentMatchFilter());
+    const filteredAccounts = users.filter(this.currentMatchFilter());
     return filteredAccounts;
   };
 });
@@ -255,20 +252,20 @@ Template.newAdminUsers.helpers({
   },
 
   adminCount(users) {
-    return _.filter(users, (user) => {
+    return users.filter((user) => {
       return user.account.isAdmin;
     }).length;
   },
 
   userCount(users) {
-    return _.filter(users, (user) => {
+    return users.filter((user) => {
       if (user.account.isAdmin) return false;
       return globalDb.isAccountSignedUpOrDemo(user.account);
     }).length;
   },
 
   visitorCount(users) {
-    return _.filter(users, (user) => {
+    return users.filter((user) => {
       if (user.account.isAdmin) return false;
       return !globalDb.isAccountSignedUpOrDemo(user.account);
     }).length;

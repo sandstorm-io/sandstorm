@@ -17,7 +17,7 @@
 import { Meteor } from "meteor/meteor";
 import { Match, check } from "meteor/check";
 import { Accounts } from "meteor/accounts-base";
-import { _ } from "meteor/underscore";
+import { pick } from "/imports/shared/collection-utils";
 
 import { fetchPicture, userPictureUrl } from "/imports/server/accounts/picture";
 import { SandstormDb } from "/imports/sandstorm-db/db";
@@ -92,7 +92,7 @@ Accounts.onCreateUser(async function (options, user) {
     user.unverifiedEmail = options.unverifiedEmail;
   }
 
-  user.profile = _.pick(options.profile || {}, "name", "handle", "pronoun");
+  user.profile = pick(options.profile || {}, "name", "handle", "pronoun");
 
   // Try downloading avatar.
   const url = userPictureUrl(user);

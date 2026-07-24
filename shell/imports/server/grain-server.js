@@ -18,7 +18,7 @@ import Crypto from "crypto";
 
 import { Meteor } from "meteor/meteor";
 import { Match, check } from "meteor/check";
-import { _ } from "meteor/underscore";
+import { pick, findWhere } from "/imports/shared/collection-utils";
 import { Random } from "meteor/random";
 
 import { send as sendEmail } from "/imports/server/email";
@@ -192,7 +192,7 @@ Meteor.publish("tokenInfo", async function (token, isStandalone) {
           account.intrinsicNames = await globalDb.getAccountIntrinsicNamesAsync(account, false);
 
           this.added("tokenInfo", token, {
-            accountOwner: _.pick(account, "_id", "profile", "credentials", "intrinsicNames"),
+            accountOwner: pick(account, "_id", "profile", "credentials", "intrinsicNames"),
             grainId: grainId,
             grainMetadata: metadata,
           });
@@ -573,7 +573,7 @@ Meteor.methods({
           const url = ROOT_URL + "/shared/" + result.token;
           try {
             const account = await Meteor.users.findOneAsync({ _id: contact._id });
-            const email = _.findWhere(await SandstormDb.getUserEmailsAsync(account),
+            const email = findWhere(await SandstormDb.getUserEmailsAsync(account),
                                       { primary: true });
             if (email) {
               const intrinsicName = contact.profile.intrinsicName;
@@ -622,7 +622,7 @@ Meteor.methods({
       }
 
       const grainOwner = await globalDb.getUser(grain.userId);
-      const email = _.findWhere(await SandstormDb.getUserEmailsAsync(grainOwner), { primary: true });
+      const email = findWhere(await SandstormDb.getUserEmailsAsync(grainOwner), { primary: true });
       if (!email) {
         throw new Meteor.Error("no email", "Grain owner has no email address.");
       }

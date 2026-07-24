@@ -31,7 +31,6 @@
 
 import { Accounts } from "meteor/accounts-base";
 import { Session } from "meteor/session";
-import { _ } from "meteor/underscore";
 
 const VALID_KEYS = [
   "dropdownVisible",
@@ -42,7 +41,7 @@ const VALID_KEYS = [
 ];
 
 const validateKey = function (key) {
-  if (!_.contains(VALID_KEYS, key))
+  if (!VALID_KEYS.includes(key))
     throw new Error("Invalid key in loginButtonsSession: " + key);
 };
 
@@ -52,7 +51,7 @@ const KEY_PREFIX = "Meteor.loginButtons.";
 Accounts._loginButtonsSession = {
   set: function (key, value) {
     validateKey(key);
-    if (_.contains(["errorMessage", "infoMessage"], key))
+    if (["errorMessage", "infoMessage"].includes(key))
       throw new Error("Don't set errorMessage or infoMessage directly. Instead, use errorMessage() or infoMessage().");
 
     this._set(key, value);

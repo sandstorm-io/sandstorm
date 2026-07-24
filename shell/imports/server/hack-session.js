@@ -20,7 +20,7 @@ import Url from "url";
 
 import { Meteor } from "meteor/meteor";
 import { Match, check } from "meteor/check";
-import { _ } from "meteor/underscore";
+import { pick, findWhere } from "/imports/shared/collection-utils";
 import { Random } from "meteor/random";
 
 import { hashSturdyRef, checkRequirements, fetchApiToken } from "/imports/server/persistent";
@@ -200,7 +200,7 @@ class SessionContextImpl {
           // Deduplicate.
           const newApiToken = await fetchApiToken(globalDb, sturdyRef.toString());
           let tokenId = newApiToken._id;
-          const dupeQuery = _.pick(newApiToken, "grainId", "roleAssignment", "requirements",
+          const dupeQuery = pick(newApiToken, "grainId", "roleAssignment", "requirements",
                                    "parentToken", "parentTokenKey", "accountId", "accountId");
           dupeQuery._id = { $ne: newApiToken._id };
           dupeQuery["owner.user.accountId"] = this.accountId;
@@ -386,7 +386,7 @@ class HackSessionContextImpl extends SessionContextImpl {
 
     const user = await Meteor.users.findOneAsync({_id: grain.userId});
 
-    const email = _.findWhere(await SandstormDb.getUserEmailsAsync(user), { primary: true });
+    const email = findWhere(await SandstormDb.getUserEmailsAsync(user), { primary: true });
 
     const result = {};
     if (email) {

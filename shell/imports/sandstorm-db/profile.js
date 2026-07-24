@@ -17,7 +17,7 @@
 import { Meteor } from "meteor/meteor";
 import { check } from "meteor/check";
 import { Accounts } from "meteor/accounts-base";
-import { _ } from "meteor/underscore";
+import { pick, findWhere } from "/imports/shared/collection-utils";
 
 import Identicon from "/imports/sandstorm-identicons/identicon";
 import { SandstormDb } from "./db";
@@ -189,12 +189,10 @@ function emailToHandle(email) {
   if (domain[domain.length - 1] === "name") {
     // Oh, a .name domain. Let's use
     base = filterHandle(domain.slice(0, domain.length - 1).join("."));
-  } else if (_.contains(
-      [
-        "me", "self", "contact", "admin", "administrator", "root", "info",
-        "sandstorm", "sandstormio", "inbox", "indiegogo", "mail", "email",
-      ],
-      base)) {
+  } else if ([
+    "me", "self", "contact", "admin", "administrator", "root", "info",
+    "sandstorm", "sandstormio", "inbox", "indiegogo", "mail", "email",
+  ].includes(base)) {
     // This is probably an address at a vanity domain. Use the domain itself as the handle.
     base = filterHandle(domain[0]);
   }
@@ -238,8 +236,8 @@ SandstormDb.fillInProfileDefaults = function (credential, profile) {
     profile.name = profile.name || services.dev.name;
     profile.handle = profile.handle || filterHandle(lowerCaseName);
     profile.pronoun = profile.pronoun ||
-        (_.contains(["alice", "carol", "eve"], lowerCaseName) ? "female" :
-         _.contains(["bob", "dave"], lowerCaseName) ? "male" : "neutral");
+        (["alice", "carol", "eve"].includes(lowerCaseName) ? "female" :
+         ["bob", "dave"].includes(lowerCaseName) ? "male" : "neutral");
   } else if (services.demo) {
     profile.name = profile.name || "Demo User";
     profile.handle = profile.handle || "demo";
@@ -292,8 +290,8 @@ SandstormDb.fillInProfileDefaultsAsync = async function (credential, profile) {
     profile.name = profile.name || services.dev.name;
     profile.handle = profile.handle || filterHandle(lowerCaseName);
     profile.pronoun = profile.pronoun ||
-        (_.contains(["alice", "carol", "eve"], lowerCaseName) ? "female" :
-         _.contains(["bob", "dave"], lowerCaseName) ? "male" : "neutral");
+        (["alice", "carol", "eve"].includes(lowerCaseName) ? "female" :
+         ["bob", "dave"].includes(lowerCaseName) ? "male" : "neutral");
   } else if (services.demo) {
     profile.name = profile.name || "Demo User";
     profile.handle = profile.handle || "demo";
@@ -388,10 +386,9 @@ SandstormDb.getVerifiedEmailsForCredential = function (credential, ldapEmailFiel
   } else if (services.email) {
     return [{ email: services.email.email, primary: true }];
   } else if (services.github && services.github.emails) {
-    return _.chain(services.github.emails)
-      .filter(function (email) { return email.verified; })
-      .map((email) => _.pick(email, "email", "primary"))
-      .value();
+    return services.github.emails
+      .filter((email) => email.verified)
+      .map((email) => pick(email, "email", "primary"));
   } else if (services.ldap) {
     // TODO(cleanup): don't create a new SandstormDb here, make this non-static
     const emailField = ldapEmailField === undefined ? new SandstormDb().getLdapEmailField() : ldapEmailField;
@@ -424,12 +421,12 @@ SandstormDb.prototype.findCredentialsByEmail = async function (email) {
     { "services.oidc.email": email },
     { "services.saml.email": email },
   ], }).fetchAsync()).filter((credential) => {
-    return !!_.findWhere(SandstormDb.getVerifiedEmailsForCredential(credential, ldapEmailField), { email: email });
+    return !!findWhere(SandstormDb.getVerifiedEmailsForCredential(credential, ldapEmailField), { email: email });
   });
 };
 
 SandstormDb.prototype.findAccountsByEmail = async function (email) {
-  const credentialIds = _.pluck(await this.findCredentialsByEmail(email), "_id");
+  const credentialIds = (await this.findCredentialsByEmail(email)).map((credential) => credential._id);
   return await Meteor.users.find({ $or: [
     { "loginCredentials.id": { $in: credentialIds } },
     { "nonloginCredentials.id": { $in: credentialIds } },
@@ -453,7 +450,7 @@ SandstormDb.getUserCredentialIds = function (user) {
   // Given an account user object, returns an array containing the ID of each credential linked to
   // the account. Always returns the most recently added login credential first.
   if (user && user.loginCredentials) {
-    return _.pluck(user.nonloginCredentials.concat(user.loginCredentials), "id").reverse();
+    return user.nonloginCredentials.concat(user.loginCredentials).map((credential) => credential.id).reverse();
   } else {
     return [];
   }
@@ -490,13 +487,13 @@ SandstormDb.getUserEmails = function (user) {
   });
 
   const result = [];
-  _.keys(verifiedEmails).map(function (email) {
+  Object.keys(verifiedEmails).map(function (email) {
     result.push({ email: email,
                   verified: true,
                   primary: email === user.primaryEmail, });
   });
 
-  _.keys(unverifiedEmails).map(function (email) {
+  Object.keys(unverifiedEmails).map(function (email) {
     if (!(email in verifiedEmails)) { result.push({ email: email, verified: false }); }
   });
 
@@ -536,13 +533,13 @@ SandstormDb.getUserEmailsAsync = async function (user) {
   });
 
   const result = [];
-  _.keys(verifiedEmails).map((email) => {
+  Object.keys(verifiedEmails).map((email) => {
     result.push({ email: email,
                   verified: true,
                   primary: user && email === user.primaryEmail, });
   });
 
-  _.keys(unverifiedEmails).map((email) => {
+  Object.keys(unverifiedEmails).map((email) => {
     if (!(email in verifiedEmails)) { result.push({ email: email, verified: false }); }
   });
 

@@ -17,7 +17,7 @@
 import { Meteor } from "meteor/meteor";
 import { check } from "meteor/check";
 import { Accounts } from "meteor/accounts-base";
-import { _ } from "meteor/underscore";
+import { pick, findWhere } from "/imports/shared/collection-utils";
 
 import { SandstormDb } from "/imports/sandstorm-db/db";
 import { SandstormBackend } from "/imports/server/backend";
@@ -60,8 +60,8 @@ const linkCredentialToAccountInternal = async function (db, backend, credentialI
     throw new Meteor.Error(403, "Sorry, this server does not allow demo users to upgrade to full accounts.");
   }
 
-  if (!!_.findWhere(accountUser.loginCredentials, { id: credentialId }) ||
-      !!_.findWhere(accountUser.nonloginCredentials, { id: credentialId })) {
+  if (!!findWhere(accountUser.loginCredentials, { id: credentialId }) ||
+      !!findWhere(accountUser.nonloginCredentials, { id: credentialId })) {
     throw new Meteor.Error("alreadyLinked",
       "Cannot link a credential that's alread linked to this account.");
   }
@@ -155,7 +155,7 @@ Meteor.methods({
       throw new Meteor.Error(404, "No such user found: " + accountUserId);
     }
 
-    const linkedCredential = _.findWhere(accountUser.loginCredentials, { id: credentialUser._id });
+    const linkedCredential = findWhere(accountUser.loginCredentials, { id: credentialUser._id });
 
     if (!linkedCredential) {
       throw new Meteor.Error(403, "Current credential is not a login credential for account "
@@ -344,7 +344,7 @@ Meteor.publish("accountsOfCredential", async function (credentialId) {
           user.loginId = SandstormDb.getLoginId(user);
           user.serviceName = SandstormDb.getServiceName(user);
 
-          const filteredUser = _.pick(user, "_id", "intrinsicName", "loginId", "serviceName");
+          const filteredUser = pick(user, "_id", "intrinsicName", "loginId", "serviceName");
           filteredUser.loginAccountId = account._id;
           filteredUser.sourceCredentialId = credentialId;
           _this.added("loginCredentialsOfLinkedAccounts", user._id, filteredUser);

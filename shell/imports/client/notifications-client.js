@@ -17,7 +17,6 @@
 import { Meteor } from "meteor/meteor";
 import { Template } from "meteor/templating";
 import { Tracker } from "meteor/tracker";
-import { _ } from "meteor/underscore";
 
 import { computeTitleFromTokenOwnerUser } from "/imports/client/model-helpers";
 import { iconSrcForPackage, iconSrcForDenormalizedGrainMetadata } from "/imports/sandstorm-identicons/helpers";
@@ -200,7 +199,7 @@ Template.notificationItem.helpers({
 
 Template.appUpdateNotificationItem.helpers({
   appUpdatesList() {
-    return _.values(this.appUpdates);
+    return Object.values(this.appUpdates);
   },
 });
 
@@ -208,7 +207,7 @@ Template.appUpdateNotificationItem.events({
   "submit form"(evt) {
     evt.preventDefault();
     evt.stopPropagation();
-    const packages = _.map(this.appUpdates, app => app.packageId);
+    const packages = Object.values(this.appUpdates).map(app => app.packageId);
 
     Meteor.call("updateApps", packages, (err) => {
       if (err) {

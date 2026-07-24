@@ -1,7 +1,7 @@
 import ldapjs from "ldapjs";
 
 import { Meteor } from "meteor/meteor";
-import { _ } from "meteor/underscore";
+import { omit } from "/imports/shared/collection-utils";
 
 // At a minimum, set up LDAP_DEFAULTS.url and .dn according to
 // your needs. url should appear as 'ldap://your.url.here'
@@ -27,7 +27,7 @@ const LDAP_DEFAULTS = {
  */
 function LDAP() {
   // Set options
-  this.options = _.clone(LDAP_DEFAULTS);
+  this.options = { ...LDAP_DEFAULTS };
 }
 
 /**
@@ -178,7 +178,7 @@ LDAP.prototype.ldapCheck = async function (db, options) {
           retObject.username = retObject.dn;
           retObject.emptySearch = false;
 
-          retObject.searchResults = _.omit(entry.object, "userPassword");
+          retObject.searchResults = omit(entry.object, "userPassword");
 
           if (hasOwnProperty(options, "searchUsername")) {
             // This was only a search, return immediately

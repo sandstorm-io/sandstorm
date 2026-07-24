@@ -21,9 +21,8 @@ import Crypto from "crypto";
 
 import { Meteor } from "meteor/meteor";
 import { Accounts } from "meteor/accounts-base";
-import { HTTP } from "meteor/http";
 
-import { SandstormDb } from "/imports/sandstorm-db/db";
+import { SandstormDb, setAppIndexHttpCallForTests } from "/imports/sandstorm-db/db";
 import { SandstormAutoupdateApps } from "/imports/sandstorm-autoupdate-apps/autoupdate-apps";
 
 const globalDb = new SandstormDb();
@@ -109,7 +108,7 @@ Tinytest.addAsync("test update notifications", function (test, onComplete) {
     this.stub(Meteor, "call", function () {});
 
     stubUser(this, aliceUserId);
-    this.stub(HTTP, "get", function () {
+    setAppIndexHttpCallForTests(async function () {
       return {
         data: {
           apps: [
@@ -134,8 +133,10 @@ Tinytest.addAsync("test update notifications", function (test, onComplete) {
       test.isNotNull(appUpdate);
       test.equal(appUpdate.name, "Mock App");
       test.equal(appUpdate.marketingVersion, "0.2");
+      setAppIndexHttpCallForTests(undefined);
       onComplete();
     }).catch((err) => {
+      setAppIndexHttpCallForTests(undefined);
       test.fail(err && err.stack || err);
       onComplete();
     });

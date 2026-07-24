@@ -16,7 +16,7 @@
 
 import { Meteor } from "meteor/meteor";
 import { check } from "meteor/check";
-import { _ } from "meteor/underscore";
+import { findWhere } from "/imports/shared/collection-utils";
 
 import { send } from "/imports/server/email";
 import { SandstormDb } from "/imports/sandstorm-db/db";
@@ -30,7 +30,7 @@ export function setAccountSuspensionEmailSenderForTests(sender) {
 async function sendDeletionEmails(db, deletedUserId, byAdminUserId, feedback) {
   const deletedUser = await db.getUser(deletedUserId);
 
-  const userEmail = _.findWhere(await SandstormDb.getUserEmailsAsync(deletedUser), { primary: true });
+  const userEmail = findWhere(await SandstormDb.getUserEmailsAsync(deletedUser), { primary: true });
   const serverTitle = await db.getServerTitleAsync();
   const returnAddress = await db.getReturnAddressAsync();
   if (!byAdminUserId) { // This was initiated by the user, send them an email
@@ -74,7 +74,7 @@ If you did not request this deletion, please contact the server administrator im
 
   const admins = await Meteor.users.find({ isAdmin: true }).fetchAsync();
   for (const user of admins) {
-    const email = _.findWhere(await SandstormDb.getUserEmailsAsync(user), { primary: true });
+    const email = findWhere(await SandstormDb.getUserEmailsAsync(user), { primary: true });
     if (!email) {
       console.error("No email found for admin with userId:", user._id);
       continue;

@@ -27,8 +27,7 @@ import { ReactiveVar } from "meteor/reactive-var";
 import { SHA256 } from "meteor/sha";
 import { Router } from "meteor/vlasky:galvanized-iron-router";
 import { TAPi18n } from "/imports/tapi18n";
-import { _ } from "meteor/underscore";
-import { $ } from "meteor/jquery";
+import { findWhere, where } from "/imports/shared/collection-utils";
 
 import { introJs } from "intro.js";
 
@@ -440,20 +439,21 @@ Template.shareWithOthers.events({
       event.preventDefault();
     }
 
-    const $focus = $(template.find(":focus"));
-    const $items = template.$("[role=tab]:visible");
-    const focusIndex = $items.index($focus);
+    const focusedElement = template.find(":focus");
+    const items = Array.from(template.findAll("[role=tab]"))
+        .filter(item => item.getClientRects().length > 0);
+    const focusIndex = items.indexOf(focusedElement);
     let newFocusIndex;
     if (event.keyCode == 37) { // left arrow
       event.preventDefault();
       newFocusIndex = focusIndex - 1;
       if (newFocusIndex == -1) {
-        newFocusIndex = $items.length - 1;
+        newFocusIndex = items.length - 1;
       }
     } else if (event.keyCode == 39) { // right arrow
       event.preventDefault();
       newFocusIndex = focusIndex + 1;
-      if (newFocusIndex >= $items.length) {
+      if (newFocusIndex >= items.length) {
         newFocusIndex = 0;
       }
     } else if (event.keyCode == 13) { // Enter key
@@ -462,10 +462,10 @@ Template.shareWithOthers.events({
     }
 
     if (newFocusIndex != null) {
-      $items.attr("tabindex", "-1");
-      const $newFocus = $($items[newFocusIndex]);
-      $newFocus.attr("tabindex", "0");
-      $newFocus.focus();
+      items.forEach(item => item.setAttribute("tabindex", "-1"));
+      const newFocus = items[newFocusIndex];
+      newFocus.setAttribute("tabindex", "0");
+      newFocus.focus();
     }
   },
 });
@@ -982,12 +982,12 @@ Template.whoHasAccessPopup.onCreated(function () {
           }
         });
 
-        let accountOwnedShares = _.values(sharesByAccountRecipient);
+        let accountOwnedShares = Object.values(sharesByAccountRecipient);
         if (accountOwnedShares.length == 0) {
           accountOwnedShares = { empty: true };
         }
 
-        let grainOwnedShares = _.values(sharesByGrainRecipient);
+        let grainOwnedShares = Object.values(sharesByGrainRecipient);
         if (grainOwnedShares.length == 0) {
           grainOwnedShares = { empty: true };
         }
@@ -1032,8 +1032,8 @@ Template.whoHasAccessPopup.events({
     const transitiveShares = instance.transitiveShares.get();
     const accountOwnedShares = transitiveShares.accountOwnedShares;
     const tokensById = instance.downstreamTokensById.get();
-    const recipientShares = _.findWhere(accountOwnedShares, { recipient: recipient });
-    const recipientTokens = _.where(recipientShares.allShares, { accountId: Meteor.userId() });
+    const recipientShares = findWhere(accountOwnedShares, { recipient: recipient });
+    const recipientTokens = where(recipientShares.allShares, { accountId: Meteor.userId() });
 
     // Two cases:
     // 1. All of the tokens are direct shares. Easy. Just revoke them.
@@ -1107,7 +1107,7 @@ Template.whoHasAccessPopup.events({
           "Unknown User";
       const singular = rootTokens.length == 1;
 
-      const tokenLabels = _.pluck(rootTokens, "petname")
+      const tokenLabels = rootTokens.map(token => token.petname)
           .map(petname => petname || "Unlabeled Link")
           .map(petname => "\"" + petname + "\"")
           .join(", ");
@@ -1156,8 +1156,8 @@ Template.whoHasAccessPopup.events({
     const transitiveShares = instance.transitiveShares.get();
     const grainOwnedShares = transitiveShares.grainOwnedShares;
     const tokensById = instance.downstreamTokensById.get();
-    const recipientShares = _.findWhere(grainOwnedShares, { recipient: recipient });
-    const recipientTokens = _.where(recipientShares.allShares, { accountId: Meteor.userId() });
+    const recipientShares = findWhere(grainOwnedShares, { recipient: recipient });
+    const recipientTokens = where(recipientShares.allShares, { accountId: Meteor.userId() });
 
     recipientTokens.forEach((token) => {
       Meteor.call("updateApiToken", token._id, { revoked: true });
@@ -1346,7 +1346,7 @@ Template.emailInviteTab.helpers({
   },
 
   invitationExplanation: function () {
-    const primaryEmail = _.findWhere(SandstormDb.getUserEmails(Meteor.user()), { primary: true });
+    const primaryEmail = findWhere(SandstormDb.getUserEmails(Meteor.user()), { primary: true });
     if (primaryEmail) {
       return "Invitation will be from " + primaryEmail.email;
     } else {
@@ -2152,7 +2152,7 @@ Meteor.startup(function () {
   if (isStandalone()) {
     // TODO(soon): delete all other routes (maybe change how they're created?)
     const route = Router.routes.root;
-    _.extend(route.options, {
+    Object.assign(route.options, {
       template: "grain",
       loadingTemplate: "loadingNoMessage",
 

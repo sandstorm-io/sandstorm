@@ -18,7 +18,7 @@ import Crypto from "crypto";
 import { Meteor } from "meteor/meteor";
 import { Match, check } from "meteor/check";
 import { Random } from "meteor/random";
-import { _ } from "meteor/underscore";
+import { deepEqual } from "/imports/shared/collection-utils";
 
 import { SandstormDb } from "/imports/sandstorm-db/db";
 
@@ -1432,9 +1432,9 @@ SandstormPermissions.grainPermissions = function (db, vertex, viewInfo, onInvali
       observeHandle.push(tokenCursor.observe({
         changed(newApiToken, oldApiToken) {
           if (newApiToken.trashed ||
-              !_.isEqual(newApiToken.roleAssignment, oldApiToken.roleAssignment) ||
-              !_.isEqual(newApiToken.suspended, oldApiToken.suspended) ||
-              !_.isEqual(newApiToken.revoked, oldApiToken.revoked)) {
+              !deepEqual(newApiToken.roleAssignment, oldApiToken.roleAssignment) ||
+              !deepEqual(newApiToken.suspended, oldApiToken.suspended) ||
+              !deepEqual(newApiToken.revoked, oldApiToken.revoked)) {
             observeHandle.stop();
             guardedOnInvalidated();
           }
@@ -1543,9 +1543,9 @@ SandstormPermissions.grainPermissionsAsync = async function (db, vertex, viewInf
       observeHandle.push(tokenCursor.observe({
         changed(newApiToken, oldApiToken) {
           if (newApiToken.trashed ||
-              !_.isEqual(newApiToken.roleAssignment, oldApiToken.roleAssignment) ||
-              !_.isEqual(newApiToken.suspended, oldApiToken.suspended) ||
-              !_.isEqual(newApiToken.revoked, oldApiToken.revoked)) {
+              !deepEqual(newApiToken.roleAssignment, oldApiToken.roleAssignment) ||
+              !deepEqual(newApiToken.suspended, oldApiToken.suspended) ||
+              !deepEqual(newApiToken.revoked, oldApiToken.revoked)) {
             observeHandle.stop();
             guardedOnInvalidated();
           }

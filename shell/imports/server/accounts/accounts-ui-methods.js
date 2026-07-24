@@ -19,7 +19,7 @@
 
 import { Meteor } from "meteor/meteor";
 import { Match, check } from "meteor/check";
-import { _ } from "meteor/underscore";
+import { findWhere } from "/imports/shared/collection-utils";
 
 import { SandstormDb } from "/imports/sandstorm-db/db";
 
@@ -108,7 +108,7 @@ Meteor.methods({
     const emails = Meteor.isServer
         ? await SandstormDb.getUserEmailsAsync(currentUser)
         : SandstormDb.getUserEmails(currentUser);
-    if (!_.findWhere(emails, { email: email, verified: true })) {
+    if (!findWhere(emails, { email: email, verified: true })) {
       throw new Meteor.Error(403, "Not a verified email of the current user: " + email);
     }
 

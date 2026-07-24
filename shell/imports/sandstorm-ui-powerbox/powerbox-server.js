@@ -16,7 +16,7 @@
 
 import { Meteor } from "meteor/meteor";
 import { check } from "meteor/check";
-import { _ } from "meteor/underscore";
+import { unique } from "/imports/shared/collection-utils";
 
 import { SandstormPermissions } from "/imports/sandstorm-permissions/permissions";
 import Capnp from "/imports/server/capnp";
@@ -127,7 +127,7 @@ Meteor.methods({
 
 class PowerboxOption {
   constructor(fields) {
-    _.extend(this, fields);
+    Object.assign(this, fields);
   }
 
   intersect(other) {
@@ -223,7 +223,7 @@ function registerUiViewQueryHandler(frontendRefRegistry) {
       const sharedGrainIds = sharedGrainTokens.map(token => token.grainId);
       const ownedGrainIds = ownedGrains.map(grain => grain._id);
 
-      return _.uniq(sharedGrainIds.concat(ownedGrainIds)).map(grainId => {
+      return unique(sharedGrainIds.concat(ownedGrainIds)).map(grainId => {
         return new PowerboxOption({
           _id: "grain-" + grainId,
           grainId: grainId,

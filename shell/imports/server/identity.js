@@ -16,7 +16,6 @@
 
 import { Meteor } from "meteor/meteor";
 import { Match, check } from "meteor/check";
-import { _ } from "meteor/underscore";
 
 import { SandstormDb } from "/imports/sandstorm-db/db";
 import { globalDb } from "/imports/db-deprecated";
@@ -184,6 +183,6 @@ globalThis.globalFrontendRefRegistry.register({
       }
     }
 
-    return _.values(resultSet);
+    return Object.values(resultSet);
   },
 });

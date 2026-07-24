@@ -16,7 +16,6 @@
 
 import { Meteor } from "meteor/meteor";
 import { Match, check } from "meteor/check";
-import { _ } from "meteor/underscore";
 import { Random } from "meteor/random";
 
 import { createAppActivityDesktopNotification } from "/imports/server/desktop-notifications";
@@ -187,7 +186,7 @@ globalThis.logActivity = async function (grainId, accountIdOrAnonymous, event) {
       // desktop notification to bind them.
       const idIfInserted = Random.id(17);
       const result = await globalDb.collections.notifications.rawCollection().findOneAndUpdate(
-          _.extend({ userId: targetId }, notification),
+          Object.assign({ userId: targetId }, notification),
           {
             $set: update,
             $inc: { count: 1 },

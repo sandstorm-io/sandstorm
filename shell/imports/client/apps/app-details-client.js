@@ -2,7 +2,7 @@ import { Meteor } from "meteor/meteor";
 import { Template } from "meteor/templating";
 import { ReactiveVar } from "meteor/reactive-var";
 import { Router } from "meteor/vlasky:galvanized-iron-router";
-import { _ } from "meteor/underscore";
+import { groupBy } from "/imports/shared/collection-utils";
 
 import { iconSrcForPackage } from "/imports/sandstorm-identicons/helpers";
 import { SandstormDb } from "/imports/sandstorm-db/db";
@@ -41,16 +41,13 @@ const compileMatchFilter = function (searchString) {
 
   return function matchFilter(item) {
     if (searchKeys.length === 0) return true;
-    return _.chain(searchKeys)
-        .map(function (searchKey) { return matchesGrainTitle(searchKey, item); })
-        .reduce(function (a, b) { return a && b; })
-        .value();
+    return searchKeys.every(searchKey => matchesGrainTitle(searchKey, item));
   };
 };
 
 const appGrains = function (db, appId, trashed) {
-  return _.filter(db.currentUserGrains({ includeTrashOnly: !!trashed }).fetch(),
-                  function (grain) {return grain.appId === appId; });
+  return db.currentUserGrains({ includeTrashOnly: !!trashed }).fetch()
+      .filter(function (grain) {return grain.appId === appId; });
 };
 
 const filteredGrains = function (db, staticAssetHost, appId, appTitle, filterText, viewingTrash) {
@@ -60,7 +57,7 @@ const filteredGrains = function (db, staticAssetHost, appId, appTitle, filterTex
   const grainIdSet = {};
   grainsMatchingAppId.map((g) => grainIdSet[g._id] = true);
 
-  const tokensForGrain = _.groupBy(db.currentUserApiTokens(viewingTrash).fetch(), "grainId");
+  const tokensForGrain = groupBy(db.currentUserApiTokens(viewingTrash).fetch(), "grainId");
   const grainIdsForApiTokens = Object.keys(tokensForGrain)
         .filter((grainId) => !(grainId in grainIdSet));
 
@@ -79,10 +76,7 @@ const filteredGrains = function (db, staticAssetHost, appId, appTitle, filterTex
   const itemsFromSharedGrains = SandstormGrainListPage.mapApiTokensToTemplateObject(
     grainTokensMatchingAppTitle, staticAssetHost);
   const filter = compileMatchFilter(filterText);
-  return _.chain([itemsFromGrains, itemsFromSharedGrains])
-      .flatten()
-      .filter(filter)
-      .value();
+  return itemsFromGrains.concat(itemsFromSharedGrains).filter(filter);
 };
 
 const pgpFingerprint = function (pkg) {
@@ -244,19 +238,17 @@ Template.sandstormAppDetails.helpers({
     // jscs:disable requireCamelCaseOrUpperCaseIdentifiers
     const proofs = profile.proofs;
     if (proofs) {
-      const externalProofs = _.chain(proofs)
+      const externalProofs = proofs
           // Filter down to twitter, github, and web
           .filter(function (proof) {
-            return _.contains(["twitter", "github", "dns", "https"],
-            proof.proof_type);
+            return ["twitter", "github", "dns", "https"].includes(proof.proof_type);
           })
           // Then map fields into the things the template cares about
           .map(function (proof) { return {
             proofTypeClass: proof.proof_type,
             linkTarget: proof.service_url,
             linkText: proof.nametag,
-          }; })
-          .value();
+          }; });
       externalProofs.forEach(function (proof) { returnValue.push(proof); });
     }
     // jscs:enable requireCamelCaseOrUpperCaseIdentifiers
@@ -337,7 +329,7 @@ Template.sandstormAppDetailsPage.helpers({
       // N.B. it's weird that we have to look up our userAction ID here when it'd be easier to just
       // enumerate the actions listed in the package that we've already retrieved.  UserActions is
       // not a very useful collection.
-      return _.chain(ref._db.currentUserActions().fetch())
+      return ref._db.currentUserActions().fetch()
           .filter(function (a) { return a.appId === ref._appId; })
           .map(function (a) {
             return {
@@ -350,8 +342,7 @@ Template.sandstormAppDetailsPage.helpers({
                 });
               },
             };
-          })
-          .value();
+          });
     }
 
   },
@@ -411,7 +402,7 @@ Template.sandstormAppDetailsPage.helpers({
     const pkg = latestPackageForAppId(ref._db, ref._appId);
     if (!pkg) return false;
     const grains = appGrains(ref._db, ref._appId);
-    return _.some(grains, function (grain) {
+    return grains.some(function (grain) {
       return grain.appVersion > pkg.manifest.appVersion;
     });
   },
@@ -426,7 +417,7 @@ Template.sandstormAppDetailsPage.helpers({
     if (pkg.dev) return false;
 
     const grains = appGrains(ref._db, ref._appId);
-    return _.some(grains, function (grain) {
+    return grains.some(function (grain) {
       // Note that we consider a different package with the same appVersion to be "older" because
       // this usually happens when the developer is iterating on their own app and isn't bumping
       // the version number for every iteration. The developer will likely want to be able to

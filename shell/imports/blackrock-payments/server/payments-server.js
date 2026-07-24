@@ -30,11 +30,11 @@ import { Meteor } from "meteor/meteor";
 import { Mongo } from "meteor/mongo";
 import { check } from "meteor/check";
 import { Random } from "meteor/random";
-import { _ } from "meteor/underscore";
+import { pick, deepEqual } from "/imports/shared/collection-utils";
 
 import { SandstormDb } from "/imports/sandstorm-db/db";
 import { globalDb } from "/imports/db-deprecated";
-import { httpCallAsync } from "/imports/http-helpers";
+import { httpCallAsync } from "/imports/server/http-helpers";
 import { MAILING_LIST_BONUS } from "/imports/blackrock-payments/constants";
 
 const ROOT_URL = process.env.ROOT_URL;
@@ -45,10 +45,12 @@ if (!Meteor.settings.stripeKey) {
   console.warn("Stripe secret key is not configured; billing operations will fail until stripeKey is set.");
 }
 export const stripe = StripeModule(stripeKey);
-let paymentsHttpCall = httpCallAsync;
+const defaultPaymentsHttpCall = (method, url, options) =>
+  httpCallAsync(method, url, { ...options, ssrfSafeDb: globalDb });
+let paymentsHttpCall = defaultPaymentsHttpCall;
 
 export function setPaymentsHttpCallForTests(call) {
-  paymentsHttpCall = call || httpCallAsync;
+  paymentsHttpCall = call || defaultPaymentsHttpCall;
 }
 
 globalThis.BlackrockPayments = {};
@@ -163,7 +165,7 @@ export async function findOriginalSourceIdAsync(hashedId, customerId) {
 }
 
 const sanitizeSource = (source, isPrimary) => {
-  var result = _.pick(source, "last4", "brand", "exp_year", "exp_month", "isPrimary");
+  var result = pick(source, "last4", "brand", "exp_year", "exp_month", "isPrimary");
   result.isPrimary = isPrimary;
   result.id = hashSourceId(source.id);
   return result;
@@ -207,7 +209,7 @@ async function sendEmail(db, user, mailSubject, mailText, mailHtml, config) {
         '  </div>' +
         '</div>';
 
-  let email = _.find(await SandstormDb.getUserEmailsAsync(user), function (email) { return email.primary; });
+  let email = (await SandstormDb.getUserEmailsAsync(user)).find((entry) => entry.primary);
   if (email) {
     email = email.email;
   } else {
@@ -887,7 +889,7 @@ globalThis.BlackrockPayments.getTotalCharges = async function() {
       req.starting_after = results.slice(-1)[0].id;
     }
   }
-  return _.reduce(results, (total, elem) => {
+  return results.reduce((total, elem) => {
     return (elem.paid ? elem.amount || 0 : 0) - (elem.refunded ? elem.amount_refunded || 0 : 0) +
       total;
   }, 0) / 100;
@@ -963,9 +965,9 @@ async function updateBonuses(user) {
     }
   }
 
-  if (!_.isEqual(user.planBonus, bonus) ||
+  if (!deepEqual(user.planBonus, bonus) ||
       !user.payments ||
-      !_.isEqual(user.payments.bonuses, paymentsBonuses)) {
+      !deepEqual(user.payments.bonuses, paymentsBonuses)) {
     await Meteor.users.updateAsync(user._id, {$set: {planBonus: bonus, "payments.bonuses": paymentsBonuses}});
   }
 

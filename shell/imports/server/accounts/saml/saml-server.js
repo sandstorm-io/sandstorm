@@ -3,7 +3,7 @@ import zlib from "zlib";
 
 import { Meteor } from "meteor/meteor";
 import { check } from "meteor/check";
-import { _ } from "meteor/underscore";
+import { pick } from "/imports/shared/collection-utils";
 import { Accounts } from "meteor/accounts-base";
 
 import { SAML } from "/imports/server/accounts/saml-utils";
@@ -42,7 +42,7 @@ Accounts.registerLoginHandler(function (loginRequest) {
   if (!loginResult) {
     throw new Meteor.Error(500, "SAML login did not complete.");
   } else if (loginResult.profile && loginResult.profile.email) {
-    let user = _.pick(loginResult.profile, "displayName", "email", "nameIDFormat");
+    let user = pick(loginResult.profile, "displayName", "email", "nameIDFormat");
     user.id = loginResult.profile.nameID;
     return Accounts.updateOrCreateUserFromExternalService("saml", user, {});
   } else {

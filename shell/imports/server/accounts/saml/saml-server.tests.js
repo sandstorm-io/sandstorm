@@ -21,7 +21,7 @@ import zlib from "zlib";
 import chai from "chai";
 
 import { Accounts } from "meteor/accounts-base";
-import { HTTP } from "meteor/http";
+import { httpCallAsync } from "/imports/server/http-helpers";
 import { Meteor } from "meteor/meteor";
 import { Random } from "meteor/random";
 
@@ -252,7 +252,7 @@ if (Meteor.isServer) {
       await setSamlSettingsForTests();
 
       try {
-        const response = await HTTP.get(Meteor.absoluteUrl("_saml/config/default"));
+        const response = await httpCallAsync("GET", Meteor.absoluteUrl("_saml/config/default"));
         assert.equal(response.statusCode, 200);
         assert.match(response.headers["content-type"] || "", /text\/xml/i);
         assert.include(response.content, "EntityDescriptor");
@@ -290,7 +290,7 @@ if (Meteor.isServer) {
           callback(null, { email: "user@example.com" }, false, "<xml/>");
         };
 
-        const response = await HTTP.post(
+        const response = await httpCallAsync("POST",
             Meteor.absoluteUrl("_saml/validate/default/forged-credential-token"), {
               content: "SAMLResponse=dummy",
               headers: {

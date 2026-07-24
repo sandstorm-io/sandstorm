@@ -16,10 +16,9 @@
 
 import { Meteor } from "meteor/meteor";
 import { Match, check } from "meteor/check";
-import { _ } from "meteor/underscore";
 
 import { inMeteor } from "/imports/server/async-helpers";
-import { httpCallAsync } from "/imports/http-helpers";
+import { httpCallAsync } from "/imports/server/http-helpers";
 import { PersistentImpl } from "/imports/server/persistent";
 import { ssrfSafeLookup } from "/imports/server/networking";
 import { REQUEST_HEADER_WHITELIST, RESPONSE_HEADER_WHITELIST }
@@ -76,6 +75,7 @@ async function refreshOAuth(url, refreshToken) {
   }
 
   const response = await httpCallAsync("POST", serviceInfo.endpoint, {
+    ssrfSafeDb: globalDb,
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
       "Accept": "application/json",
@@ -354,7 +354,7 @@ class ExternalWebSession extends PersistentImpl {
           .then(() => session._ensureResolvedTarget())
           .then(() => session._ensureAuthorization())
           .then((authorization) => {
-      const options = _.clone(session.options);
+      const options = { ...session.options };
       options.headers = options.headers || {};
       if (authorization) {
         options.headers.authorization = authorization;

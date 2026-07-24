@@ -2,7 +2,6 @@ import { Meteor } from "meteor/meteor";
 import { Template } from "meteor/templating";
 import { Tracker } from "meteor/tracker";
 import { ReactiveVar } from "meteor/reactive-var";
-import { _ } from "meteor/underscore";
 
 import { globalDb } from "/imports/db-deprecated";
 
@@ -105,7 +104,7 @@ Template._appRow.helpers({
 
   isAppDownloading() {
     const pack = globalDb.collections.packages.findOne({ _id: this.packageId });
-    return pack && _.contains(["verify", "unpack", "analyze", "download"], pack.status);
+    return pack && ["verify", "unpack", "analyze", "download"].includes(pack.status);
   },
 
   isAppFailed() {
@@ -115,7 +114,7 @@ Template._appRow.helpers({
 
   progressFraction() {
     const pack = globalDb.collections.packages.findOne({ _id: this.packageId });
-    if (_.contains(["verify", "unpack", "analyze"], pack.status)) {
+    if (["verify", "unpack", "analyze"].includes(pack.status)) {
       // Downloading is done
       return 1;
     }
@@ -144,7 +143,7 @@ Template.newAdminPreinstalledApps.events({
       state: "submitting",
       message: "",
     });
-    const appAndPackageIdList = _.map(preinstalledAppAndPackageIds, (val, key) => {
+    const appAndPackageIdList = Object.entries(preinstalledAppAndPackageIds).map(([key, val]) => {
       return {
         appId: key,
         packageId: val,
@@ -158,7 +157,7 @@ Template.newAdminPreinstalledApps.events({
         });
       } else {
         let notYetInstalled = [];
-        _.each(preinstalledAppAndPackageIds, (packageId) => {
+        Object.values(preinstalledAppAndPackageIds).forEach((packageId) => {
           const pack = globalDb.collections.packages.findOne({ _id: packageId });
           if (!pack || pack.status !== "ready") {
             notYetInstalled.push(packageId);
@@ -181,7 +180,7 @@ Template.newAdminPreinstalledApps.events({
                 } else if (pack.status === "ready") {
                   progress += 1;
                   ready += 1;
-                } else if (_.contains(["verify", "unpack", "analyze"], pack.status)) {
+                } else if (["verify", "unpack", "analyze"].includes(pack.status)) {
                   // This means it's stuck on analyzing/unpacking/verifying
                   progress += 1;
                 }

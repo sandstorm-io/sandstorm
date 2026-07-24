@@ -16,7 +16,7 @@
 
 import { Meteor } from "meteor/meteor";
 import { Match, check } from "meteor/check";
-import { _ } from "meteor/underscore";
+import { omit, difference } from "/imports/shared/collection-utils";
 import { Accounts } from "meteor/accounts-base";
 import { Random } from "meteor/random";
 import { ServiceConfiguration } from "meteor/service-configuration";
@@ -31,7 +31,7 @@ import { fillUndefinedForChangedDoc } from "/imports/server/observe-helpers";
 import { SandstormDb } from "/imports/sandstorm-db/db";
 import { globalDb } from "/imports/db-deprecated";
 import { computeStats } from "/imports/server/stats-server";
-import { httpCallAsync } from "/imports/http-helpers";
+import { httpCallAsync } from "/imports/server/http-helpers";
 import { createAcmeAccount, renewCertificateNow } from "/imports/server/acme";
 import { Issuer } from "openid-client";
 
@@ -215,7 +215,7 @@ Meteor.methods({
       throw new Meteor.Error(403, "User cannot remove admin permissions from itself.");
     }
 
-    await Meteor.users.updateAsync({ _id: userId }, { $set: _.omit(userInfo, ["_id", "userId"]) });
+    await Meteor.users.updateAsync({ _id: userId }, { $set: omit(userInfo, ["_id", "userId"]) });
   },
 
   testSend: async function (token, smtpConfig, to) {
@@ -441,7 +441,7 @@ Meteor.methods({
   fetchAcmeDirectory: async function (token, url) {
     await checkAuthAsync(this.connection.sandstormDb, this.userId, token);
     check(url, String);
-    let response = await httpCallAsync("GET", url);
+    let response = await httpCallAsync("GET", url, { ssrfSafeDb: globalDb });
 
     if (response.statusCode != 200) {
       throw new Meteor.Error("bad_acme_directory",
@@ -602,7 +602,7 @@ Meteor.publish("adminUserDetails", async function (userId) {
       const oldCredentials = SandstormDb.getUserCredentialIds(oldDoc);
 
       // Those in newDoc - oldDoc, ref.
-      const credentialsAdded = _.difference(newCredentials, oldCredentials);
+      const credentialsAdded = difference(newCredentials, oldCredentials);
       credentialsAdded.forEach((credentialId) => {
         refCredential(credentialId).catch((err) => {
           console.error("Failed to start credential observer (account changed):", err);
@@ -610,7 +610,7 @@ Meteor.publish("adminUserDetails", async function (userId) {
       });
 
       // Those in oldDoc - newDoc, unref.
-      const credentialsRemoved = _.difference(oldCredentials, newCredentials);
+      const credentialsRemoved = difference(oldCredentials, newCredentials);
       credentialsRemoved.forEach((credentialId) => {
         unrefCredential(credentialId);
       });
@@ -636,7 +636,7 @@ Meteor.publish("adminUserDetails", async function (userId) {
       console.error("Failed to stop account observer:", err);
     });
     // Also stop all the credential subscriptions.
-    const subs = _.values(credentialSubs);
+    const subs = Object.values(credentialSubs);
     subs.forEach((sub) => {
       Promise.resolve(sub).then((h) => {
         if (typeof h === "function") { h(); } else if (h && typeof h.stop === "function") h.stop();

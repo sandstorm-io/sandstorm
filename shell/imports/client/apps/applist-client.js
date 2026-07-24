@@ -3,7 +3,7 @@ import { Template } from "meteor/templating";
 import { ReactiveVar } from "meteor/reactive-var";
 import { Session } from "meteor/session";
 import { Router } from "meteor/vlasky:galvanized-iron-router";
-import { _ } from "meteor/underscore";
+import { countBy, groupBy, indexBy, sortBy } from "/imports/shared/collection-utils";
 import { TAPi18n } from "/imports/tapi18n";
 
 import { introJs } from "intro.js";
@@ -44,10 +44,7 @@ const compileMatchFilter = function (searchString) {
 
   return function matchFilter(item) {
     if (searchKeys.length === 0) return true;
-    return _.chain(searchKeys)
-        .map(function (searchKey) {return matchesApp(searchKey, item); })
-        .reduce(function (a, b) {return a && b; })
-        .value();
+    return searchKeys.every(searchKey => matchesApp(searchKey, item));
   };
 };
 
@@ -67,10 +64,9 @@ const matchApps = function (searchString) {
 
   const db = Template.instance().data._db;
   const allActions = db.currentUserActions().fetch();
-  const appsFromUserActionsByAppId = _.chain(allActions)
-      .groupBy("packageId")
-      .pairs()
-      .map(function (pair) {
+  const actionsByPackageId = groupBy(allActions, "packageId");
+  const appsFromUserActionsByAppId = indexBy(
+    Object.entries(actionsByPackageId).map(function (pair) {
         const pkg = db.collections.packages.findOne(pair[0]);
         return {
           packageId: pair[0],
@@ -79,11 +75,11 @@ const matchApps = function (searchString) {
           pkg: pkg,
           dev: false,
         };
-      })
-      .indexBy("appId")
-      .value();
-  const devPackagesByAppId = _.chain(db.collections.devPackages.find().fetch())
-      .map(function (devPackage) {
+      }),
+    "appId"
+  );
+  const devPackagesByAppId = indexBy(
+    db.collections.devPackages.find().fetch().map(function (devPackage) {
         return {
           packageId: devPackage._id,
           actions: devPackage.manifest.actions,
@@ -91,19 +87,12 @@ const matchApps = function (searchString) {
           pkg: devPackage,
           dev: true,
         };
-      })
-      .indexBy("appId")
-      .value();
+      }),
+    "appId"
+  );
   // Merge, making sure that dev apps overwrite user actions if they share appId
-  const allApps = _.chain({})
-                 .extend(appsFromUserActionsByAppId, devPackagesByAppId)
-                 .values()
-                 .value();
-
-  const matchingApps = _.chain(allApps)
-                      .filter(filter)
-                      .value();
-  return matchingApps;
+  return Object.values(Object.assign({}, appsFromUserActionsByAppId, devPackagesByAppId))
+      .filter(filter);
 };
 
 Template.sandstormAppListPage.helpers({
@@ -158,16 +147,14 @@ Template.sandstormAppListPage.helpers({
     const ref = Template.instance().data;
     // Count the number of grains owned by this user created by each app.
     const actions = ref._db.currentUserActions().fetch();
-    const appIds = _.pluck(actions, "appId");
+    const appIds = actions.map(action => action.appId);
     const grains = ref._db.currentUserGrains().fetch();
-    const appCounts = _.countBy(grains, function (x) { return x.appId; });
+    const appCounts = countBy(grains, function (x) { return x.appId; });
     // Sort apps by the number of grains created, descending.
     const apps = matchApps(ref._filter.get());
-    return _.chain(apps)
-        .sortBy(function (app) { return appCounts[app.appId] || 0; })
+    return sortBy(apps, function (app) { return appCounts[app.appId] || 0; })
         .reverse()
-        .map(appToTemplateObject)
-        .value();
+        .map(appToTemplateObject);
   },
 
   assetPath: function (assetId) {

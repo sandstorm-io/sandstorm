@@ -19,8 +19,7 @@ import { check } from "meteor/check";
 import { Template } from "meteor/templating";
 import { ReactiveVar } from "meteor/reactive-var";
 import { Session } from "meteor/session";
-import { HTTP } from "meteor/http";
-import { _ } from "meteor/underscore";
+import { findWhere } from "/imports/shared/collection-utils";
 
 import { formatFutureTime } from "/imports/dates";
 import { ACCOUNT_DELETION_SUSPENSION_TIME } from "/imports/constants";
@@ -72,7 +71,7 @@ Template.sandstormAccountSettings.helpers({
   },
 
   credentials: function () {
-    return _.chain(SandstormDb.getUserCredentialIds(Meteor.user()))
+    return SandstormDb.getUserCredentialIds(Meteor.user())
       .map((id) => Meteor.users.findOne({ _id: id }))
       .filter((credential) => !!credential)
       // Demo credentials don't need to be shown at all anymore.
@@ -83,7 +82,7 @@ Template.sandstormAccountSettings.helpers({
         credential.intrinsicName = SandstormDb.getIntrinsicName(credential, true);
         credential.serviceName = SandstormDb.getServiceName(credential);
         return credential;
-      }).value();
+      });
   },
 
   isAccountUser: function () {
@@ -175,14 +174,14 @@ Template.sandstormAccountSettings.helpers({
     const actionCompleted = Template.instance()._actionCompleted;
     return {
       _id: credentialId,
-      isLogin: user.loginCredentials && !!_.findWhere(user.loginCredentials, { id: credentialId }),
+      isLogin: user.loginCredentials && !!findWhere(user.loginCredentials, { id: credentialId }),
       isDemo: this.serviceName === "demo",
       setActionCompleted: function (x) { actionCompleted.set(x); },
     };
   },
 
   verifiedEmailsForCredential: function () {
-    return _.pluck(SandstormDb.getVerifiedEmailsForCredential(this), "email");
+    return SandstormDb.getVerifiedEmailsForCredential(this).map(email => email.email);
   },
 });
 
@@ -419,14 +418,16 @@ Template._accountProfileEditor.onCreated(function () {
     const staticHost = this.data.staticHost;
     if (!staticHost) throw new Error("missing staticHost");
     const path = staticHost + "/" + token;
-    HTTP.post(path, { content: file, }, (err, result) => {
-      if (err) {
-        this._setActionCompleted({ error: "Upload failed: " + err.message });
-      } else if (result.statusCode >= 400) {
-        this._setActionCompleted({ error: "Upload failed: " + result.statusCode + " " + result.content });
+    fetch(path, { method: "POST", body: file }).then(async (response) => {
+      if (!response.ok) {
+        this._setActionCompleted({
+          error: "Upload failed: " + response.status + " " + await response.text(),
+        });
       } else {
         this._setActionCompleted({ success: "picture updated" });
       }
+    }).catch((err) => {
+      this._setActionCompleted({ error: "Upload failed: " + err.message });
     });
   };
 });

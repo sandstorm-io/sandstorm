@@ -16,12 +16,12 @@
 
 import { Meteor } from "meteor/meteor";
 import { Mongo } from "meteor/mongo";
-import { _ } from "meteor/underscore";
+import { indexBy, countBy } from "/imports/shared/collection-utils";
 import { Random } from "meteor/random";
 import { Router } from "meteor/vlasky:galvanized-iron-router";
 
 import { globalDb } from "/imports/db-deprecated";
-import { httpCallAsync } from "/imports/http-helpers";
+import { httpCallAsync } from "/imports/server/http-helpers";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -84,7 +84,7 @@ async function computeStats(since) {
       },
     },
   ]);
-  apps = _.indexBy(apps, "_id");
+  apps = indexBy(apps, "_id");
 
   for (const appId in apps) {
     // We need to count ApiTokens, which don't have appId denormalized into them. We therefore
@@ -104,7 +104,7 @@ async function computeStats(since) {
     }, {
       fields: { _id: 1 },
     }).fetchAsync();
-    const grainIds = _.pluck(grains, "_id");
+    const grainIds = grains.map((grain) => grain._id);
 
     const counts = await globalDb.collections.apiTokens.aggregate([
       {
@@ -177,6 +177,7 @@ async function computeStats(since) {
 async function recordStats() {
   const postStats = async function (record) {
     await httpCallAsync("POST", "https://alpha-api.sandstorm.io/data", {
+      ssrfSafeDb: globalDb,
       data: record,
       headers: {
         Authorization: "Bearer aT-mGyNwsgwZBbZvd5FWr0Ma79O9IehI4NiEO94y_oR",
@@ -187,7 +188,7 @@ async function recordStats() {
 
   const now = new Date();
 
-  const planStats = _.countBy(
+  const planStats = countBy(
     await Meteor.users.find({ expires: { $exists: false }, "payments.id": { $exists: true } },
                              { fields: { plan: 1 } }).fetchAsync(),
     "plan");

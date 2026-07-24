@@ -22,15 +22,16 @@ import NodeHttps from "https";
 import { Meteor } from "meteor/meteor";
 import { Match, check } from "meteor/check";
 import { Router } from "meteor/vlasky:galvanized-iron-router";
-import { HTTP } from "meteor/http";
 
 import { inMeteor } from "/imports/server/async-helpers";
-import { httpCallAsync } from "/imports/http-helpers";
+import { httpCallAsync } from "/imports/server/http-helpers";
 import { globalDb } from "/imports/db-deprecated";
 import { createGrainBackup, createBackupToken, restoreGrainBackup, storeGrainBackup }
   from "/imports/server/backup";
 
-let transferHttpCall = httpCallAsync;
+const defaultTransferHttpCall = (method, url, options) =>
+  httpCallAsync(method, url, { ...options, ssrfSafeDb: globalDb });
+let transferHttpCall = defaultTransferHttpCall;
 let transferCreateGrainBackup = createGrainBackup;
 let transferCreateBackupToken = createBackupToken;
 let transferStoreGrainBackup = storeGrainBackup;
@@ -38,7 +39,7 @@ let transferRestoreGrainBackup = restoreGrainBackup;
 let transferDownloaderDisabledForTests = false;
 
 export function setTransferHttpCallForTests(call) {
-  transferHttpCall = call || httpCallAsync;
+  transferHttpCall = call || defaultTransferHttpCall;
 }
 
 export function setTransferCreateGrainBackupForTests(fn) {
@@ -391,13 +392,11 @@ async function revokeTransferTokens(db, userId) {
   });
 
   for (let token in revokeMap) {
-    HTTP.del(revokeMap[token] + "/transfers/cancel", {
+    transferHttpCall("DELETE", revokeMap[token] + "/transfers/cancel", {
       headers: {"Authorization": "Bearer " + token}
-    }, (err, _response) => {
-      if (err) {
+    }).catch((err) => {
         // Don't really care...
         console.error("Error revoking transfer token:", err);
-      }
     });
   }
 }

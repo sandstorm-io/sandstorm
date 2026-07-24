@@ -16,7 +16,7 @@
 
 import { Meteor } from "meteor/meteor";
 import { Match, check } from "meteor/check";
-import { _ } from "meteor/underscore";
+import { pick } from "/imports/shared/collection-utils";
 
 import Crypto from "crypto";
 import { inMeteor } from "/imports/server/async-helpers";
@@ -325,7 +325,7 @@ async function dismissNotification(db, notificationId, callCancel) {
         }
       }
     } else if (notification.appUpdates) {
-      _.forEach(notification.appUpdates, (app, appId) => {
+      Object.keys(notification.appUpdates).forEach((appId) => {
         db.deleteUnusedPackages(appId).catch((err) => {
           console.error("Failed deleting unused packages after dismissNotification:", err);
         });
@@ -455,7 +455,7 @@ const makeSaveTemplateForChild = async function (db, parentToken, requirements, 
     // Saving this token should make a copy of the restored token, rather than make a child
     // token.
 
-    saveTemplate = _.clone(parentTokenInfo);
+    saveTemplate = { ...parentTokenInfo };
 
     // Don't copy over fields that should be determined at save() time.
     delete saveTemplate._id;
@@ -464,7 +464,7 @@ const makeSaveTemplateForChild = async function (db, parentToken, requirements, 
   } else {
     if (parentTokenInfo.accountId) {
       // A UiView token. Need to denormalize some fields from the parent.
-      saveTemplate = _.pick(parentTokenInfo, "grainId", "accountId");
+      saveTemplate = pick(parentTokenInfo, "grainId", "accountId");
 
       // By default, a save()d copy should have the same permissions, so set an allAccess role
       // assignment.

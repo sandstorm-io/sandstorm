@@ -22,7 +22,7 @@ import { Tracker } from "meteor/tracker";
 import { ReactiveVar } from "meteor/reactive-var";
 import { Random } from "meteor/random";
 import { Router } from "meteor/vlasky:galvanized-iron-router";
-import { _ } from "meteor/underscore";
+import { deepEqual } from "/imports/shared/collection-utils";
 
 import { computeTitleFromTokenOwnerUser } from "/imports/client/model-helpers";
 import { isStandalone } from "/imports/client/standalone";
@@ -620,7 +620,7 @@ class GrainView {
     if (permissions) {
       if (!this._permissions) {
         this._permissions = permissions;
-      } else if (!_.isEqual(this._permissions, permissions)) {
+      } else if (!deepEqual(this._permissions, permissions)) {
         // Our permissions have changed! We reset the grain view so that we get a fresh host ID.
         //
         // TODO(someday): Maybe we should allow apps to opt-in or opt-out of this behavior?
@@ -655,7 +655,7 @@ class GrainView {
       }
 
       const isIncognito = _this._userIdentityRevealed.get() === false;
-      _this._addSessionObserver(_.extend({
+      _this._addSessionObserver(Object.assign({
         grainId: _this._grainId,
         revealIdentity: !isIncognito,
         parentOrigin: getOrigin()
@@ -675,7 +675,7 @@ class GrainView {
 
       if (isIncognito || neverRedeem) {
         // We don't intend to redeem the token, so just open a token-based session.
-        _this._addSessionObserver(_.extend({
+        _this._addSessionObserver(Object.assign({
           token: _this._token,
           revealIdentity: !isIncognito,
           parentOrigin: getOrigin()

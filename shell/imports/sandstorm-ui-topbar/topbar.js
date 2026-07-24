@@ -22,7 +22,7 @@ import { Reload } from "meteor/reload";
 import { Tracker } from "meteor/tracker";
 import { ReactiveVar } from "meteor/reactive-var";
 import { Router } from "meteor/vlasky:galvanized-iron-router";
-import { _ } from "meteor/underscore";
+import { sortBy, deepEqual } from "/imports/shared/collection-utils";
 
 let reloadBlockingCount = 0;
 const blockedReload = new ReactiveVar(null);
@@ -55,7 +55,7 @@ Template.sandstormTopbarBlockReload.onDestroyed(function () {
 });
 
 Template.sandstormTopbar.onCreated(function () {
-  Template.instance().popupPosition = new ReactiveVar(undefined, _.isEqual);
+  Template.instance().popupPosition = new ReactiveVar(undefined, deepEqual);
 
   const topbar = this.data;
   this.escapeHandler = function (ev) {
@@ -81,7 +81,7 @@ Template.sandstormTopbar.helpers({
 
     // Note that JS objects always iterate in the order in which keys were added, so this actually
     // produces a stable ordering.
-    return _.sortBy(_.values(this._items), function (item) { return -(item.priority || 0); });
+    return sortBy(Object.values(this._items), function (item) { return -(item.priority || 0); });
   },
 
   isCurrentRoute: function (routeName) {
@@ -283,7 +283,7 @@ Template.sandstormTopbar.events({
 });
 
 Template.sandstormTopbarItem.onCreated(function () {
-  const item = _.clone(this.data);
+  const item = { ...this.data };
   const topbar = item.topbar;
   delete item.topbar;
 
@@ -307,7 +307,7 @@ Template.sandstormTopbarItem.onCreated(function () {
     item.popupTemplate = view.templateElseBlock;
   }
 
-  const dataVar = new ReactiveVar(null, _.isEqual);
+  const dataVar = new ReactiveVar(null, deepEqual);
   if ("data" in item) {
     // Changes to the input data do not cause this template to get created anew, so we must
     // propagate such changes to the item.

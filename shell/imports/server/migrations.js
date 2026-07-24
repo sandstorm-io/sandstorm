@@ -6,7 +6,7 @@
 
 import { Meteor } from "meteor/meteor";
 import { Mongo } from "meteor/mongo";
-import { _ } from "meteor/underscore";
+import { pick, omit } from "/imports/shared/collection-utils";
 import { Match } from "meteor/check";
 import { userPictureUrl, fetchPicture } from "/imports/server/accounts/picture";
 import { PRIVATE_IPV4_ADDRESSES, PRIVATE_IPV6_ADDRESSES } from "/imports/constants";
@@ -286,8 +286,8 @@ const moveDevAndEmailLoginDataIntoIdentities = async function (db, _backend) {
     const identity = user.identities[0];
     if (Match.test(identity.service, Object)) { return; } // Already migrated.
 
-    const newIdentity = _.pick(identity, "id", "main", "noLogin", "verifiedEmail", "unverifiedEmail");
-    newIdentity.profile = _.pick(identity, "name", "handle", "picture", "pronoun");
+    const newIdentity = pick(identity, "id", "main", "noLogin", "verifiedEmail", "unverifiedEmail");
+    newIdentity.profile = pick(identity, "name", "handle", "picture", "pronoun");
 
     const serviceObject = {};
     const fieldsToUnset = {};
@@ -321,7 +321,7 @@ const repairEmailIdentityIds = async function (db, _backend) {
     }
 
     const identity = user.identities[0];
-    const newIdentity = _.pick(identity, "main", "noLogin", "verifiedEmail", "unverifiedMail",
+    const newIdentity = pick(identity, "main", "noLogin", "verifiedEmail", "unverifiedMail",
                                "profile");
     newIdentity.service = { email: identity.service.emailToken };
     newIdentity.id = Crypto.createHash("sha256")
@@ -355,26 +355,26 @@ const splitAccountUsersAndIdentityUsers = async function (db, _backend) {
     }
 
     const identity = user.identities[0];
-    const identityUser = _.pick(user, "createdAt", "lastActive", "expires");
+    const identityUser = pick(user, "createdAt", "lastActive", "expires");
     identityUser._id = identity.id;
     identityUser.profile = identity.profile;
-    _.extend(identityUser, _.pick(identity, "unverifiedEmail"));
+    Object.assign(identityUser, pick(identity, "unverifiedEmail"));
     identityUser.profile.service = Object.keys(identity.service)[0];
 
     // Updating this user needs to be a two step process because the `services` field typically
     // contains subfields that are constrained to be unique by Mongo indices.
-    identityUser.stagedServices = _.omit(user.services, "resume");
+    identityUser.stagedServices = omit(user.services, "resume");
     if (identity.service.dev) {
       identityUser.stagedServices.dev = identity.service.dev;
     } else if (identity.service.email) {
       identityUser.stagedServices.email = identity.service.email;
     }
 
-    const accountUser = _.pick(user, "_id", "createdAt", "lastActive", "expires",
+    const accountUser = pick(user, "_id", "createdAt", "lastActive", "expires",
                              "isAdmin", "signupKey", "signupNote", "signupEmail",
                              "plan", "storageUsage", "isAppDemoUser", "appDemoId",
                              "payments", "dailySentMailCount", "hasCompletedSignup");
-    accountUser.loginIdentities = [_.pick(identity, "id")];
+    accountUser.loginIdentities = [pick(identity, "id")];
     accountUser.nonloginIdentities = [];
     if (user.services && user.services.resume) {
       accountUser.services = { resume: user.services.resume };
@@ -545,7 +545,7 @@ const smtpPortShouldBeNumber = async function (db, _backend) {
   if (entry) {
     const setting = entry.value;
     if (setting.port) {
-      setting.port = _.isNumber(setting.port) ? setting.port : parseInt(setting.port);
+      setting.port = typeof setting.port === "number" ? setting.port : parseInt(setting.port);
       await db.collections.settings.upsertAsync({ _id: "smtpConfig" }, { value: setting });
     }
   }
@@ -705,7 +705,7 @@ const startPreinstallingApps = async function (db, _backend) {
       $in: db.getProductivitySuiteAppIds().concat(
         db.getSystemSuiteAppIds()), },
     }).fetchAsync();
-    const appAndPackageIds = _.map(preinstalledApps, (app) => {
+    const appAndPackageIds = preinstalledApps.map((app) => {
       return {
         appId: app.appId,
         packageId: app.packageId,
@@ -831,7 +831,7 @@ function getUserIdentityIds(user) {
   // Formerly SandstormDb.getUserIdentityIds(), from before the identity refactor.
 
   if (user && user.loginIdentities) {
-    return _.pluck(user.nonloginIdentities.concat(user.loginIdentities), "id").reverse();
+    return user.nonloginIdentities.concat(user.loginIdentities).map(identity => identity.id).reverse();
   } else {
     return [];
   }
@@ -1323,7 +1323,9 @@ const migrateToLatest = async function (db, backend) {
 
     await new Promise((resolve, reject) => {
       let observer = null;
+      let shouldStop = false;
       const stopObserver = (label) => {
+        shouldStop = true;
         Promise.resolve(observer).then((h) => {
           if (typeof h === "function") { h(); } else if (h && typeof h.stop === "function") h.stop();
         }).catch((err) => {
@@ -1348,12 +1350,15 @@ const migrateToLatest = async function (db, backend) {
         },
       }).then((h) => {
         observer = h;
+        if (shouldStop) stopObserver("observer-ready");
       }).catch(reject);
     });
 
     await new Promise((resolve, reject) => {
       let newServerObserver = null;
+      let shouldStop = false;
       const stopObserver = (label) => {
+        shouldStop = true;
         Promise.resolve(newServerObserver).then((h) => {
           if (typeof h === "function") { h(); } else if (h && typeof h.stop === "function") h.stop();
         }).catch((err) => {
@@ -1378,6 +1383,7 @@ const migrateToLatest = async function (db, backend) {
         },
       }).then((h) => {
         newServerObserver = h;
+        if (shouldStop) stopObserver("observer-ready");
       }).catch(reject);
     });
 
@@ -1414,8 +1420,8 @@ const migrateToLatest = async function (db, backend) {
       // ensures it.
       for (let i = 0; i < NEW_SERVER_STARTUP.length; i++) {
         console.log("Running new server startup function " + (i + 1));
-        NEW_SERVER_STARTUP[i](db, backend);
-        console.log("Running new server startup function " + (i + 1));
+        await NEW_SERVER_STARTUP[i](db, backend);
+        console.log("Ran new server startup function " + (i + 1));
       }
 
       await db.collections.migrations.updateAsync(

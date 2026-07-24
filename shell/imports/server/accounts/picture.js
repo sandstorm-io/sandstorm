@@ -1,4 +1,4 @@
-import { httpCallAsync } from "/imports/http-helpers";
+import { httpCallAsync } from "/imports/server/http-helpers";
 
 const userPictureUrl = function (user) {
   if (user.services && !(user.profile && user.profile.picture)) {
@@ -24,6 +24,7 @@ const userPictureUrl = function (user) {
 const fetchPicture = async function (db, url) {
   try {
     const result = await httpCallAsync("GET", url, {
+      ssrfSafeDb: db,
       npmRequestOptions: { encoding: null },
       timeout: 5000,
     });

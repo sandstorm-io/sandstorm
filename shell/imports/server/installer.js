@@ -15,14 +15,13 @@
 // limitations under the License.
 
 import Crypto from "crypto";
-import { pipeline, Writable } from "stream";
+import { pipeline, Readable, Writable } from "stream";
 
 import { Meteor } from "meteor/meteor";
-import { _ } from "meteor/underscore";
-import Request from "request";
+import { throttle } from "/imports/shared/collection-utils";
 
 import { inMeteor } from "/imports/server/async-helpers";
-import { ssrfSafeLookupOrProxy } from "/imports/server/networking";
+import { withSsrfSafeFetch } from "/imports/server/networking";
 import { globalDb } from "/imports/db-deprecated";
 
 let installers;  // set to {} on main replica
@@ -246,7 +245,7 @@ class AppInstaller {
     return function () {
       if (_this.failed) return;
       try {
-        return method.apply(_this, _.toArray(arguments));
+        return method.apply(_this, Array.from(arguments));
       } catch (err) {
         _this.fail(err);
       }
@@ -309,53 +308,42 @@ class AppInstaller {
     console.log("Downloading app:", this.url);
     this.updateProgress("download");
 
-    inMeteor(() => ssrfSafeLookupOrProxy(globalDb, this.url)).then(this.wrapCallback(function (safe) {
+    const abortController = new AbortController();
+    this.downloadRequest = { abort: () => abortController.abort(new Error("Canceled")) };
+    withSsrfSafeFetch(globalDb, this.url, {
+      signal: abortController.signal,
+      timeoutMs: 0,
+    }, async (response) => {
+      if (response.status !== 200) {
+        throw new Error("Package download returned error: " + response.status);
+      }
 
-      let bytesExpected = undefined;
+      const contentLength = response.headers.get("content-length");
+      const bytesExpected = contentLength ? parseInt(contentLength, 10) : undefined;
       let bytesReceived = 0;
       let done = false;
-      const updateDownloadProgress = _.throttle(this.wrapCallback(() => {
-        if (!done) {
-          if (bytesExpected) {
-            this.updateProgress("download", bytesReceived / bytesExpected);
-          } else {
-            this.updateProgress("download", bytesReceived);
-          }
+      const updateDownloadProgress = throttle(() => {
+        if (done) return;
+        if (bytesExpected) {
+          this.updateProgress("download", bytesReceived / bytesExpected);
+        } else {
+          this.updateProgress("download", bytesReceived);
         }
-      }), 500);
+      }, 500);
 
-      const request = safe.proxy
-          ? Request.get(this.url, { proxy: safe.proxy })
-          : Request.get(safe.url, {
-              headers: { host: safe.host },
-              servername: safe.host.split(":")[0],
-            });
-
-      request.on("response", this.wrapCallback((response) => {
-        if (response.statusCode != 200) {
-          throw new Error("Package download returned error: " + response.statusCode);
-        }
-
-        if ("content-length" in response.headers) {
-          bytesExpected = parseInt(response.headers["content-length"]);
-        }
-        readPackageFromStream(response, globalThis.globalBackend, (chunkLen) => {
-          bytesReceived += chunkLen;
-          updateDownloadProgress();
-        }).then(({info}) => {
-          done = true;
-          delete this.downloadRequest;
-
-          this.appId = info.appId;
-          this.authorPgpKeyFingerprint = info.authorPgpKeyFingerprint;
-          this.done(info.manifest);
-        }, (err) => {
-          this.fail(err);
-        });
-      }))
-
-      this.downloadRequest = request;
-    })).catch(this.wrapCallback((err) => {
+      const result = await readPackageFromStream(
+          Readable.fromWeb(response.body), globalThis.globalBackend, (chunkLen) => {
+        bytesReceived += chunkLen;
+        updateDownloadProgress();
+      });
+      done = true;
+      return result;
+    }).then(this.wrapCallback(({ info }) => {
+      delete this.downloadRequest;
+      this.appId = info.appId;
+      this.authorPgpKeyFingerprint = info.authorPgpKeyFingerprint;
+      this.done(info.manifest);
+    }), this.wrapCallback((err) => {
       throw err;
     }));
   }

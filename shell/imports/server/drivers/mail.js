@@ -16,7 +16,7 @@
 
 import { Meteor } from "meteor/meteor";
 import { Match, check } from "meteor/check";
-import { _ } from "meteor/underscore";
+import { unique } from "/imports/shared/collection-utils";
 import { Random } from "meteor/random";
 import { Accounts } from "meteor/accounts-base";
 
@@ -185,7 +185,7 @@ Meteor.startup(function () {
         };
 
         // Get list of grain IDs.
-        const grainPublicIds = _.uniq(session.envelope.rcptTo.map((deliverTo) => {
+        const grainPublicIds = unique(session.envelope.rcptTo.map((deliverTo) => {
           // smtp-server already validates that the address contains an @.
           // To simplify things, we ignore the hostname part of the address and assume that the
           // message would not have been sent here if it weren't intended for our host. Usually
@@ -514,8 +514,7 @@ Meteor.startup(() => {
       // Verify that the address actually belongs to the user.
 
       const verifiedEmails = await getVerifiedEmails(db, session.userId, value.verifierId);
-      if (!_.contains(verifiedEmails.emails,
-                      value.address)) {
+      if (!verifiedEmails.emails.includes(value.address)) {
         throw new Meteor.Error(403, "User has no such verified address");
       }
 

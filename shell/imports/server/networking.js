@@ -18,8 +18,7 @@ import { Meteor } from "meteor/meteor";
 import Dns from "dns";
 import { Address4, Address6 } from "ip-address";
 import Url from "url";
-import Agent from "undici/lib/dispatcher/agent";
-import ProxyAgent from "undici/lib/dispatcher/proxy-agent";
+import { Agent, ProxyAgent, fetch as undiciFetch } from "undici";
 
 import { SPECIAL_IPV4_ADDRESSES, SPECIAL_IPV6_ADDRESSES } from "/imports/constants";
 
@@ -203,7 +202,8 @@ async function fetchWithTimeout(url, init = {}, timeoutMs = 30000) {
     : undefined;
 
   try {
-    return await fetch(url, { ...fetchInit, signal });
+    const fetchImpl = fetchInit.dispatcher ? undiciFetch : fetch;
+    return await fetchImpl(url, { ...fetchInit, signal });
   } finally {
     if (timeout) clearTimeout(timeout);
   }
@@ -230,6 +230,17 @@ function redirectedRequest(response, currentUrl, method, headers, body) {
   }
 
   return { url: nextUrl.href, method, headers, body };
+}
+
+function makePinnedLookup(address, family) {
+  return (_hostname, options, callback) => {
+    const result = { address, family };
+    if (options.all) {
+      callback(null, [result]);
+    } else {
+      callback(null, result.address, result.family);
+    }
+  };
 }
 
 async function withSsrfSafeFetch(db, url, init = {}, consume) {
@@ -262,9 +273,7 @@ async function withSsrfSafeFetch(db, url, init = {}, consume) {
         dispatcher = new Agent({
           connect: {
             servername: safe.servername,
-            lookup(_hostname, _options, callback) {
-              callback(null, safe.address, safe.family);
-            },
+            lookup: makePinnedLookup(safe.address, safe.family),
           },
         });
       }
@@ -308,6 +317,7 @@ async function withSsrfSafeFetch(db, url, init = {}, consume) {
 
 export {
   fetchWithTimeout,
+  makePinnedLookup,
   parseCidr,
   redirectedRequest,
   selectSafeAddress,

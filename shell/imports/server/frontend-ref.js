@@ -149,4 +149,9 @@ class FrontendRefRegistry {
   }
 }
 
-export { FrontendRefRegistry };
+const globalFrontendRefRegistry = new FrontendRefRegistry();
+
+// Keep the global alias while the remaining server modules are migrated to explicit imports.
+globalThis.globalFrontendRefRegistry = globalFrontendRefRegistry;
+
+export { FrontendRefRegistry, globalFrontendRefRegistry };

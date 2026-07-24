@@ -43,7 +43,7 @@ BrowserPolicy.framing.disallow();  // Disallow framing of the UI.
 Meteor.startup(() => {
   const frameSetter = async () => {
     BrowserPolicy.content.disallowFrame(); // This clears all the old rules
-    BrowserPolicy.content.allowFrameOrigin(globalThis.getWildcardOrigin());
+    BrowserPolicy.content.allowFrameOrigin(globalDb.getWildcardOrigin());
     const billingPromptSetting = await globalDb.collections.settings.findOneAsync({ _id: "billingPromptUrl" });
     const billingPromptUrl = billingPromptSetting && billingPromptSetting.value;
     if (billingPromptUrl) {

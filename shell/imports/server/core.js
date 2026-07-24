@@ -20,6 +20,7 @@ import { pick } from "/imports/shared/collection-utils";
 
 import Crypto from "crypto";
 import { inMeteor } from "/imports/server/async-helpers";
+import { globalFrontendRefRegistry } from "/imports/server/frontend-ref";
 import { StaticAssetImpl, IdenticonStaticAssetImpl } from "/imports/server/static-asset";
 import { PersistentImpl, hashSturdyRef, generateSturdyRef, checkRequirements,
          fetchApiToken, insertApiToken } from "/imports/server/persistent";
@@ -290,7 +291,7 @@ const makePersistentUiView = async function (db, saveTemplate, grainId) {
                               PersistentUiView);
 };
 
-globalThis.globalFrontendRefRegistry.register({
+globalFrontendRefRegistry.register({
   frontendRefField: "notificationHandle",
 
   restore(db, saveTemplate, notificationId) {

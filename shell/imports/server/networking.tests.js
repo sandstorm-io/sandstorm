@@ -4,6 +4,7 @@ import chai from "chai";
 import Url from "url";
 
 import {
+  makePinnedLookup,
   parseCidr,
   redirectedRequest,
   selectSafeAddress,
@@ -19,18 +20,41 @@ describe("Fetch networking security", function () {
     assert.isFalse(parseCidr("2001:db8::/32")("2001:db9::42"));
   });
 
-  it("rejects reserved and administrator-blocked addresses", async function () {
-    const db = { getSettingAsync: async () => "203.0.113.0/24" };
+  it("returns pinned DNS results in the form requested by Node", function () {
+    const lookup = makePinnedLookup("203.0.113.4", 4);
+
+    lookup("ignored.example", { all: false }, (error, address, family) => {
+      assert.isNull(error);
+      assert.strictEqual(address, "203.0.113.4");
+      assert.strictEqual(family, 4);
+    });
+
+    lookup("ignored.example", { all: true }, (error, addresses) => {
+      assert.isNull(error);
+      assert.deepEqual(addresses, [{ address: "203.0.113.4", family: 4 }]);
+    });
+  });
+
+  it("rejects reserved addresses even when the administrator blacklist is empty", async function () {
+    const db = { getSettingAsync: async () => "" };
     const parsed = Url.parse("https://example.test/path");
-    try {
-      await selectSafeAddress(db, parsed, [
-        { address: "127.0.0.1", family: 4 },
-        { address: "203.0.113.4", family: 4 },
-      ]);
-      assert.fail("Expected all blocked addresses to be rejected.");
-    } catch (error) {
-      assert.match(error.message, /blacklisted private network address/);
-    }
+    const error = await selectSafeAddress(db, parsed, [
+      { address: "203.0.113.4", family: 4 },
+    ]).then(() => null, error => error);
+
+    assert.instanceOf(error, Error);
+    assert.match(error.message, /blacklisted private network address/);
+  });
+
+  it("rejects addresses from the administrator blacklist", async function () {
+    const db = { getSettingAsync: async () => "8.8.8.0/24" };
+    const parsed = Url.parse("https://example.test/path");
+    const error = await selectSafeAddress(db, parsed, [
+      { address: "8.8.8.8", family: 4 },
+    ]).then(() => null, error => error);
+
+    assert.instanceOf(error, Error);
+    assert.match(error.message, /blacklisted private network address/);
   });
 
   it("applies Fetch redirect methods and strips cross-origin credentials", function () {

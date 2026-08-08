@@ -100,6 +100,22 @@ that.](https://github.com/sandstorm-io/vagrant-spk/issues/87)
 You should make sure the user knows how to configure their domain's
 CNAME record (to point at the Sandstorm install) and TXT record (to
 tell Sandstorm which grain the domain points at).
+### Root domains
+
+If the user wants to use the root (apex) domain, such as `example.com`,
+instead of a subdomain such as `www.example.com`, a regular DNS CNAME
+record cannot normally be used at the root of the domain.
+
+Some DNS providers support CNAME flattening, ANAME, or ALIAS records
+for root domains. If the user's DNS provider supports one of these
+features, they can configure the root domain to point to the same
+Sandstorm host used by the `autoUrl`.
+
+The exact DNS record type and configuration depend on the user's DNS
+provider. The user should consult their DNS provider's documentation
+for instructions on configuring an apex/root domain.
+
+
 
 You can find sample text in the [Sandstorm sample app with static
 publishing](https://github.com/paulproteus/sandstorm-sample-static-publishing/blob/master/after_publish.php). The essentials are:

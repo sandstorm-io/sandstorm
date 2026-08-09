@@ -3,7 +3,8 @@
 This tutorial will show you how to setup your personal sandstorm instance with support for e-mail.
 
 First, a quick rundown of how email works in sandstorm. Sandstorm is
-running an SMTP server on port 30025 that will accept email of the
+running an SMTP server (on port 25 when that port was available at install
+time, otherwise 30025) that will accept email of the
 form `publicId`@`hostname`. `publicId` is randomly generated for every
 grain that handles e-mail, and `hostname` is extracted from the
 `BASE_URL` parameter in sandstorm.conf (which is initially created by
@@ -86,7 +87,10 @@ as the MX priority, for example, `10`.
 
 ### Configure port 25, the easy way: Sandstorm can listen on port 25
 
-By default, Sandstorm's SMTP server runs on port 30025. You can adjust it to listen on port 25.
+The installer configures port 25 for inbound SMTP when that port is
+available on the host, and falls back to port 30025 otherwise. You can
+always switch the port after installation by editing
+`/opt/sandstorm/sandstorm.conf` as described below.
 This is the easiest way to configure inbound email; however, note that Sandstorm's SMTP server does
 not support inbound STARTTLS at this time.
 

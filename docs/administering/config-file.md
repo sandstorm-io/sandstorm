@@ -71,7 +71,8 @@ A HTTPS_PORT is automatically treated as the first port, in the context of "firs
 
 ### SMTP_LISTEN_PORT
 
-A port number on which Sandstorm will bind, listening for inbound email. By default, 30025; if
+A port number on which Sandstorm will bind, listening for inbound email. The installer
+writes 25 when that port is available on the host and 30025 otherwise; if the setting is
 missing, the Sandstorm shell uses 30025. You can choose port 25 if you like.
 
 If Sandstorm is started as root, Sandstorm binds to this port as root, allowing it to use

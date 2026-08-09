@@ -119,7 +119,7 @@ traffic.
 _Default configuration_
 
 * **TCP port 6080**
-* **TCP port 30025**
+* **TCP port 25 or 30025** — inbound SMTP; the installer writes port 25 when it is available on the host, otherwise 30025
 
 _Optionally_
 

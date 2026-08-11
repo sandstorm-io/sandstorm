@@ -949,6 +949,7 @@ configure_hostnames() {
   if [ "yes" = "$USE_EXTERNAL_INTERFACE" ]; then
     BIND_IP=0.0.0.0
     SS_HOSTNAME="${SS_HOSTNAME:-$(hostname -f 2>/dev/null || hostname)}"
+    SS_HOSTNAME=$(echo "$SS_HOSTNAME" | tr '[:upper:]' '[:lower:]')
   else
     BIND_IP=127.0.0.1
     SS_HOSTNAME=local.sandstorm.io
@@ -983,12 +984,14 @@ configure_hostnames() {
     BASE_URL="$DEFAULT_BASE_URL"
   else
     BASE_URL=$(prompt "URL users will enter in browser:" "$DEFAULT_BASE_URL")
+    BASE_URL=$(echo "$BASE_URL" | tr '[:upper:]' '[:lower:]')
     if ! [[ "$BASE_URL" =~ ^http(s?):// ]] ; then
       local PROPOSED_BASE_URL="http://${BASE_URL}"
       echo "** You entered ${BASE_URL}, which needs http:// at the front. I can use:" >&2
       echo "        ${PROPOSED_BASE_URL}" >&2
       if prompt-yesno "Is this OK?" yes; then
         BASE_URL="${PROPOSED_BASE_URL}"
+        BASE_URL=$(echo "$BASE_URL" | tr '[:upper:]' '[:lower:]')
       else
         configure_hostnames
       fi
@@ -1024,10 +1027,12 @@ configure_hostnames() {
       echo "port, you must include it here as well."
     fi
     WILDCARD_HOST=$(prompt "Wildcard host:" "$DEFAULT_WILDCARD")
+    WILDCARD_HOST=$(echo "$WILDCARD_HOST" | tr '[:upper:]' '[:lower:]')
 
     while ! [[ "$WILDCARD_HOST" =~ ^[^*]*[*][^*]*$ ]]; do
       error "Invalid wildcard host. It must contain exactly one asterisk."
       WILDCARD_HOST=$(prompt "Wildcard host:" "$DEFAULT_WILDCARD")
+      WILDCARD_HOST=$(echo "$WILDCARD_HOST" | tr '[:upper:]' '[:lower:]')
     done
   fi
 }
@@ -1702,6 +1707,7 @@ sandcats_provide_help() {
 
 sandcats_recover_domain() {
   DESIRED_SANDCATS_NAME=$(prompt "What Sandcats subdomain do you want to recover?" "none")
+  DESIRED_SANDCATS_NAME=$(echo "$DESIRED_SANDCATS_NAME" | tr '[:upper:]' '[:lower:]')
 
   # If the user wants none of our help, then go back to registration.
   if [ "none" = "$DESIRED_SANDCATS_NAME" ] ; then
@@ -1910,6 +1916,7 @@ sandcats_register_name() {
     echo "Type the word none to skip this step, or help for help."
     DESIRED_SANDCATS_NAME=$(prompt "What *.${SANDCATS_BASE_DOMAIN} subdomain would you like?" '')
   fi
+  DESIRED_SANDCATS_NAME=$(echo "$DESIRED_SANDCATS_NAME" | tr '[:upper:]' '[:lower:]')
 
   # If they just press enter, insist that they type either the word
   # "none" or provide a name they want to register.

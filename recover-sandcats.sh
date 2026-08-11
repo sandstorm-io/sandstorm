@@ -110,6 +110,7 @@ sandcats_recover_domain() {
   local SANDCATS_DIR="$SANDSTORM_DIR/var/sandcats"
 
   DESIRED_SANDCATS_NAME=$(prompt "What Sandcats subdomain do you want to recover?" "")
+  DESIRED_SANDCATS_NAME=$(echo "$DESIRED_SANDCATS_NAME" | tr '[:upper:]' '[:lower:]')
 
   if [ -z "$DESIRED_SANDCATS_NAME" ]; then
     fail "E_NO_SUBDOMAIN" "You must provide a subdomain to recover."

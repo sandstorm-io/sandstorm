@@ -25,9 +25,7 @@
 #include <capnp/serialize.h>
 #include <capnp/compat/json.h>
 #include <sandstorm/package.capnp.h>
-#include <sandstorm/update-tool.capnp.h>
 #include <sodium/randombytes.h>
-#include <sodium/crypto_sign_ed25519.h>
 #include <stdlib.h>
 #include <signal.h>
 #include <limits.h>
@@ -67,6 +65,7 @@
 #include "backup.h"
 #include "gateway.h"
 #include "config.h"
+#include "release-signature.h"
 
 namespace sandstorm {
 
@@ -3045,39 +3044,19 @@ private:
           "*** Aborting update because signature check failed! Most likely this is due to a "
           "network glitch, but if you suspect an attack, notify security@sandstorm.org."));
 
-      // Download and parse signature file for this update.
-      capnp::StreamFdMessageReader signatureMessage(
-          CurlRequest(kj::str(url, ".update-sig")).getPipe());
-      auto sigs = signatureMessage.getRoot<UpdateSignature>().getSignatures();
+      auto signatureFile = openTemporary("/var/tmp/sandstorm-update-signature");
+      CurlRequest(kj::str(url, ".sig"), signatureFile);
 
-      // Always verify using the *last* key in updatePublicKeys, as it is the most recent.
-      uint keyIndex = UPDATE_PUBLIC_KEYS->size() - 1;
-      PublicSigningKey::Reader key = (*UPDATE_PUBLIC_KEYS)[keyIndex];
-      KJ_ASSERT(sigs.size() > keyIndex,
-          "signature is missing the most recent signing key");
-      Signature::Reader signature = sigs[keyIndex];
+      auto expectedFingerprint = trim(readAll("./keys/release-key-fingerprint"));
+      verifyReleaseSignature(signatureFile, file,
+          "./bin/gpg", "./keys/release-keyring.gpg", expectedFingerprint, "./usr/lib");
 
-      // mmap the file and check the signature.
-      MemoryMapping mapping(file, "(update tarball)");
-      capnp::Data::Reader data = mapping;
-      KJ_ASSERT(crypto_sign_ed25519_verify_detached(
-          structToBytes(signature, crypto_sign_ed25519_BYTES),
-          data.begin(), data.size(),
-          structToBytes(key, crypto_sign_ed25519_PUBLICKEYBYTES)) == 0,
-          "signature is invalid");
-
-      context.warning("Signature is valid.");
+      context.warning(kj::str("Signature is valid (", expectedFingerprint, ")."));
     }
 
     unpackUpdate(file, targetBuild);
 
     return true;
-  }
-
-  const byte* structToBytes(capnp::AnyStruct::Reader reader, size_t size) {
-    auto data = reader.getDataSection();
-    KJ_REQUIRE(data.size() >= size);
-    return data.begin();
   }
 
   void unpackUpdate(int bundleFd, uint expectedBuild = 0) {

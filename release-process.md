@@ -5,6 +5,11 @@ You will need:
 * The release signing key.
 * SSH access to the Sandstorm release server.
 
+The release signing key is also the automatic-update signing key. Its complete primary-key
+fingerprint is stored in `keys/release-key-fingerprint`, and its public key must be present in
+`keys/release-keyring.gpg` and in the installer's embedded key block and fingerprint check. Update
+the fingerprint and verification instructions in `docs/install.md` at the same time.
+
 Steps:
 
 1. Make sure relevant pull requests have been merged.
@@ -27,6 +32,15 @@ Steps:
 6. Release it:
     * Run: `./release.sh`
 
+   The script creates one detached OpenPGP `.sig` for the bundle and one for `install.sh`. The bundle
+   `.sig` is the same artifact used by both administrators and Sandstorm's automatic updater.
+
+   For a key rotation that must bridge automatic updates, add both fingerprints temporarily to
+   `SIGNING_KEY_IDS` in `release.sh`. The resulting `.sig` contains an independent signature from
+   each key; old installations can validate the old signature while the bridge release installs the
+   new trust root. Return the list to the new key only after the bridge. This is not needed for the
+   build 308 to 309 transition because that upgrade is deliberately manual.
+
 7. Check alpha.sandstorm.io (which the release script will have directly updated) to verify it's not broken.
 
 8. `git push`
@@ -39,4 +53,3 @@ If you discover after `release.sh` completes that the release is fatally broken,
 1. SSH into updates server and edit `/var/www/install.sandstorm.io/dev`. This file contains the current release number. Change it back to the previous release. This stops anyone else from updating.
 
 2. Fix or revert the breakage and do a new release as soon as possible, so that the people who did update to the broken release can update again to fix it. Sandstorm does not allow rolling back a release once it has been installed, so a new release is the only way forward.
-

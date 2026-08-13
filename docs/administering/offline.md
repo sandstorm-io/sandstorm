@@ -13,13 +13,13 @@ How to set up these services is not covered in this document.
 
 By default, Sandstorm's install script downloads the latest release from `sandstorm.io`, but the script can also accept a release tarball as a parameter. To use it offline, you will need to obtain the installer script and a release tarball from the internet and transfer them to your server.
 
-You can find and download the latest release by going to: [https://dl.sandstorm.io/](https://dl.sandstorm.io/) Look for the files titled `sandstorm-<version>.tar.gz` and find the one with the highest number for `<version>`. Download this file.
+You can find and download the latest release by going to: [https://dl.sandstorm.io/](https://dl.sandstorm.io/) Look for the files titled `sandstorm-<version>.tar.xz` and find the one with the highest number for `<version>`. Download this file and its adjacent `sandstorm-<version>.tar.xz.sig` detached signature.
 
 You can obtain the latest version of the installer script from our GitHub repository: [install.sh](https://raw.githubusercontent.com/sandstorm-io/sandstorm/master/install.sh) Transfer this file to your server as well.
 
 Now, on your server, you can run:
 
-    bash install.sh sandstorm-<version>.tar.gz
+    bash install.sh sandstorm-<version>.tar.xz
 
 (Replace `<version>` with the version number you downloaded.)
 
@@ -40,11 +40,23 @@ Then restart Sandstorm:
     sudo sandstorm stop
     sudo sandstorm start
 
-Now, to update Sandstorm manually, obtain the latest release tarball from `dl.sandstorm.io` the same as you did to install it originally. Upload this to your server.
+Now, to update Sandstorm manually, obtain the latest release tarball and its `.sig` file from
+`dl.sandstorm.io` the same as you did to install it originally. Before transferring the tarball,
+verify its detached signature using the Sandstorm release public key and confirm the key's complete
+primary fingerprint through an independently authenticated channel:
+
+    gpg --no-default-keyring --keyring ./sandstorm-release-keyring.gpg \
+        --verify sandstorm-<version>.tar.xz.sig sandstorm-<version>.tar.xz
+
+Only transfer and install the tarball if verification succeeds with the expected fingerprint.
 
 Then, run:
 
-    sudo sandstorm update sandstorm-<version>.tar.gz
+    sudo sandstorm update sandstorm-<version>.tar.xz
+
+The local update command trusts the file supplied by the administrator; it does not fetch or check
+the adjacent `.sig` itself. Signature verification is therefore a required part of the offline
+transfer procedure.
 
 ## Installing Apps
 

@@ -94,9 +94,15 @@ We release new versions of Sandstorm approximately once per week. We release the
 [dl.sandstorm.io](https://dl.sandstorm.io/) as `tar.xz` files.  Since they contain not just
 Sandstorm but all of Sandstorm's dependencies, we call them the **Sandstorm bundle.**
 
-Since September 2015, we [sign updates and Sandstorm verifies these
+Since September 2015, we [sign releases and Sandstorm verifies their
 signatures](https://blog.sandstorm.io/news/2015-09-24-is-curl-bash-insecure-pgp-verified-install.html).
-By default, Sandstorm checks for updates every day. You can configure this behavior by editing `sandstorm.conf`.
+The automatic updater downloads the release's ordinary detached OpenPGP `.sig` file and verifies
+it with the same release key used by the installer. The updater uses the copy of GnuPG and the
+release public key packaged in the installed Sandstorm bundle; it also pins the complete primary-key
+fingerprint rather than trusting any key found in the keyring.
+
+By default, Sandstorm checks for updates every day. You can configure this behavior by editing
+`sandstorm.conf`.
 
 This setting enables automatic updates.
 
@@ -114,6 +120,33 @@ We intend to follow the Chrome update channels system, but for now we only have 
 
 We strongly recommend that you keep automatic updates enabled. This is a work in progress, but
 we intend for our automatic updates to not cause any downtime.
+
+#### Manual upgrade from build 308 to build 309
+
+Build 309 changes the automatic-update trust root and signature format. As a result, build 308
+cannot authenticate build 309 automatically. An administrator must perform this one transition
+manually:
+
+1. Set `UPDATE_CHANNEL=none` in `sandstorm.conf` and stop Sandstorm.
+2. On a network-connected, trusted machine, download both `sandstorm-309.tar.xz` and
+   `sandstorm-309.tar.xz.sig` from `https://dl.sandstorm.io/`.
+3. Obtain the new Sandstorm release public key through an independently authenticated channel.
+   Confirm that its complete primary-key fingerprint is exactly the fingerprint published by the
+   Sandstorm project, then run:
+
+       gpg --no-default-keyring --keyring ./sandstorm-release-keyring.gpg \
+           --verify sandstorm-309.tar.xz.sig sandstorm-309.tar.xz
+
+4. Transfer the verified tarball to the server and run:
+
+       sudo sandstorm update ./sandstorm-309.tar.xz
+
+5. Restore the desired `UPDATE_CHANNEL` and start Sandstorm. Build 309 and later will authenticate
+   automatic updates with the new OpenPGP release key.
+
+Do not run the manual update unless the signature and full fingerprint both match. The local
+`sandstorm update <file>` command installs the file supplied by the administrator and does not
+independently download its detached signature.
 
 ### Sandstorm apps
 

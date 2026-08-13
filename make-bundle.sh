@@ -119,6 +119,11 @@ cp bin/sandstorm-http-bridge bundle/bin/sandstorm-http-bridge
 cp bin/sandstorm bundle/sandstorm
 cp $METEOR_DEV_BUNDLE/bin/node bundle/bin
 
+# The platform updater authenticates releases with the same OpenPGP key used by install.sh.
+# Keep these outside of the chroot's include tree: they are runtime trust data for the updater.
+mkdir -p bundle/keys
+cp keys/release-keyring.gpg keys/release-key-fingerprint bundle/keys
+
 # We used to pull mongodb out of the meteor dev bundle, but we need to figure out how to safely
 # upgrade some databases created with very old mongo versions, so we're shipping mongo 2.6 for
 # now.

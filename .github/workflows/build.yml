@@ -40,7 +40,7 @@ jobs:
             which go || (sudo apt-get update && sudo apt-get install golang-go)
 
             sudo apt-get update && sudo apt-get install -y --no-install-recommends \
-                build-essential libcap-dev xz-utils zip unzip strace curl discount git python3 zlib1g-dev cmake ccache apparmor
+                build-essential libcap-dev xz-utils zip unzip strace curl discount git gnupg python3 zlib1g-dev cmake ccache apparmor
 
             # Install OpenSSL 1.1 (required for Meteor/Node compatibility)
             # Ubuntu 24.04 only ships OpenSSL 3.x, so we need to install 1.1 from older release

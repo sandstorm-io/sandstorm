@@ -236,7 +236,11 @@ prompt() {
   echo -en '\e[1m' >&3
   echo -n "$1 [$2]" >&3
   echo -en '\e[0m ' >&3
-  read -u 3 VALUE
+  # FD 3 may be at EOF or write-only in a headless invocation. Treat that as "no input"
+  if ! IFS= read -r -u 3 VALUE 2>/dev/null; then
+    echo >&3
+    return 1
+  fi
   if [ -z "$VALUE" ]; then
     VALUE=$2
   fi
@@ -246,7 +250,10 @@ prompt() {
 prompt-numeric() {
   local NUMERIC_REGEX="^[0-9]+$"
   while true; do
-    local VALUE=$(prompt "$@")
+    local VALUE
+    if ! VALUE=$(prompt "$@"); then
+      return 1
+    fi
 
     if ! [[ "$VALUE" =~ $NUMERIC_REGEX ]] ; then
       echo "You entered '$VALUE'. Please enter a number." >&3
@@ -259,7 +266,10 @@ prompt-numeric() {
 
 prompt-yesno() {
   while true; do
-    local VALUE=$(prompt "$@")
+    local VALUE
+    if ! VALUE=$(prompt "$@"); then
+      return 1
+    fi
 
     case $VALUE in
       y | Y | yes | YES | Yes )

@@ -314,7 +314,6 @@ usage() {
   echo '' >&2
   echo 'If -d is specified, the auto-installs with defaults suitable for app development.' >&2
   echo 'If -e is specified, default to listening on an external interface, not merely loopback.' >&2
-  echo 'If -i is specified, default to (i)nsecure mode where we do not request a HTTPS certificate.' >&2
   echo 'If -p is specified, use its argument (PORT_NUMBER) as the default port for HTTP. Otherwise, use 6080. Note that if the install script enables HTTPS, it will use 443 instead!'
   echo 'If -u is specified, default to avoiding root priviliges. Note that the dev tools only work if the server has root privileges.' >&2
   exit 1
@@ -363,7 +362,9 @@ handle_args() {
         USE_EXTERNAL_INTERFACE="yes"
         ;;
       i)
-        # TODO(soon): Fix or remove this option, which currently does nothing
+        # The -i ("insecure mode") option was never implemented. Keep accepting it
+        # so existing scripts that pass it don't break, but tell the user it is ignored.
+        echo "WARNING: The -i option is deprecated and has no effect. Ignoring it." >&2
         ;;
       u)
         PREFER_ROOT=no

@@ -30,7 +30,7 @@ The handling of inbound HTTP API requests is configured in `sandstorm-pkgdef.cap
 line.
 
 ```bash
-    # apiPath = "/api",
+    # apiPath = "/api/",
 ```
 
 Before your app will accept requests on an API subdomain, you need to uncomment this line and
@@ -38,6 +38,9 @@ specify a string here. All inbound requests to the Sandstorm API subdomain for y
 their path prefixed by this string. The empty string (`""`) indicates that your app disallows API
 requests; a single slash (`"/"`) indicates that your entire app should be available over the
 Sandstorm API subdomain.
+
+The string must end with a slash. For example, with `"/api/"` a request for `/stuff` reaches your
+app as `/api/stuff`, but with `"/api"` it would reach your app as `/apistuff`.
 
 For apps not using `sandstorm-http-bridge`, read [the relevant Cap'n Proto
 files](https://github.com/sandstorm-io/sandstorm/search?l=cap%27n-proto&type=Code&utf8=%E2%9C%93&q=ApiSession).

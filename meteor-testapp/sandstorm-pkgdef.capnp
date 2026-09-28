@@ -231,11 +231,11 @@ const pkgdef :Spk.PackageDefinition = (
         ),
       ],
     ),
-    #apiPath = "/api",
+    #apiPath = "/api/",
     # Apps can export an API to the world.  The API is to be used primarily by Javascript
     # code and native apps, so it can't serve out regular HTML to browsers.  If a request
     # comes in to your app's API, sandstorm-http-bridge will prefix the request's path with
-    # this string, if specified.
+    # this string, if specified. The string must end with "/".
   ),
 );
 

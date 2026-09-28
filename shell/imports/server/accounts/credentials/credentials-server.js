@@ -167,12 +167,18 @@ Meteor.methods({
       throw new Meteor.Error(403, "Cannot create an account for a credential that's already " +
                                   "linked to another account.");
     }
-
+    const primaryEmail = _.findWhere(
+      SandstormDb.getVerifiedEmailsForCredential(user),
+      { primary: true },
+    );
     const newUser = {
       type: "account",
       loginCredentials: [{ id: user._id }],
       nonloginCredentials: [],
     };
+    if (primaryEmail) {
+      newUser.primaryEmail = primaryEmail.email;
+    }
     if (user.services.dev) {
       newUser.signupKey = "devAccounts";
       if (user.services.dev.isAdmin) {

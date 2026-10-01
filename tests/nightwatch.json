@@ -13,6 +13,9 @@
   "test_settings": {
     "default": {
       "launch_url": "http://local.sandstorm.io:6080",
+      "globals": {
+        "waitForConditionPollInterval": 100
+      },
       "webdriver": {
         "start_process": true,
         "server_path": "node_modules/chromedriver/lib/chromedriver/chromedriver",
@@ -29,7 +32,14 @@
       "desiredCapabilities": {
         "browserName": "chrome",
         "goog:chromeOptions": {
-          "args": ["--headless", "--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu"],
+          "binary": "${NIGHTWATCH_CHROME_BINARY}",
+          "args": [
+            "--headless",
+            "--no-sandbox",
+            "--disable-dev-shm-usage",
+            "--disable-gpu",
+            "--host-resolver-rules=MAP local.sandstorm.io 127.0.0.1,MAP *.local.sandstorm.io 127.0.0.1"
+          ],
           "prefs": {
             "download.prompt_for_download": false,
             "download.directory_upgrade": true,

@@ -3656,6 +3656,9 @@ private:
     args.add("/bin/mongosh");
     args.add("--eval");
     args.add("void disableTelemetry()");
+    // `--eval` alone makes mongosh exit immediately; keep interactive behavior for
+    // `sandstorm mongo`.
+    args.add("--shell");
     setenv("HOME", "/tmp", 1);
 
     // If /var/mongo/passwd exists, we interpret it as containing the password for a Mongo user

@@ -4,10 +4,24 @@
   "scripts": {
     "start": "meteor run"
   },
+  "meteor": {
+    "mainModule": {
+      "client": "client/main.js",
+      "server": "server/main.js"
+    },
+    "modern": true
+  },
   "dependencies": {
-    "@babel/runtime": "^7.8.4",
-    "babel-runtime": "^6.26.0",
-    "jquery": "^3.5.0",
-    "meteor-node-stubs": "~0.2.4"
+    "@babel/runtime": "^7.28.4",
+    "@swc/helpers": "^0.5.17"
+  },
+  "devDependencies": {
+    "@meteorjs/rspack": "^2.0.1",
+    "@rsdoctor/rspack-plugin": "^1.5.7",
+    "@rspack/cli": "^1.7.1",
+    "@rspack/core": "^1.7.1"
+  },
+  "overrides": {
+    "uuid": "^11.1.1"
   }
 }

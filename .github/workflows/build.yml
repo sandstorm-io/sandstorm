@@ -3,7 +3,7 @@ name: build_and_test
 on: [push, pull_request, workflow_dispatch]
 
 env:
-  CCACHE_DIR: ${{ github.workspace }}/.ccache"
+  CCACHE_DIR: ${{ github.workspace }}/.ccache
 jobs:
   build_and_test:
     runs-on: ubuntu-24.04
@@ -84,6 +84,7 @@ jobs:
             sudo apparmor_parser -r /etc/apparmor.d/sandstorm-ci
       - name: install meteor
         run: |
+            set -o pipefail
             curl https://install.meteor.com/ | sh
       - name: cache ccache files
         uses: actions/cache@v4
@@ -132,13 +133,14 @@ jobs:
         run: make typecheck-ts
       - name: lint
         run: |
+          set -o pipefail
           # In addition to making sure the linting step doesn't flag any errors,
           # we also want to make sure the number of warnings doesn't increase.
           # We check for equality; if the number decreases, great! But then update
           # the constant below.
           make lint | tee lint.log
           num_problems=$(cat lint.log | grep ' problems (0 errors, ' | awk '{print $2}')
-          [ "$num_problems" = 774 ]
+          [ "$num_problems" = 545 ]
       - name: setup java 11
         uses: actions/setup-java@v4
         with:
@@ -155,7 +157,12 @@ jobs:
       - name: test
         run: |
           set -o pipefail
-          (make test |& tee testlog.txt; echo "Result: $?")
+          set +e
+          make test |& tee testlog.txt
+          result=${PIPESTATUS[0]}
+          set -e
+          echo "Result: $result"
+          exit "$result"
       - name: upload test log
         if: always()
         uses: actions/upload-artifact@v4

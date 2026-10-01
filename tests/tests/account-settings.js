@@ -20,11 +20,15 @@ var crypto      = require("crypto");
 var utils       = require('../utils'),
     short_wait  = utils.short_wait,
     medium_wait = utils.medium_wait,
-    long_wait   = utils.long_wait;
+    long_wait   = utils.long_wait,
+    appDetailsTitleSelector = utils.appDetailsTitleSelector;
 var path = require('path');
 // Use sandstorm qr code as new profile picture
 var newPicPath  = path.resolve(__dirname + "/../../sandstorm-qr.png");
 var testappPath = path.resolve(__dirname + "/../assets/meteor-testapp.spk");
+var expectedServerRuntime = process.env.EXPECTED_SERVER_RUNTIME === undefined
+  ? "classic"
+  : process.env.EXPECTED_SERVER_RUNTIME;
 // Prepend 'A' so that the default handle is valid
 var devName2 = "A" + crypto.randomBytes(10).toString("hex");
 
@@ -33,11 +37,16 @@ module.exports["Test profile changes passing to testapp"] = function (browser) {
     .loginDevAccount()
     .disableGuidedTour()
     // Click dropdown menu, go to account settings link
-    .waitForElementVisible("button.has-picture", medium_wait)
+    .waitForElementPresent("button.has-picture", medium_wait)
     .pause(500)
-    .click("button.has-picture")
+    .execute(function () {
+      var button = document.querySelector("button.has-picture");
+      if (button) button.click();
+    }, [])
     .waitForElementVisible("a[href='/account']", medium_wait)
-    .click("a[href='/account']")
+    // Navigate directly so the build-308 upgrade fixture is not blocked by
+    // its older Intro.js overlay after the guided tour has been dismissed.
+    .url(browser.launch_url + "/account")
     .waitForElementVisible("form.account-profile-editor", short_wait)
 
 
@@ -89,6 +98,8 @@ module.exports["Test profile changes passing to testapp"] = function (browser) {
 
     // upload meteor-testapp.spk, create new instance
     .uploadMeteorTestApp()
+    .waitForElementVisible(appDetailsTitleSelector, medium_wait)
+    .assert.textContains(appDetailsTitleSelector, "testapp")
     .waitForElementVisible('button.action', medium_wait)
     .click('button.action')
 
@@ -102,7 +113,7 @@ module.exports["Test profile changes passing to testapp"] = function (browser) {
     .assert.textContains('#picture', 'sandstorm.io')
     .assert.textContains('#preferredHandle', devName2.toLowerCase())
     .assert.textContains('#pronouns', 'robot')
-    .assert.textContains('#serverRuntime', 'classic')
+    .assert.textContains('#serverRuntime', expectedServerRuntime)
 
     .frameParent()
     .execute("window.Meteor.logout()")

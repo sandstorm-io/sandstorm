@@ -18,11 +18,10 @@ import Crypto from "crypto";
 
 import { Meteor } from "meteor/meteor";
 import { Match, check } from "meteor/check";
-import { _ } from "meteor/underscore";
+import { pick, findWhere } from "/imports/shared/collection-utils";
 import { Random } from "meteor/random";
 
 import { send as sendEmail } from "/imports/server/email";
-import { waitPromise } from "/imports/server/async-helpers";
 import { SandstormDb } from "/imports/sandstorm-db/db";
 import { globalDb } from "/imports/db-deprecated";
 import { SandstormPermissions } from "/imports/sandstorm-permissions/permissions";
@@ -38,23 +37,41 @@ const emailLinkWithInlineStyle = function (url, text) {
 
 // Force-shutdown dev apps whenever their packages change.
 Meteor.startup(() => {
-  const shutdownApp = (appId) => {
-    globalDb.collections.grains.find({ appId: appId }, {fields: {oldUsers: 0}}).forEach((grain) => {
-      waitPromise(globalBackend.shutdownGrain(grain._id, grain.userId));
+  const shutdownApp = async (appId) => {
+    const grains = await globalDb.collections.grains.find(
+        { appId: appId }, { fields: { oldUsers: 0 } }).fetchAsync();
+    grains.forEach((grain) => {
+      globalThis.globalBackend.shutdownGrain(grain._id, grain.userId).catch((err) => {
+        console.error("Error shutting down grain:", err);
+      });
     });
   };
 
-  globalDb.collections.devPackages.find().observe({
-    removed(devPackage) { shutdownApp(devPackage.appId); },
+  globalDb.collections.devPackages.find().observeAsync({
+    removed(devPackage) {
+      shutdownApp(devPackage.appId).catch((err) => {
+        console.error("Error shutting down app grains:", err);
+      });
+    },
 
     changed(newDevPackage, oldDevPackage) {
-      shutdownApp(oldDevPackage.appId);
+      shutdownApp(oldDevPackage.appId).catch((err) => {
+        console.error("Error shutting down app grains:", err);
+      });
       if (oldDevPackage.appId !== newDevPackage.appId) {
-        shutdownApp(newDevPackage.appId);
+        shutdownApp(newDevPackage.appId).catch((err) => {
+          console.error("Error shutting down app grains:", err);
+        });
       }
     },
 
-    added(devPackage) { shutdownApp(devPackage.appId); },
+    added(devPackage) {
+      shutdownApp(devPackage.appId).catch((err) => {
+        console.error("Error shutting down app grains:", err);
+      });
+    },
+  }).catch((err) => {
+    console.error("Failed to observe dev package changes:", err);
   });
 });
 
@@ -93,11 +110,21 @@ Meteor.publish("grainTopBar", function (grainId) {
 // This is used for obtaining icon and app title information for grains
 // you own, which is used in the sidebar. It is not a security/privacy
 // risk since it only exposes this information for grains the user owns.
-Meteor.publish("packageByGrainId", function (grainId) {
+Meteor.publish("packageByGrainId", async function (grainId) {
   check(grainId, String);
   const publishThis = [];
   // We need to publish the packageId so that client-side code can
   // find the right package.
+  const thisGrain = await globalDb.collections.grains.findOneAsync({
+    _id: grainId,
+    userId: this.userId,
+  }, {
+    fields: { packageId: 1 },
+  });
+  if (!thisGrain) {
+    return publishThis;
+  }
+
   const thisGrainCursor = globalDb.collections.grains.find({
     _id: grainId,
     userId: this.userId,
@@ -106,23 +133,20 @@ Meteor.publish("packageByGrainId", function (grainId) {
   });
   publishThis.push(thisGrainCursor);
 
-  if (thisGrainCursor.count()) {
-    const thisGrain = thisGrainCursor.fetch()[0];
-    const thisPackageCursor = globalDb.collections.packages.find({ _id: thisGrain.packageId });
-    publishThis.push(thisPackageCursor);
-  }
+  const thisPackageCursor = globalDb.collections.packages.find({ _id: thisGrain.packageId });
+  publishThis.push(thisPackageCursor);
 
   return publishThis;
 });
 
-Meteor.publish("tokenInfo", function (token, isStandalone) {
+Meteor.publish("tokenInfo", async function (token, isStandalone) {
   // Allows the client side to map a raw token to its entry in ApiTokens, and the additional
   // metadata that it will need to display the app icon and title.  We do not care about making
   // the metadata reactive.
   check(token, String);
 
   const hashedToken = Crypto.createHash("sha256").update(token).digest("base64");
-  const apiToken = globalDb.collections.apiTokens.findOne({
+  const apiToken = await globalDb.collections.apiTokens.findOneAsync({
     _id: hashedToken,
   }, {
     fields: {
@@ -138,7 +162,7 @@ Meteor.publish("tokenInfo", function (token, isStandalone) {
     this.added("tokenInfo", token, { revoked: true });
   } else {
     const grainId = apiToken.grainId;
-    const grain = globalDb.collections.grains.findOne({
+    const grain = await globalDb.collections.grains.findOneAsync({
       _id: grainId,
     }, {
       fields: {
@@ -151,23 +175,24 @@ Meteor.publish("tokenInfo", function (token, isStandalone) {
       this.added("tokenInfo", token, { invalidToken: true });
     } else {
       if (apiToken.owner && apiToken.owner.user) {
-        let account = Meteor.users.findOne({_id: apiToken.owner.user.accountId});
+        let account = await Meteor.users.findOneAsync({ _id: apiToken.owner.user.accountId });
         let metadata = apiToken.owner.user.denormalizedGrainMetadata;
         if (account && metadata) {
-          account.credentials =
-              Meteor.users.find({ _id: { $in: account.loginCredentials.map(cred => cred.id) } })
-                  .map(credential => {
+          const credentials = await Meteor.users.find({
+            _id: { $in: account.loginCredentials.map(cred => cred.id) },
+          }).fetchAsync();
+          account.credentials = credentials.map((credential) => {
             return {
               serviceName: SandstormDb.getServiceName(credential),
               intrinsicName: SandstormDb.getIntrinsicName(credential, true),
               loginId: SandstormDb.getLoginId(credential)
-            }
+            };
           });
 
-          account.intrinsicNames = globalDb.getAccountIntrinsicNames(account, false);
+          account.intrinsicNames = await globalDb.getAccountIntrinsicNamesAsync(account, false);
 
           this.added("tokenInfo", token, {
-            accountOwner: _.pick(account, "_id", "profile", "credentials", "intrinsicNames"),
+            accountOwner: pick(account, "_id", "profile", "credentials", "intrinsicNames"),
             grainId: grainId,
             grainMetadata: metadata,
           });
@@ -176,7 +201,7 @@ Meteor.publish("tokenInfo", function (token, isStandalone) {
         }
       } else if (!apiToken.owner || "webkey" in apiToken.owner) {
         if (this.userId && !isStandalone) {
-          const childToken = globalDb.collections.apiTokens.findOne({
+          const childToken = await globalDb.collections.apiTokens.findOneAsync({
             "owner.user.accountId": this.userId,
             parentToken: apiToken._id,
           });
@@ -188,7 +213,8 @@ Meteor.publish("tokenInfo", function (token, isStandalone) {
           }
         }
 
-        let pkg = globalDb.collections.packages.findOne({ _id: grain.packageId }, { fields: { manifest: 1 } });
+        let pkg = await globalDb.collections.packages.findOneAsync(
+            { _id: grain.packageId }, { fields: { manifest: 1 } });
         let appTitle = (pkg && pkg.manifest && pkg.manifest.appTitle) || { defaultText: "" };
         let appIcon = undefined;
         if (pkg && pkg.manifest && pkg.manifest.metadata && pkg.manifest.metadata.icons) {
@@ -216,23 +242,30 @@ Meteor.publish("tokenInfo", function (token, isStandalone) {
   return;
 });
 
-Meteor.publish("requestingAccess", function (grainId) {
+Meteor.publish("requestingAccess", async function (grainId) {
   check(grainId, String);
 
   if (!this.userId) {
     throw new Meteor.Error(403, "Must be logged in to request access.");
   }
 
-  const grain = globalDb.getGrain(grainId);
+  const grain = await globalDb.getGrainAsync(grainId);
   if (!grain) {
     throw new Meteor.Error(404, "Grain not found.");
   }
 
-  if (grain.userId === this.userId) {
-    this.added("grantedAccessRequests", Random.id(), { grainId: grainId });
-  }
-
   const _this = this;
+  const grantedDocId = "granted:" + grainId;
+  let grantedPublished = false;
+  const publishGranted = () => {
+    if (grantedPublished) return;
+    _this.added("grantedAccessRequests", grantedDocId, { grainId: grainId });
+    grantedPublished = true;
+  };
+  if (grain.userId === this.userId) {
+    // Owner always has access; publish sentinel immediately.
+    publishGranted();
+  }
   const query = globalDb.collections.apiTokens.find({
     grainId: grainId,
     accountId: grain.userId,
@@ -240,19 +273,25 @@ Meteor.publish("requestingAccess", function (grainId) {
     "owner.user.accountId": this.userId,
     revoked: { $ne: true },
   });
-  const handle = query.observe({
+  const handle = await query.observeAsync({
     added(apiToken) {
-      _this.added("grantedAccessRequests", Random.id(), { grainId: grainId });
+      publishGranted();
     },
   });
 
-  this.onStop(() => handle.stop());
+  this.onStop(() => {
+    Promise.resolve(handle).then((h) => {
+      if (typeof h === "function") { h(); } else if (h && typeof h.stop === "function") h.stop();
+    }).catch((err) => {
+      console.error("Failed to stop requestingAccess observer:", err);
+    });
+  });
 });
 
-Meteor.publish("grainLog", function (grainId) {
+Meteor.publish("grainLog", async function (grainId) {
   check(grainId, String);
   let id = 0;
-  const grain = globalDb.collections.grains.findOne(grainId, {fields: {oldUsers: 0}});
+  const grain = await globalDb.collections.grains.findOneAsync(grainId, { fields: { oldUsers: 0 } });
   if (!grain || !this.userId || grain.userId !== this.userId) {
     this.added("grainLog", id++, { text: "Only the grain owner can view the debug log." });
     this.ready();
@@ -277,21 +316,21 @@ Meteor.publish("grainLog", function (grainId) {
     },
   };
 
-  try {
-    const handle = waitPromise(globalBackend.useGrain(grainId, (supervisor) => {
-      return supervisor.watchLog(8192, receiver);
-    })).handle;
+  globalThis.globalBackend.useGrain(grainId, (supervisor) => {
+    return supervisor.watchLog(8192, receiver);
+  }).then((result) => {
+    const handle = result.handle;
     connected = true;
     this.onStop(() => {
       handle.close();
     });
-  } catch (err) {
+  }).catch((err) => {
     if (!connected) {
       this.added("grainLog", id++, {
         text: "*** couldn't connect to grain (" + err + ") ***",
       });
     }
-  }
+  });
 
   // Notify ready.
   this.ready();
@@ -300,12 +339,17 @@ Meteor.publish("grainLog", function (grainId) {
 const GRAIN_DELETION_MS = 1000 * 60 * 60 * 24 * 30; // thirty days
 SandstormDb.periodicCleanup(86400000, () => {
   const trashExpiration = new Date(Date.now() - GRAIN_DELETION_MS);
-  globalDb.removeApiTokens({ trashed: { $lt: trashExpiration } }, true);
-  globalDb.deleteGrains({ trashed: { $lt: trashExpiration } }, globalBackend, "grain");
+  globalDb.removeApiTokens({ trashed: { $lt: trashExpiration } }, true).catch((err) => {
+    console.error("Error deleting expired trashed apiTokens:", err);
+  });
+  globalDb.deleteGrains({ trashed: { $lt: trashExpiration } }, globalThis.globalBackend, "grain")
+      .catch((err) => {
+        console.error("Error deleting expired trashed grains:", err);
+      });
 });
 
 Meteor.methods({
-  newGrain(packageId, command, title) {
+  async newGrain(packageId, command, title) {
     // Create and start a new grain.
 
     check(packageId, String);
@@ -316,22 +360,23 @@ Meteor.methods({
       throw new Meteor.Error(403, "Unauthorized", "Must be logged in to create grains.");
     }
 
-    if (!isSignedUpOrDemo()) {
+    const account = await Meteor.users.findOneAsync({ _id: this.userId });
+    if (!await globalDb.isAccountSignedUpOrDemoAsync(account)) {
       throw new Meteor.Error(403, "Unauthorized",
                              "Only invited users or demo users can create grains.");
     }
 
-    if (isUserOverQuota(Meteor.user())) {
+    if (await globalDb.isUserOverQuotaAsync(account)) {
       throw new Meteor.Error(402,
           "You are out of storage space. Please delete some things and try again.");
     }
 
-    let pkg = globalDb.collections.packages.findOne(packageId);
+    let pkg = await globalDb.collections.packages.findOneAsync(packageId);
     let isDev = false;
     let mountProc = false;
     if (!pkg) {
       // Maybe they wanted a dev package.  Check there too.
-      pkg = globalDb.collections.devPackages.findOne(packageId);
+      pkg = await globalDb.collections.devPackages.findOneAsync(packageId);
       isDev = true;
       mountProc = pkg && pkg.mountProc;
     }
@@ -343,7 +388,7 @@ Meteor.methods({
     const appId = pkg.appId;
     const manifest = pkg.manifest;
     const grainId = Random.id(22);  // 128 bits of entropy
-    globalDb.collections.grains.insert({
+    await globalDb.collections.grains.insertAsync({
       _id: grainId,
       packageId: packageId,
       appId: appId,
@@ -355,37 +400,39 @@ Meteor.methods({
       size: 0,
     });
 
-    globalBackend.startGrainInternal(packageId, grainId, this.userId, command, true,
+    globalThis.globalBackend.startGrainInternal(packageId, grainId, this.userId, command, true,
                                      isDev, mountProc);
 
     return grainId;
   },
 
-  shutdownGrain(grainId) {
+  async shutdownGrain(grainId) {
     check(grainId, String);
-    const grain = globalDb.collections.grains.findOne(grainId, {fields: {oldUsers: 0}});
+    const grain = await globalDb.collections.grains.findOneAsync(grainId, { fields: { oldUsers: 0 } });
     if (!grain || !this.userId || grain.userId !== this.userId) {
       throw new Meteor.Error(403, "Unauthorized", "User is not the owner of this grain");
     }
 
-    waitPromise(globalBackend.shutdownGrain(grainId, grain.userId, true));
+    await globalThis.globalBackend.shutdownGrain(grainId, grain.userId, true);
   },
 
-  updateGrainTitle: function (grainId, newTitle, obsolete) {
+  updateGrainTitle: async function (grainId, newTitle, obsolete) {
     check(grainId, String);
     check(newTitle, String);
     if (this.userId) {
-      const grain = globalDb.collections.grains.findOne(grainId, {fields: {oldUsers: 0}});
+      const grain = await globalDb.collections.grains.findOneAsync(grainId, { fields: { oldUsers: 0 } });
       if (grain) {
         if (grain.userId === this.userId) {
-          globalDb.collections.grains.update({ _id: grainId, userId: this.userId }, { $set: { title: newTitle } });
+          await globalDb.collections.grains.updateAsync(
+              { _id: grainId, userId: this.userId }, { $set: { title: newTitle } });
 
           // Denormalize new title out to all sharing tokens.
-          globalDb.collections.apiTokens.update({ grainId: grainId, "owner.user": { $exists: true } },
-                           { $set: { "owner.user.upstreamTitle": newTitle } },
-                           { multi: true });
+          await globalDb.collections.apiTokens.updateAsync(
+              { grainId: grainId, "owner.user": { $exists: true } },
+              { $set: { "owner.user.upstreamTitle": newTitle } },
+              { multi: true });
         } else {
-          const token = globalDb.collections.apiTokens.findOne({
+          const token = await globalDb.collections.apiTokens.findOneAsync({
             grainId: grainId,
             objectId: { $exists: false },
             "owner.user.accountId": this.userId,
@@ -396,7 +443,7 @@ Meteor.methods({
             if (token.owner.user.upstreamTitle === newTitle) {
               // User renamed grain to match upstream title. Act like they never renamed it at
               // all.
-              globalDb.collections.apiTokens.update({
+              await globalDb.collections.apiTokens.updateAsync({
                 grainId: grainId,
                 "owner.user.accountId": this.userId,
               }, {
@@ -416,9 +463,10 @@ Meteor.methods({
                 modification["owner.user.upstreamTitle"] = token.owner.user.title;
               }
 
-              globalDb.collections.apiTokens.update({ grainId: grainId, "owner.user.accountId": this.userId },
-                               { $set: modification },
-                               { multi: true });
+              await globalDb.collections.apiTokens.updateAsync(
+                  { grainId: grainId, "owner.user.accountId": this.userId },
+                  { $set: modification },
+                  { multi: true });
             }
           }
         }
@@ -426,14 +474,15 @@ Meteor.methods({
     }
   },
 
-  privatizeGrain: function (grainId) {
+  privatizeGrain: async function (grainId) {
     check(grainId, String);
     if (this.userId) {
-      globalDb.collections.grains.update({ _id: grainId, userId: this.userId }, { $set: { private: true } });
+      await globalDb.collections.grains.updateAsync(
+          { _id: grainId, userId: this.userId }, { $set: { private: true } });
     }
   },
 
-  inviteUsersToGrain: function (_origin, obsolete, grainId, title, roleAssignment,
+  inviteUsersToGrain: async function (_origin, obsolete, grainId, title, roleAssignment,
                                 contacts, message) {
     if (typeof message === "object") {
       // Older versions of the client passed an object here, but we only care about the `text`
@@ -472,7 +521,8 @@ Meteor.methods({
         throw new Meteor.Error(400, "No contacts were provided.");
       }
 
-      if (globalDb.isDemoUser()) {
+      const account = await Meteor.users.findOneAsync({ _id: this.userId });
+      if (account && account.expires) {
         throw new Meteor.Error(403, "Demo users are not allowed to share by email.");
       }
 
@@ -484,12 +534,12 @@ Meteor.methods({
 
       const accountId = this.userId;
       const outerResult = { successes: [], failures: [] };
-      const fromEmail = globalDb.getReturnAddressWithDisplayName(accountId);
-      const replyTo = globalDb.getPrimaryEmail(accountId);
-      contacts.forEach(function (contact) {
+      const fromEmail = await globalDb.getReturnAddressWithDisplayName(accountId);
+      const replyTo = await globalDb.getPrimaryEmail(accountId);
+      for (const contact of contacts) {
         if (contact.isDefault) {
           const emailAddress = contact.profile.name;
-          const result = SandstormPermissions.createNewApiToken(
+          const result = await SandstormPermissions.createNewApiToken(
             globalDb, { accountId: accountId }, grainId,
             "email invitation for " + emailAddress,
             roleAssignment, { webkey: { forSharing: true } });
@@ -500,8 +550,8 @@ Meteor.methods({
               "Note: If you forward this email to other people, they will be able to access " +
               "the share as well. To prevent this, remove the button before forwarding.</div>";
           try {
-            globalDb.incrementDailySentMailCount(accountId);
-            sendEmail({
+            await globalDb.incrementDailySentMailCount(accountId);
+            await sendEmail({
               to: emailAddress,
               from: fromEmail,
               replyTo: replyTo,
@@ -516,14 +566,14 @@ Meteor.methods({
             outerResult.failures.push({ contact: contact, error: e.toString() });
           }
         } else {
-          let result = SandstormPermissions.createNewApiToken(
+          const result = await SandstormPermissions.createNewApiToken(
             globalDb, { accountId: accountId }, grainId,
             "direct invitation to " + contact.profile.name,
             roleAssignment, { user: { accountId: contact._id, title: title } });
           const url = ROOT_URL + "/shared/" + result.token;
           try {
-            const account = Meteor.users.findOne({ _id: contact._id });
-            const email = _.findWhere(SandstormDb.getUserEmails(account),
+            const account = await Meteor.users.findOneAsync({ _id: contact._id });
+            const email = findWhere(await SandstormDb.getUserEmailsAsync(account),
                                       { primary: true });
             if (email) {
               const intrinsicName = contact.profile.intrinsicName;
@@ -531,8 +581,8 @@ Meteor.methods({
               const html = escapedMessage + "<br><br>" +
                   emailLinkWithInlineStyle(url, "Open Shared Grain") +
                   "<div style='font-size:8pt;font-style:italic;color:gray'>";
-              globalDb.incrementDailySentMailCount(accountId);
-              sendEmail({
+              await globalDb.incrementDailySentMailCount(accountId);
+              await sendEmail({
                 to: email.email,
                 from: fromEmail,
                 replyTo: replyTo,
@@ -552,13 +602,13 @@ Meteor.methods({
               "manually share " + url + " with them.", });
           }
         }
-      });
+      }
 
       return outerResult;
     }
   },
 
-  requestAccess: function (_origin, grainId, obsolete) {
+  requestAccess: async function (_origin, grainId, obsolete) {
     check(_origin, String);
     check(grainId, String);
     if (!this.isSimulation) {
@@ -566,27 +616,28 @@ Meteor.methods({
         throw new Meteor.Error(403, "Must be logged in to request access.");
       }
 
-      const grain = globalDb.collections.grains.findOne(grainId, {fields: {oldUsers: 0}});
+      const grain = await globalDb.collections.grains.findOneAsync(grainId, { fields: { oldUsers: 0 } });
       if (!grain) {
         throw new Meteor.Error(404, "No such grain");
       }
 
-      const grainOwner = globalDb.getUser(grain.userId);
-      const email = _.findWhere(SandstormDb.getUserEmails(grainOwner), { primary: true });
+      const grainOwner = await globalDb.getUser(grain.userId);
+      const email = findWhere(await SandstormDb.getUserEmailsAsync(grainOwner), { primary: true });
       if (!email) {
         throw new Meteor.Error("no email", "Grain owner has no email address.");
       }
 
       const emailAddress = email.email;
 
-      globalDb.addContact(grainOwner._id, this.userId);
+      await globalDb.addContact(grainOwner._id, this.userId);
 
-      const fromEmail = globalDb.getReturnAddressWithDisplayName(this.userId);
-      const replyTo = globalDb.getPrimaryEmail(this.userId);
+      const fromEmail = await globalDb.getReturnAddressWithDisplayName(this.userId);
+      const replyTo = await globalDb.getPrimaryEmail(this.userId);
+      const requester = await Meteor.users.findOneAsync({ _id: this.userId });
 
       // TODO(soon): In the HTML version, we should display an identity card.
       const identityNotes = [];
-      globalDb.getAccountIntrinsicNames(Meteor.user(), true).forEach(intrinsic => {
+      (await globalDb.getAccountIntrinsicNamesAsync(requester, true)).forEach(intrinsic => {
         // TODO(cleanup): Don't switch on service here; extend getAccountIntrinsicNames or
         //   Account.loginServices to cover what we need.
         if (intrinsic.service === "google") {
@@ -605,7 +656,7 @@ Meteor.methods({
       const identityNote = identityNotes.length === 0 ? "" :
           " (" + identityNotes.join(", ") + ")";
 
-      const message = Meteor.user().profile.name + identityNote +
+      const message = requester.profile.name + identityNote +
             " is requesting access to your grain: " + grain.title + ".";
 
       const url = ROOT_URL + "/share/" + grainId + "/" + this.userId;
@@ -613,12 +664,12 @@ Meteor.methods({
       let html = message + "<br><br>" +
           emailLinkWithInlineStyle(url, "Open Sharing Menu");
 
-      const user = Meteor.user();
+      const user = requester;
       const ACCESS_REQUEST_LIMIT = 10;
       let resetCount = true;
       if (user.accessRequests) {
         if (user.accessRequests.resetOn < new Date()) {
-          Meteor.users.update({ _id: user._id }, { $unset: { accessRequests: 1 } });
+          await Meteor.users.updateAsync({ _id: user._id }, { $unset: { accessRequests: 1 } });
         } else if (user.accessRequests.count >= ACCESS_REQUEST_LIMIT) {
           throw new Meteor.Error(403, "For spam control reasons, you are not allowed to make " +
                                  "more than " + ACCESS_REQUEST_LIMIT +
@@ -634,9 +685,9 @@ Meteor.methods({
         modifier.$set = { "accessRequests.resetOn": tomorrow };
       }
 
-      Meteor.users.update({ _id: user._id }, modifier);
+      await Meteor.users.updateAsync({ _id: user._id }, modifier);
 
-      sendEmail({
+      await sendEmail({
         to: emailAddress,
         from: fromEmail,
         replyTo: replyTo,

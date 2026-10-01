@@ -1,3 +1,7 @@
+@use "partials";
+@use "about";
+@use "geometry";
+
 .referrals {
   @extend %padded-info-page;
 
@@ -22,7 +26,7 @@
 
     // Minimize the padding on mobile, since 8em ends up being a large fraction
     // of a small screen.
-    @media #{$mobile} {
+    @media #{geometry.$mobile} {
       padding-left: 10%;
       padding-right: 10%;
     }
@@ -47,7 +51,7 @@
 
     // On mobile, use 8px padding, which is the same as the rest of the page,
     // to avoid wasting precious horizontal space.
-    @media #{$mobile} {
+    @media #{geometry.$mobile} {
       padding-left: 8px;
       padding-right: 8px;
     }
@@ -91,7 +95,7 @@
       list-style-position: inside;
 
       ol {
-        @media #{$mobile} {
+        @media #{geometry.$mobile} {
           padding-left: 0;
         }
       }
@@ -99,7 +103,7 @@
       li {
         padding: 1em;
 
-        @media #{$mobile} {
+        @media #{geometry.$mobile} {
           padding-left: 0;
           padding-right: 0;
         }
@@ -110,7 +114,7 @@
         margin: auto;
         max-width: 50%;
 
-        @media #{$mobile} {
+        @media #{geometry.$mobile} {
           width: 100%;
           max-width: 100%;
         }

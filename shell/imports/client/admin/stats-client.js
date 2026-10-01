@@ -2,7 +2,7 @@ import { Meteor } from "meteor/meteor";
 import { Mongo } from "meteor/mongo";
 import { Template } from "meteor/templating";
 import { ReactiveVar } from "meteor/reactive-var";
-import { _ } from "meteor/underscore";
+import { sortBy } from "/imports/shared/collection-utils";
 
 import { SandstormDb } from "/imports/sandstorm-db/db";
 import { globalDb } from "/imports/db-deprecated";
@@ -87,7 +87,7 @@ Template.newAdminStats.helpers({
     const instance = Template.instance();
     if (!instance.ready()) return [];
     return globalDb.collections.activityStats.find({}, { sort: { timestamp: -1 } }).map((point) => {
-      return _.extend({
+      return Object.assign({
         // Report date of midpoint of sample period.
         day: new Date(point.timestamp.getTime() - 12 * 60 * 60 * 1000).toLocaleDateString(),
       }, point);
@@ -98,7 +98,7 @@ Template.newAdminStats.helpers({
     const instance = Template.instance();
     return globalDb.collections.activityStats.find({}, { sort: { timestamp: -1 }, fields: { timestamp: 1 } })
         .map(function (point) {
-      return _.extend({
+      return Object.assign({
         // Report date of midpoint of sample period.
         day: new Date(point.timestamp.getTime() - 12 * 60 * 60 * 1000).toLocaleDateString(),
         selected: point._id === instance.currentPackageDate.get(),
@@ -134,8 +134,7 @@ Template.newAdminStats.helpers({
     pivotApps("weekly");
     pivotApps("monthly");
     pivotApps("forever");
-    return _.chain(apps)
-      .map(function (packObj, appId) {
+    return sortBy(Object.entries(apps).map(function ([appId, packObj]) {
         packObj.appId = appId;
         // Find the newest version of this app.
         const p = globalDb.collections.packages.findOne({
@@ -149,9 +148,7 @@ Template.newAdminStats.helpers({
         }
 
         return packObj;
-      })
-      .sortBy(function (app) { return -((app.daily || {}).owners || 0); })
-      .value();
+      }), function (app) { return -((app.daily || {}).owners || 0); });
   },
 
   hasSuccess() {

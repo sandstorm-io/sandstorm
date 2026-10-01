@@ -1,5 +1,4 @@
 import { Meteor } from "meteor/meteor";
-import Future from "fibers/future";
 
 let inMeteorListener: (() => void) | undefined = undefined;
 
@@ -29,14 +28,4 @@ function inMeteor<T>(callback: () => T): Promise<T> {
   });
 }
 
-function promiseToFuture<T>(promise: Promise<T>): Future<T> {
-  const result = new Future<T>();
-  promise.then(result.return.bind(result), result.throw.bind(result));
-  return result;
-}
-
-function waitPromise<T>(promise: Promise<T>): T {
-  return promiseToFuture(promise).wait();
-}
-
-export { inMeteor, promiseToFuture, waitPromise, onInMeteor };
+export { inMeteor, onInMeteor };

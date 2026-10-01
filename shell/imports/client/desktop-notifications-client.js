@@ -17,7 +17,7 @@
 import { Meteor } from "meteor/meteor";
 import { Template } from "meteor/templating";
 import { Random } from "meteor/random";
-import { Router } from "meteor/iron:router";
+import { Router } from "meteor/vlasky:galvanized-iron-router";
 
 import { computeTitleFromTokenOwnerUser } from "/imports/client/model-helpers";
 import { iconSrcForPackage, identiconForApp } from "/imports/sandstorm-identicons/helpers";
@@ -163,7 +163,7 @@ const showActivityDesktopNotification = (notif) => {
         handle.close();
 
         // Dismiss the associated notification, ignoring errors and without blocking.
-        Meteor.call("dismissNotification", notif.notificationId, (err) => {});
+        Meteor.callAsync("dismissNotification", notif.notificationId).catch(() => {});
       };
     };
 

@@ -21,8 +21,8 @@ import { Blaze } from "meteor/blaze";
 import { Tracker } from "meteor/tracker";
 import { ReactiveVar } from "meteor/reactive-var";
 import { Random } from "meteor/random";
-import { Router } from "meteor/iron:router";
-import { _ } from "meteor/underscore";
+import { Router } from "meteor/vlasky:galvanized-iron-router";
+import { deepEqual } from "/imports/shared/collection-utils";
 
 import { computeTitleFromTokenOwnerUser } from "/imports/client/model-helpers";
 import { isStandalone } from "/imports/client/standalone";
@@ -104,7 +104,14 @@ class GrainView {
         this.revealIdentity();
       }
     } else {
-      this.revealIdentity();
+      // For direct /grain routes while logged out, default to anonymous session so the user can
+      // receive an explicit access-denied/request-access interstitial instead of hanging in
+      // pre-session state waiting for login.
+      if (Meteor.userId()) {
+        this.revealIdentity();
+      } else {
+        this.doNotRevealIdentity();
+      }
     }
 
     // We manage our Blaze view directly in order to get more control over when iframes get
@@ -245,7 +252,8 @@ class GrainView {
     }
 
     if (!Meteor.userId() && !this._token) {
-      console.error("should never happen: anonymous, but no token either.");
+      // This can happen transiently during logout before the view is torn down.
+      return false;
     }
 
     return !!this._token;
@@ -453,7 +461,9 @@ class GrainView {
   }
 
   revealIdentity() {
-    if (!Meteor.user()) {
+    // We only need an account id for session creation; waiting for full user doc can
+    // incorrectly leave identity in "incognito" during startup.
+    if (!Meteor.userId()) {
       return;
     }
 
@@ -610,7 +620,7 @@ class GrainView {
     if (permissions) {
       if (!this._permissions) {
         this._permissions = permissions;
-      } else if (!_.isEqual(this._permissions, permissions)) {
+      } else if (!deepEqual(this._permissions, permissions)) {
         // Our permissions have changed! We reset the grain view so that we get a fresh host ID.
         //
         // TODO(someday): Maybe we should allow apps to opt-in or opt-out of this behavior?
@@ -626,15 +636,26 @@ class GrainView {
 
   _openGrainSession() {
     const _this = this;
-    const isIncognito = _this.isIncognito();
 
     const condition = () => {
       // Make sure we don't call openSession before the user is logged in.
-      return isIncognito || (Meteor.userId() && !Meteor.loggingIn());
+      const revealState = _this._userIdentityRevealed.get();
+      if (revealState === undefined) {
+        // For non-token grain sessions, wait until we know login state and can choose identity.
+        return !!Meteor.userId() && !Meteor.loggingIn();
+      }
+
+      const isIncognito = !revealState;
+      return isIncognito || (!!Meteor.userId() && !Meteor.loggingIn());
     };
 
     onceConditionIsTrue(condition, () => {
-      _this._addSessionObserver(_.extend({
+      if (_this._userIdentityRevealed.get() === undefined && Meteor.userId()) {
+        _this.revealIdentity();
+      }
+
+      const isIncognito = _this._userIdentityRevealed.get() === false;
+      _this._addSessionObserver(Object.assign({
         grainId: _this._grainId,
         revealIdentity: !isIncognito,
         parentOrigin: getOrigin()
@@ -654,7 +675,7 @@ class GrainView {
 
       if (isIncognito || neverRedeem) {
         // We don't intend to redeem the token, so just open a token-based session.
-        _this._addSessionObserver(_.extend({
+        _this._addSessionObserver(Object.assign({
           token: _this._token,
           revealIdentity: !isIncognito,
           parentOrigin: getOrigin()
@@ -888,9 +909,9 @@ class GrainView {
 
   markRead() {
     if (this.isOwner()) {
-      Meteor.call("markActivityReadByOwner", this._grainId);
+      globalThis.callMeteor("markActivityReadByOwner", this._grainId);
     } else {
-      Meteor.call("markActivityRead", this._grainId);
+      globalThis.callMeteor("markActivityRead", this._grainId);
     }
   }
 

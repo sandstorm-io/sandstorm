@@ -16,7 +16,7 @@
 
 import { Meteor } from "meteor/meteor";
 import { check } from "meteor/check";
-import { _ } from "meteor/underscore";
+import { pick } from "/imports/shared/collection-utils";
 import { Random } from "meteor/random";
 
 import Crypto from "crypto";
@@ -48,14 +48,14 @@ class PersistentImpl {
   }
 
   save(params) {
-    return inMeteor(() => {
+    return inMeteor(async () => {
       if (!params.sealFor) {
         throw new Error("must specify 'sealFor'");
       }
 
       const db = this[privateDb];
 
-      const newToken = _.clone(this[privateTemplate]);
+      const newToken = { ...this[privateTemplate] };
       newToken.owner = params.sealFor;
       if (newToken.owner.user) {
         if (!newToken.accountId || !newToken.grainId) {
@@ -63,17 +63,17 @@ class PersistentImpl {
         }
 
         // Only "accountId" and "title" are allowed to be passed to save().
-        const userOwner = _.pick(newToken.owner.user, "accountId", "title");
+        const userOwner = pick(newToken.owner.user, "accountId", "title");
 
-        const grain = db.getGrain(newToken.grainId);
+        const grain = await db.getGrainAsync(newToken.grainId);
         if (!grain) {
           throw new Error("unknown grain ID");
         }
 
-        userOwner.identityId = db.getOrGenerateIdentityId(userOwner.accountId, grain);
+        userOwner.identityId = await db.getOrGenerateIdentityId(userOwner.accountId, grain);
 
         // Fill in denormalizedGrainMetadata and upstreamTitle ourselves.
-        userOwner.denormalizedGrainMetadata = db.getDenormalizedGrainInfo(newToken.grainId);
+        userOwner.denormalizedGrainMetadata = await db.getDenormalizedGrainInfo(newToken.grainId);
 
         if (grain.title !== userOwner.title) {
           userOwner.upstreamTitle = grain.title;
@@ -83,7 +83,7 @@ class PersistentImpl {
       }
 
       newToken.created = new Date();
-      const sturdyRef = insertApiToken(db, newToken);
+      const sturdyRef = await insertApiToken(db, newToken);
 
       this[privateIsSaved] = true;
       return { sturdyRef: new Buffer(sturdyRef) };
@@ -137,7 +137,7 @@ function cryptApiToken(key, entry, cryptIn, cryptOut) {
   }
 }
 
-function fetchApiToken(db, key, moreQuery) {
+async function fetchApiToken(db, key, moreQuery) {
   // Reads an ApiToken from the database and decrypts its encrypted fields.
 
   function bufferToString(buf) {
@@ -152,7 +152,7 @@ function fetchApiToken(db, key, moreQuery) {
 
   const query = { _id: hashSturdyRef(key) };
   Object.assign(query, moreQuery || {});
-  const entry = db.collections.apiTokens.findOne(query);
+  const entry = await db.collections.apiTokens.findOneAsync(query);
   if (entry) {
     cryptApiToken(key, entry, x => x, bufferToString);
   }
@@ -160,7 +160,7 @@ function fetchApiToken(db, key, moreQuery) {
   return entry;
 }
 
-function insertApiToken(db, entry, key) {
+async function insertApiToken(db, entry, key) {
   // Adds a new ApiToken to the database. `key`, if specified, *must* be a base64-encoded 256-bit
   // value. If omitted, a key will be generated. Either way, the key is returned, and entry._id
   // is filled in. Also, as a side effect, some fields of `entry` will become encrypted, but
@@ -179,11 +179,11 @@ function insertApiToken(db, entry, key) {
   if (!key) key = generateSturdyRef();
   entry._id = hashSturdyRef(key);
   cryptApiToken(key, entry, stringToBuffer, x => x);
-  db.collections.apiTokens.insert(entry);
+  await db.collections.apiTokens.insertAsync(entry);
   return key;
 }
 
-function checkRequirements(db, requirements) {
+async function checkRequirements(db, requirements) {
   // Checks if the given list of MembraneRequirements are all satisfied, returning true if so and
   // false otherwise.
 
@@ -198,9 +198,9 @@ function checkRequirements(db, requirements) {
     return true;
   }
 
-  requirements.forEach(requirement => {
+  for (const requirement of requirements) {
     if (requirement.tokenValid) {
-      const token = db.collections.apiTokens.findOne(
+      const token = await db.collections.apiTokens.findOneAsync(
           { _id: requirement.tokenValid, revoked: { $ne: true }, },
           { fields: { requirements: 1 } });
       if (!token) {
@@ -209,15 +209,16 @@ function checkRequirements(db, requirements) {
             "revoked or deleted.");
       }
 
-      checkRequirements(db, token.requirements);
+      await checkRequirements(db, token.requirements);
 
       if (token.parentToken) {
-        checkRequirements(db, [{ tokenValid: token.parentToken }]);
+        await checkRequirements(db, [{ tokenValid: token.parentToken }]);
       }
     } else if (requirement.permissionsHeld) {
       const p = requirement.permissionsHeld;
-      const viewInfo = db.collections.grains.findOne(
-          p.grainId, { fields: { cachedViewInfo: 1 } }).cachedViewInfo;
+      const grain = await db.collections.grains.findOneAsync(
+          p.grainId, { fields: { cachedViewInfo: 1 } });
+      const viewInfo = grain && grain.cachedViewInfo;
       let vertex;
       if (p.accountId) {
         vertex = { grain: { _id: p.grainId, accountId: p.accountId } };
@@ -225,8 +226,8 @@ function checkRequirements(db, requirements) {
         vertex = { token: { _id: p.tokenId, grainId: p.grainId } };
       }
 
-      const currentPermissions = SandstormPermissions.grainPermissions(db,
-          vertex, viewInfo || {}).permissions;
+      const currentPermissions = (await SandstormPermissions.grainPermissionsAsync(db,
+          vertex, viewInfo || {})).permissions;
       if (!currentPermissions) {
         throw new Meteor.Error(403,
             "Capability revoked because a user involved in introducing it no longer has " +
@@ -242,7 +243,7 @@ function checkRequirements(db, requirements) {
         }
       }
     } else if (requirement.userIsAdmin) {
-      if (!db.isAdminById(requirement.userIsAdmin)) {
+      if (!await db.isAdminById(requirement.userIsAdmin)) {
         throw new Meteor.Error(403,
             "Capability revoked because the user who created it has lost their admin " +
             "rights.");
@@ -250,7 +251,7 @@ function checkRequirements(db, requirements) {
     } else {
       throw new Meteor.Error(403, "Unknown requirement type.");
     }
-  });
+  }
 }
 
 export {

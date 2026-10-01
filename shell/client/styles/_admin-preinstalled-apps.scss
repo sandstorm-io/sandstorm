@@ -1,3 +1,7 @@
+@use "icons";
+@use "colors";
+@use "partials";
+
 .admin-preinstalled-apps {
   @extend %standard-form;
 
@@ -15,12 +19,8 @@
     color: #888888;
 
     button {
-      @include unstyled-button();
+      @include partials.unstyled-button();
     }
-  }
-
-  i.icon-down, i.icon-up {
-    transform: scale(.7, 1); // Fix the scaling of the icon to look a little better
   }
 
   [role=grid] {
@@ -28,14 +28,14 @@
       display: flex;
       flex-direction: row;
       justify-content: flex-start;
-      border-top: 1px solid $default-table-border-color;
+      border-top: 1px solid colors.$default-table-border-color;
       flex-basis: 0;
       width: 100%;
 
       &.checked, &.toggle-more {
         background-color: white;
         [role=row] {
-          border-top: 1px solid $default-content-background-color;
+          border-top: 1px solid colors.$default-content-background-color;
         }
       }
 
@@ -49,7 +49,7 @@
       [role=gridcell] {
         padding: 4px;
         overflow: hidden;
-        @include overflow-ellipsis();
+        @include partials.overflow-ellipsis();
         flex-grow: 0;
         &.name {
           width: 20%;
@@ -86,4 +86,18 @@
       }
     }
   }
+}
+
+// The legacy global import graph let app-details' extension of icon-down/icon-up
+// flow into this rule. Sass modules intentionally isolate extensions, so spell
+// out the affected component selectors to preserve that styling.
+.admin-preinstalled-apps i.icon-down,
+.admin-preinstalled-apps .app-details > .app-details-widget > .app-details-box >
+    div.info-row > ul.package-info > li > button.show-authorship-button > i.expanded-icon,
+.admin-preinstalled-apps .install #step-confirm > .app-details-widget > .app-details-box >
+    div.info-row > ul.package-info > li > button.show-authorship-button > i.expanded-icon,
+.install .admin-preinstalled-apps #step-confirm > .app-details-widget > .app-details-box >
+    div.info-row > ul.package-info > li > button.show-authorship-button > i.expanded-icon,
+.admin-preinstalled-apps i.icon-up {
+  transform: scale(.7, 1); // Fix the scaling of the icon to look a little better
 }

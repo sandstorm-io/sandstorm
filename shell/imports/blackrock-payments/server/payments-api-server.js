@@ -18,7 +18,7 @@ import Crypto from "crypto";
 import { Meteor } from "meteor/meteor";
 import { check } from "meteor/check";
 
-import { stripe } from "/imports/blackrock-payments/server/payments-server";
+import { stripe, findOriginalSourceIdAsync } from "/imports/blackrock-payments/server/payments-server";
 
 import Capnp from "/imports/server/capnp";
 const PaymentsRpc = Capnp.importSystem("sandstorm/payments.capnp");
@@ -53,7 +53,7 @@ function formatCents(cents) {
   return (cents / 100).toFixed(2);
 }
 
-BlackrockPayments.registerPaymentsApi =
+globalThis.BlackrockPayments.registerPaymentsApi =
     (frontendRefRegistry, PersistentImpl, unwrapFrontendCap) => {
   class PaymentSourceImpl extends PersistentImpl {
     // A payment source, such as a credit card.
@@ -88,20 +88,20 @@ BlackrockPayments.registerPaymentsApi =
                                   PaymentsRpc.PersistentPaymentSource);
     },
 
-    validate(db, session, value) {
+    async validate(db, session, value) {
       check(value, { source: String });
 
       if (!session.userId) {
         throw new Meteor.Error(403, "Not logged in.");
       }
 
-      const user = Meteor.users.findOne(session.userId);
+      const user = await Meteor.users.findOneAsync(session.userId);
       value.customer = ((user || {}).payments || {}).id;
       if (!value.customer) {
         throw new Meteor.Error(403, "No such payment source.");
       }
 
-      value.source = findOriginalSourceId(value.source, value.customer);
+      value.source = await findOriginalSourceIdAsync(value.source, value.customer);
 
       return {
         descriptor: { tags: [{ id: PaymentsRpc.PaymentSource.typeId }] },
@@ -110,8 +110,8 @@ BlackrockPayments.registerPaymentsApi =
       };
     },
 
-    query(db, userId, value) {
-      const user = Meteor.users.findOne(userId);
+    async query(db, userId, value) {
+      const user = await Meteor.users.findOneAsync(userId);
       const customerId = ((user || {}).payments || {}).id;
 
       const addCardSource = {
@@ -124,7 +124,7 @@ BlackrockPayments.registerPaymentsApi =
         return [addCardSource];
       }
 
-      const data = Meteor.wrapAsync(stripe.customers.retrieve.bind(stripe.customers))(customerId);
+      const data = await stripe.customers.retrieve(customerId);
       if (!data.sources || !data.sources.data) {
         return [addCardSource];
       }
@@ -176,8 +176,8 @@ BlackrockPayments.registerPaymentsApi =
           description: description,
           capture: false,
         });
-      }).then(charge => {
-        const payment = frontendRefRegistry.create(this._db, {
+      }).then(async (charge) => {
+        const payment = await frontendRefRegistry.create(this._db, {
           stripePayment: { id: charge.id, invoice: invoice, config: this._config }
         }, []);
 
@@ -216,8 +216,9 @@ BlackrockPayments.registerPaymentsApi =
       };
     },
 
-    query(db, userId, value) {
-      if (userId && Meteor.users.findOne(userId).isAdmin) {
+    async query(db, userId, value) {
+      const user = userId ? await Meteor.users.findOneAsync(userId) : null;
+      if (user && user.isAdmin) {
         return [
           {
             _id: "frontendref-stripePaymentAcceptor",
@@ -249,8 +250,8 @@ BlackrockPayments.registerPaymentsApi =
 
     commit() {
       // TODO(now): Handle throw, especially for already captured.
-      return captureCharge(this._id).then(charge => {
-        const user = Meteor.users.findOne({ "payments.id": charge.customer });
+      return captureCharge(this._id).then(async (charge) => {
+        const user = await Meteor.users.findOneAsync({ "payments.id": charge.customer });
         if (user) {
           sendInvoice(this._db, user, this._invoice, this._config);
         } else {

@@ -1,3 +1,6 @@
+@use "partials";
+@use "colors";
+
 
 .button-primary {
   @extend %button-base;
@@ -31,19 +34,19 @@
 }
 
 .error-message {
-  background-color: $error-background-color;
+  background-color: colors.$error-background-color;
 }
 
 .warning-message {
-  background-color: $warning-background-color;
+  background-color: colors.$warning-background-color;
 }
 
 .success-message {
-  background-color: $success-background-color;
+  background-color: colors.$success-background-color;
 }
 
 .info-message {
-  background-color: $info-background-color;
+  background-color: colors.$info-background-color;
 }
 
 .standard-form {

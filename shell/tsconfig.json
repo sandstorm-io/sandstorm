@@ -24,7 +24,8 @@
     "baseUrl": ".",
     "paths": {
       /* Support absolute /imports/* with a leading '/' */
-      "/*": ["*"]
+      "/*": ["*"],
+      "meteor/*": [".meteor/local/types/packages.d.ts"]
     },
     "moduleResolution": "node",
     "resolveJsonModule": true,

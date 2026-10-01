@@ -1,4 +1,5 @@
 <template name="sandstormAppListPage">
+  {{#if _db}}
   {{setDocumentTitle}}
   {{#sandstormTopbarItem name="title" priority=5 topbar=globalTopbar }}{{_ "apps.title"}}{{/sandstormTopbarItem}}
   {{#if isSignedUpOrDemo}}
@@ -82,5 +83,6 @@
         <p>{{_ "apps.appList.unauthorizedText"}}</p>
       </div>
     {{/if}}
+  {{/if}}
   {{/if}}
 </template>

@@ -1,3 +1,7 @@
+@use "partials";
+@use "sass:color";
+@use "colors";
+
 // Styles used for the Admin Users page and Users details page
 
 %user-class-label {
@@ -74,7 +78,7 @@
 }
 
 .admin-user-table {
-  border: 1px solid $default-table-border-color;
+  border: 1px solid colors.$default-table-border-color;
 
   div[role=columnheader] {
     // Column header text should "stick" to the bottom of the row, to be
@@ -96,11 +100,11 @@
     flex-direction: row;
     align-items: stretch; // so the border-left covers the whole height of the row
     justify-content: flex-start;
-    background-color: $default-table-header-background-color;
-    color: $default-table-header-foreground-color;
-    border-bottom: 1px solid $default-table-header-border-color;
+    background-color: colors.$default-table-header-background-color;
+    color: colors.$default-table-header-foreground-color;
+    border-bottom: 1px solid colors.$default-table-header-border-color;
     >div[role=columnheader]:not(:first-child) {
-      border-left: 1px solid $default-table-header-border-color;
+      border-left: 1px solid colors.$default-table-header-border-color;
     }
     .created, .last-active {
       cursor: pointer;
@@ -120,7 +124,7 @@
     flex-direction: row;
     align-items: flex-start;
     justify-content: flex-start;
-    background-color: $default-table-row-action-background-color;
+    background-color: colors.$default-table-row-action-background-color;
     cursor: pointer;
 
     .plus-icon {
@@ -132,7 +136,7 @@
     }
 
     &:hover {
-      background-color: $default-table-row-action-background-color-hover;
+      background-color: colors.$default-table-row-action-background-color-hover;
       .plus-icon {
         background-image: url("/plus-6A237C.svg");
       }
@@ -152,13 +156,13 @@
     flex-direction: row;
     align-items: flex-start;
     justify-content: flex-start;
-    background-color: $default-table-row-background-color;
+    background-color: colors.$default-table-row-background-color;
     cursor: pointer;
     &:not(:last-child) {
       border-bottom: 1px solid #dddddd;
     }
     &:hover {
-      background-color: $default-table-row-background-color-hover;
+      background-color: colors.$default-table-row-background-color-hover;
     }
   }
 
@@ -425,7 +429,7 @@
 }
 
 .admin-user-credential-list {
-  border: 1px solid $default-table-border-color;
+  border: 1px solid colors.$default-table-border-color;
 
   div[role=columnheader] {
     display: flex;
@@ -446,12 +450,12 @@
       flex-direction: row;
       align-items: stretch;
       justify-content: flex-start;
-      background-color: $default-table-header-background-color;
-      color: $default-table-header-foreground-color;
-      border-bottom: 1px solid $default-table-header-border-color;
+      background-color: colors.$default-table-header-background-color;
+      color: colors.$default-table-header-foreground-color;
+      border-bottom: 1px solid colors.$default-table-header-border-color;
 
       >div[role=columnheader]:not(:first-child) {
-        border-left: 1px solid $default-table-header-border-color;
+        border-left: 1px solid colors.$default-table-header-border-color;
       }
 
       .admin-user-credential-header-cell {
@@ -473,7 +477,7 @@
       flex-direction: row;
       align-items: flex-start;
       justify-content: flex-start;
-      background-color: $default-table-row-background-color;
+      background-color: colors.$default-table-row-background-color;
       &:not(:last-child) {
         border-bottom: 1px solid #dddddd;
       }

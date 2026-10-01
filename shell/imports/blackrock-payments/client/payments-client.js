@@ -44,11 +44,11 @@ export function updateStripeData(cb) {
   });
 }
 
-BlackrockPayments = function (db) {
+globalThis.BlackrockPayments = function (db) {
   this.db = db
 }
 
-BlackrockPayments.processOptins = function (form) {
+globalThis.BlackrockPayments.processOptins = function (form) {
   if (form.subscribeToList && form.subscribeToList.checked) {
     Meteor.call("subscribeMailingList", function(err) {
       if (err) window.alert("Error subscribing to list: " + err.message);

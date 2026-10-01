@@ -1,15 +1,49 @@
 import { Meteor } from "meteor/meteor";
 import { check } from "meteor/check";
-import { _ } from "meteor/underscore";
 
 import nodemailer from "nodemailer";
-import Future from "fibers/future";
 
 import { globalDb } from "/imports/db-deprecated";
 
-const getSmtpConfig = function () {
-  const config = globalDb.collections.settings.findOne({ _id: "smtpConfig" });
-  return config && config.value;
+const smtpConfigFromMailUrl = (mailUrl) => {
+  if (!mailUrl) return undefined;
+
+  let parsed;
+  try {
+    parsed = new URL(mailUrl);
+  } catch (err) {
+    return undefined;
+  }
+
+  if (!parsed.hostname) return undefined;
+
+  const auth = parsed.username || parsed.password ? {
+    user: decodeURIComponent(parsed.username || ""),
+    pass: decodeURIComponent(parsed.password || ""),
+  } : undefined;
+
+  return {
+    hostname: parsed.hostname,
+    port: parsed.port ? parseInt(parsed.port, 10) : (parsed.protocol === "smtps:" ? 465 : 25),
+    auth,
+  };
+};
+
+const getSmtpConfig = async function () {
+  const config = await globalDb.collections.settings.findOneAsync({ _id: "smtpConfig" });
+  const value = config && config.value;
+  const mailUrlConfig = smtpConfigFromMailUrl(process.env.MAIL_URL);
+  if (!value || !value.hostname) return mailUrlConfig;
+
+  const looksLikeLegacyDefault =
+      value.hostname === "localhost" &&
+      (value.port === 25 || value.port === "25") &&
+      (!value.auth || (!value.auth.user && !value.auth.pass));
+  if (looksLikeLegacyDefault && mailUrlConfig) {
+    return { ...value, ...mailUrlConfig };
+  }
+
+  return value;
 };
 
 const makePool = function (mailConfig) {
@@ -39,7 +73,7 @@ const makePool = function (mailConfig) {
     // TODO(someday): allow maxConnections to be configured?
   });
 
-  pool._futureWrappedSendMail = _.bind(Future.wrap(pool.sendMail), pool);
+  pool._sendMailAsync = pool.sendMail.bind(pool);
   return pool;
 };
 
@@ -49,7 +83,7 @@ let pool;
 let configured = false;
 
 Meteor.startup(function () {
-  globalDb.collections.settings.find({ _id: "smtpConfig" }).observeChanges({
+  globalDb.collections.settings.find({ _id: "smtpConfig" }).observeChangesAsync({
     removed: function () {
       configured = false;
     },
@@ -61,15 +95,17 @@ Meteor.startup(function () {
     added: function () {
       configured = false;
     },
+  }).catch((err) => {
+    console.error("Failed to observe smtpConfig changes:", err);
   });
 });
 
-const getPool = function (smtpConfig) {
+const getPool = async function (smtpConfig) {
   if (smtpConfig) {
     return makePool(smtpConfig);
   } else if (!configured) {
     configured = true;
-    const config = getSmtpConfig();
+    const config = await getSmtpConfig();
     if (config) {
       pool = makePool(config);
     }
@@ -78,8 +114,8 @@ const getPool = function (smtpConfig) {
   return pool;
 };
 
-const smtpSend = function (pool, mailOptions) {
-  pool._futureWrappedSendMail(mailOptions).wait();
+const smtpSend = async function (pool, mailOptions) {
+  await pool._sendMailAsync(mailOptions);
 };
 
 // From http://emailregex.com/, which claims this is the W3C standard for the HTML input element,
@@ -108,7 +144,7 @@ function validateEmail(email) {
   }
 }
 
-const rawSend = function (mailOptions, smtpConfig) {
+const rawSend = async function (mailOptions, smtpConfig) {
   // Sends an email mailOptions object structured as described in
   // https://github.com/nodemailer/mailcomposer#e-mail-message-fields
   // across the transport described by smtpConfig.
@@ -120,9 +156,9 @@ const rawSend = function (mailOptions, smtpConfig) {
     validateEmail(mailOptions[field]);
   });
 
-  const pool = getPool(smtpConfig);
+  const pool = await getPool(smtpConfig);
   if (pool) {
-    smtpSend(pool, mailOptions);
+    await smtpSend(pool, mailOptions);
   } else {
     throw new Error("SMTP pool is misconfigured.");
   }
@@ -172,7 +208,7 @@ const rawSend = function (mailOptions, smtpConfig) {
  *   https://github.com/nodemailer/mailcomposer/tree/v0.1.15#add-attachments
  * @param {String} [options.envelopeFrom] Envelope sender.
  */
-const send = function (options) {
+const send = async function (options) {
   // Unpack options
   const {
     from,
@@ -211,10 +247,10 @@ const send = function (options) {
     };
   }
 
-  rawSend(opts, smtpConfig);
+  await rawSend(opts, smtpConfig);
 };
 
 export { send, rawSend };
 
-// TODO(cleanup): Remove this once BlackrockPayments code finds a better way to import it.
+// TODO(cleanup): Remove this once globalThis.BlackrockPayments code finds a better way to import it.
 global.SandstormEmail = { send };

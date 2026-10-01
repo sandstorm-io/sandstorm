@@ -1,0 +1,21 @@
+{
+  "name": "acme-dns-01-gcp",
+  "version": "0.1.0-sandstorm.1",
+  "private": true,
+  "description": "Sandstorm-maintained ACME dns-01 plugin for Google Cloud DNS",
+  "main": "index.js",
+  "scripts": {
+    "test": "node --test index.node-test.cjs"
+  },
+  "engines": {
+    "node": ">=22.0"
+  },
+  "dependencies": {
+    "@google-cloud/dns": "^5.3.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sandstorm-io/sandstorm"
+  },
+  "license": "MPL-2.0"
+}

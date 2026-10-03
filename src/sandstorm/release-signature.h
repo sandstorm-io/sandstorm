@@ -27,8 +27,8 @@ bool hasValidReleaseSignature(
 // Parses GnuPG's machine-readable status output and returns true if at least one signature has both
 // GOODSIG and VALIDSIG records whose OpenPGP primary-key fingerprint is
 // expectedPrimaryFingerprint, using SHA-512 over a binary document. Expired, revoked, and bad
-// signatures are rejected. Additional signatures made by unknown keys are ignored; this is what
-// permits one detached-signature file to be signed by both sides of a key rotation.
+// signatures are rejected. Additional signatures made by unknown keys are ignored. This allows a
+// single detached signature file to be signed by an old key and a new key, enabling key rotation.
 
 void verifyReleaseSignature(
     int signatureFd, int bundleFd, kj::StringPtr gpgPath, kj::StringPtr keyringPath,

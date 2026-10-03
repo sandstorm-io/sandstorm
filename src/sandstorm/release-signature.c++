@@ -118,6 +118,7 @@ void verifyReleaseSignature(
   auto status = readAll(statusPipe.readEnd);
   int waitStatus = gpg.waitForExitOrSignal();
 
+  // WIFEXITED accepts any normal exit, including a non-zero status, but rejects signal termination.
   KJ_REQUIRE(WIFEXITED(waitStatus), "GnuPG was terminated while checking the release signature");
 
   // A dual-signed file normally makes GnuPG return non-zero when this client's keyring does not

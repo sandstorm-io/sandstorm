@@ -23,48 +23,51 @@
 namespace sandstorm {
 namespace {
 
-const char KEY_A_FINGERPRINT[] = "0C7ABBD86D03E47FCA986BFD409CBAA847617B62";
-const char KEY_B_FINGERPRINT[] = "9DDBF2A14EA98D3B47C29A4596AFFBD130FEC761";
+// Test-only RSA signing keys have no expiration. Keys and SHA-512 signatures were generated
+// with GnuPG at the fixed timestamp 2020-01-01 so verification does not depend on the test date.
+// Only public keys and signatures are retained; the private keys are discarded.
+const char KEY_A_FINGERPRINT[] = "AD69F92B7329436FF4F36F8BBC4A7BB73F26E428";
+const char KEY_B_FINGERPRINT[] = "AA022527C38341362A7E517F5572AD51D6C5734F";
 
 const char DATA[] = "c2lnbmVkIHVwZGF0ZSBmaXh0dXJlCg==";
 const char KEY_A[] =
-    "mQENBGp9NpUBCADD6RkGI664oIggSkxtgQTCHIcdkOr3lITThK2nMQ8A02+uiHW+R72/g6edIghfa/vS"
-    "sEuZoWYrMknHoNZJlegW7QlwBOGPIYhBBXindDxYUvh0rP4+El27WJUWd/izEV6w8jg+388luGnpzTg"
-    "b2jP0pmjNMy1cjLtQCtlzvoMW+rqFZMDNQvR9s1u4VuN0bpzx6vdE74FnmlpYxPuWq2/536uuMbdta"
-    "YxutOHl27ZYTvOk/3C6sOsnAGO38YIngSoMfDK/M6FwMKYQqQvgLAl0/QpJmJ4slppyOdqxc5/t3SEz"
-    "H8nZhNngNm4A4Ld0kqBOnn3wv+nwSnXWjr2auRulABEBAAG0G1NhbmRzdG9ybSB1cGRhdGUgdGVzdCBr"
-    "ZXkgQYkBVAQTAQoAPhYhBAx6u9htA+R/yphr/UCcuqhHYXtiBQJqfTaVAhsDBQkAAVGABQsJCAcCBhUK"
-    "CQgLAgQWAgMBAh4BAheAAAoJEECcuqhHYXtiQA8IAJ2rMCP9ysJ5vZQo73yU2fNkcof8q6UBEr3PM54H"
-    "fbDw6Rhbk1gutfXEk2uXsiF8AzzXBP7Bo69nAthxvCh9QXrnmYcEXmnnegK8AzHs8VsoeD3KrT/LNDxT"
-    "jeb35B/Hfk68+TqhSgpJylFruPxn1Y/DMCY4DAJHMAJt4tstGDBmX2dwESPB/pz4iQRDp/X/vCTLCTxW"
-    "cEk/LaQOoq262aabfguwtuibaRBnzNFugg+W5mcAM0qEBGfTTzUnAfpPTSiMX3QqJeue7h34PNz5tk8Q"
-    "Tlf1HaxRXEX4LXJvSJLzErmm0SHEUVTdlqESKlQZWwHNfL4UXtGt9zsMFDtz0rQ=";
+    "mQENBF4L4QABCACQWSp338ZaN45sv4XNs+44hDeD6j0s5qqAw1n9qoHzZFDjH3Zey9kCvIpZy+LwTMua"
+    "j/2fr7tqo912CjO/8tSjMZfx33BiQG3mW+GqTOm1Wqau7dUCMiRX7tGGjlT4exmF+yMF2kgl5/5GipXN"
+    "+83SF9DbXzh1sJiRn50GwBEBxW8szogW0ZUjGff1zWNyOw7YEm8iGPvnDXN47LjuxZEBpsvsbmpqY7Ey"
+    "a93KixRdlcfz+RFzjIFw1Ee3hEovRlQmr1rxNRwwtqiOGhO4xByvgYX9DzQzkV9XBY2FNA/0i/y+lfxn"
+    "OH3s9wHS6Afx0BdT2Brri1+DgHz+SSpvITXTABEBAAG0G1NhbmRzdG9ybSB1cGRhdGUgdGVzdCBrZXkg"
+    "QYkBTgQTAQoAOBYhBK1p+StzKUNv9PNvi7xKe7c/JuQoBQJeC+EAAhsDBQsJCAcCBhUKCQgLAgQWAgMB"
+    "Ah4BAheAAAoJELxKe7c/JuQofH4IAIUsdPnM39WH7UdYwZoBURED9uxg+lYBg/fAbtsSamgJUAL62hq1"
+    "HwJ+eBECe27Z7a6MvKNLEFmEPiX+3BCnWS9FGmMy4bs0sykm1RcfmWZVUnzWTfUlTYCBEjQZpkLUZQiM"
+    "w/smgFeJNL1i3mT5MKNyk8PUCAeh1D1ut7SYEbOIOaZgFAJh5VJz0TCUxFxvcqavuGyAlxfO1nkyewDH"
+    "BFdxCqe+D76k1LYwAqRiL4VA5hmp1SR/sWsLaN5VB/F0WUtfVxtjHNTyDHvgVJgFfu1q4w8vFEKdzi8h"
+    "m+5+4/hjScwjEHy0KUT7pzQpF8x4X9kg7EuKO8Rv66JVBmu/mzs=";
 const char KEY_B[] =
-    "mQENBGp9NpUBCADpFN7AHer/VsD0nyd6ZPhS8vxBjOHQbF7LXSbrX7w+hY6/SHyOZIQxMkxxuqxY4wK"
-    "X7Oy5UU8SBtaigbAjVPj5YQMsTG/3ubeOkwS3731mApFY0GvPZk9m+oerqOHwbbvQQKsofwBbNC3P5x5"
-    "uD2r/JhFod/QqRBlGEfpVUrIKBITgXj3XEVCQdDKhoezlnGD7Ym2ZPljmhz4cNZEDR+xHwz6TfmprS/+"
-    "Q/6g3SLxE4zHSpRKuNMd2cpM8rjv9hIXAugiXNIoZA+XmNoZTVtr6inhc/6hqkfhO0SEeAgYZIVkaAMq"
-    "sLRi+IE3KzFxoOcrCbJIXzfdPMJMpiWou9dI3ABEBAAG0G1NhbmRzdG9ybSB1cGRhdGUgdGVzdCBrZXkg"
-    "QokBVAQTAQoAPhYhBJ3b8qFOqY07R8KaRZav+9Ew/sdhBQJqfTaVAhsDBQkAAVGABQsJCAcCBhUKCQgL"
-    "AgQWAgMBAh4BAheAAAoJEJav+9Ew/sdh280H/jcLWMoIi8ZaTheLZYnOwqf8pmcHxZTkXmJ1ZIbIMuEx/"
-    "OXrA3A0t1+ZiCLB9g8MIeSXVIde717E7aox9kb6UwLwq7ZknwgoJU6RCPXdeMx7hAFLBe5/bNDO9QDI4"
-    "NPCSKjd5Uc742vVtOsHxob2J3Fid2frayshvVZhjdKbaDALvG+3nrZtjoejdY0KNsO2AEuuI0aJA95Kow"
-    "m8QjX3yQjy5u9CMKAuDxeGP7rBPnmMIBW4OC4yw0BXnYaIMHfZ6FzbJadGcaa0+aZwQEVOqg+pRH4COk"
-    "0uQRDPGbmG5hKF5DTMZVUmJgpXtLwYs3YBfQPGH/SFCxFQkk/CM72rGNU=";
+    "mQENBF4L4QABCADKGlhmQVfYLXi7asRQViemOsmv6mN2Z5BJVcbGi0hqweD7g2xQz8OAxJiKPnimtQNN"
+    "Pyfes1e9xcDvtMihNcg6ebWRLAEnL+5SVRzySCSREJVStTXH0g/z7ieVT9/62tyRwU8mU15+Ggvd/WpV"
+    "gzwpVOhOt0L4fT7DmuXsgy+93F0pMvzqnGRGN6gSXhpCFt+x7JPbrIUvTjQ4OJV70LQfdqrPSiaqdDuG"
+    "p+YsKKWPtog97EmeSI+k34O9mIoMbObjTA2vm4+tnZrs7CqTCYLuyLddifv/1qJc66dqJ3KDKxeX7fKo"
+    "6aTyUX00JoVVRERaHrK72evzMrsaayaeZVEZABEBAAG0G1NhbmRzdG9ybSB1cGRhdGUgdGVzdCBrZXkg"
+    "QokBTgQTAQoAOBYhBKoCJSfDg0E2Kn5Rf1VyrVHWxXNPBQJeC+EAAhsDBQsJCAcCBhUKCQgLAgQWAgMB"
+    "Ah4BAheAAAoJEFVyrVHWxXNPzxMIAJ5nL7F+BBm7QeLdmt+5gElRIYOTz3+/26a5fEqmfefWIQN1XO+L"
+    "89+ARGn3Xwqtb47nCQFN615l+TUrthOgt0WU77hs8V4C/Dvl8TlqQXzcoE7gH9cyGFXPJb8+dzo793dp"
+    "jrLKwqCvzFdNxqK2gNwnNKUBnrl2Cw3IM80HA7IArYTa88RatEG6ANxfRrYtMQHkjXwBPoiv3r2ZChhg"
+    "gq2jwkYC+1/pfQ5YvIPeYdwwuB3tUZ9Xjek1ApDmca9AO76zFP1KKVIcvaFr/mQyxeW6ZYpVGczfqetx"
+    "/fp4SNSzxQ9RW5atvGxNSLwXr1reC2K9nOfa1AZnG1hL0lZQcWY=";
 const char SIGNATURE_A[] =
-    "iQEzBAABCgAdFiEEDHq72G0D5H/KmGv9QJy6qEdhe2IFAmp9NpYACgkQQJy6qEdhe2ICVQgAt2OZDMo8"
-    "eYGENGYVpKL/UqIFP4cOavqVfbNbsjxLxIjWf5TX/fPQBcTLfSql5tAOJWrvebTTIUEAZO9sMiHfz7bEw"
-    "sjR7CMSfHp24/zWppoOVzxMZCpUPaNkwaNhRjlA9VPqT4nUPqqJIrYSMMiAJy4rTm7ti+peZPKFD9UlCL"
-    "DvKY+MoJhVeGLne+L359imNNPn6npX6kG4Ck+SkfkuYbiXz20aIH2TZoNhRv+Zg0tYBiIBHZTVnRGZ8Lm"
-    "usw+W9J/an05piXWGegYNypak8xLeW5aV3Mkkpwn+oBZV/xl/nKJKLPTVzl8gU+zshZC/qMjycG9bZje"
-    "qmZrheFEH8g==";
+    "iQEzBAABCgAdFiEErWn5K3MpQ2/082+LvEp7tz8m5CgFAl4L4QAACgkQvEp7tz8m5Ch9UQf+OfG5k6UD"
+    "33bn+E3G1oi8X6xJY47pdt0VrvSwqsgqJ+AxY1Wz5p1/21lk2YaBiZO7WCTOL19VyTdlPEX1nwHadNvR"
+    "8zPGy+ft/cgi6PyG2gRu0bVi/sAxIeJddNlt6zGNkxtRb/a7G3QM9mrdPy4KrcFJIANqBQXg6N6F0P72"
+    "am13I4nX79n77RGfYztPv61f8WL9XDx5PJBI8ZKK0iUrlRGAVKeK+VAPohcsq9YgwFkJ1Vr94n75Mmui"
+    "zSApEDwOSkEZt6f8IyyerSpNlm0O7doUPJbB38REXSvP8N+iYR4T+5imAPq9u7jcmHk9hS7KV0z2/zw/"
+    "K7qqD4eZ9G6Rpg==";
 const char SIGNATURE_B[] =
-    "iQEzBAABCgAdFiEEndvyoU6pjTtHwppFlq/70TD+x2EFAmp9NpYACgkQlq/70TD+x2GI+gf+JJ1i9LcJ"
-    "WJQ1hdc04EvJ7XW/3QTMycLZav+0b4NAHBfrUEnAGX1Jrl33y/hFjueRN1HLqgwqJRCm3uxRveGDXNsd"
-    "KWLzmqFmlpcqZ10o8LgapGuBGCebkRUVhchzY2dTZ8b8YKs/NcYWIy8M+tw2spQrLbSiHPWMDUWui9+c"
-    "AmqdQBKGV/vuBysAdz+BG6PdMNTsC0F+dAmZUyT1UBUXuY8AGgDGk+0SbRH6B9sBcUbcz7+KAQbef8vX"
-    "99AbTIg7BJlM1bnNYnN6kaUNX+Og90wS/kGeVDjS2XK4QBqIlbgX+gizOk3KdRwXIzovs+y0Olgnm6gw"
-    "TnWRrL4LZgOJPQ==";
+    "iQEzBAABCgAdFiEEqgIlJ8ODQTYqflF/VXKtUdbFc08FAl4L4QAACgkQVXKtUdbFc0/L5Qf+IWMNhtDM"
+    "2nZPcjUoFHgzy/vUFH7Vfo00n+C0knL1JSCuUZDpGxgER6eUSy26Gif1we6RLyQysA46VcMrcsVUjgFp"
+    "1qzg1Dc6mJyv83rE+AbMQ1dz1Sg7u7kmT6W618bk/pbYDOmdIlyOcCXttqA9v5RxWSMpMPHhrxAHSwbp"
+    "4JpYUAfj43dN/cE7pTQodsMB8BkJE84xbxC+edT5Yan7pDQnVd3/XdZ8nt2GP0WFoYU/CiEeTyY2IX7I"
+    "rouyib/BEpedFRVYD5Ju+KbN/eMC6H96BHA7L6hE/U3WJckLr8IeDdqkv+v5tPY9jyCFdX0j9BUJdJqP"
+    "Y2zh86GGx67ONQ==";
 
 void writeBase64(kj::StringPtr path, kj::StringPtr encoded) {
   auto decoded = kj::decodeBase64(encoded.asArray());

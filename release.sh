@@ -83,7 +83,7 @@ check-release-trust-root() {
     exit 1
   fi
 
-  if ! grep -Fq "[GNUPG:] VALIDSIG $SIGNING_KEY_ID " install.sh; then
+  if ! grep -Fq "\[GNUPG:\] VALIDSIG $SIGNING_KEY_ID " install.sh; then
     echo "install.sh does not pin the release-key-fingerprint key." >&2
     exit 1
   fi

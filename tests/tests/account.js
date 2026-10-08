@@ -183,3 +183,18 @@ module.exports["Test link credential from unused account"] = function (browser) 
         .end()
     });
 }
+
+module.exports["Test GitHub primary email"] = function (browser) {
+  browser
+    .loginGithub()
+    .execute(
+      function () {
+        return Meteor.user().primaryEmail;
+      },
+      [],
+      function (response) {
+        browser.assert.equal(response.value, "primary@example.com");
+      },
+    )
+    .end();
+};

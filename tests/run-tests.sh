@@ -30,6 +30,41 @@ test -e assets/ssjekyll7.spk || curl https://sandstorm.io/apps/ssjekyll7.spk > a
 
 NIGHTWATCH_PARAMS=()
 
+extract_major_version() {
+  echo "$1" | sed -E 's/[^0-9]*([0-9]+)\..*/\1/'
+}
+
+prepare_repo_local_chrome() {
+  local driver_bin="node_modules/chromedriver/lib/chromedriver/chromedriver"
+  if [ ! -x "$driver_bin" ]; then
+    echo "Missing chromedriver binary at: $driver_bin" >&2
+    echo "Install test dependencies first (e.g. npm install in tests/)." >&2
+    exit 1
+  fi
+
+  local driver_version driver_major
+  driver_version="$("$driver_bin" --version | awk '{print $2}')"
+  driver_major="$(extract_major_version "$driver_version")"
+
+  echo "Ensuring repo-local Chrome-for-Testing version $driver_version"
+  ./node_modules/.bin/browsers \
+    install "chrome@$driver_version" --path ./.browsers >/dev/null
+
+  local chrome_bin
+  chrome_bin="$(find ./.browsers/chrome -type f -path "*linux-${driver_major}*/chrome-linux64/chrome" | sort | tail -n1)"
+  if [ -z "$chrome_bin" ]; then
+    chrome_bin="$(find ./.browsers/chrome -type f -path "*/chrome-linux64/chrome" | sort | tail -n1)"
+  fi
+
+  if [ -z "$chrome_bin" ] || [ ! -x "$chrome_bin" ]; then
+    echo "Failed to locate downloaded Chrome binary under tests/.browsers/chrome" >&2
+    exit 1
+  fi
+
+  export NIGHTWATCH_CHROME_BINARY="$chrome_bin"
+  echo "Using Chrome binary: $NIGHTWATCH_CHROME_BINARY"
+}
+
 if [ ! -z "${TESTCASE:-}" ]; then
   # This is awkward because the test case name usually has spaces, but we need
   # to pass it as a single argument on the command-line. So, we concoct a bash
@@ -42,6 +77,8 @@ if [ ! -z "${TESTCASE:-}" ]; then
   fi
   SKIP_UNITTESTS=true
 fi
+
+prepare_repo_local_chrome
 
 if [[ -z "${LAUNCH_URL:-}" ]]; then
   if [[ -z "${SKIP_UNITTESTS:-}" ]]; then

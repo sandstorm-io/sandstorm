@@ -1,7 +1,7 @@
 var util = require("util");
 var events = require("events");
 var simpleParser = require("mailparser").simpleParser;
-var simplesmtp = require("simplesmtp");
+var simplesmtp = require("simplesmtp/index.js");
 var _ = require("underscore");
 
 var SMTP_OUTGOING_PORT = parseInt(process.env.SMTP_OUTGOING_PORT, 10) || 30026;

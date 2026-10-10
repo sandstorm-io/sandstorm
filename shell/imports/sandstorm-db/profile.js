@@ -27,7 +27,7 @@ let makeIdenticon;
 let httpProtocol;
 
 if (Meteor.isServer) {
-  SandstormDb.ensureSubscriberHasCredential = function (publishHandler, credentialId) {
+  SandstormDb.ensureSubscriberHasCredential = async function (publishHandler, credentialId) {
     // Helper for publish functions that need to restrict access based on whether the subscriber
     // has a given credential linked. Automatically stops the subscription if the user loses the
     // credential. Returns a boolean indicating whether the user initially has the credential.
@@ -48,23 +48,29 @@ if (Meteor.isServer) {
           },
         ],
       });
-      if (hasCredentialCursor.count() == 0) {
+      if (await hasCredentialCursor.countAsync() == 0) {
         publishHandler.stop();
         return false;
       }
 
-      const handle = hasCredentialCursor
-          .observe({ removed: function () { publishHandler.stop(); } });
+      const handle = await hasCredentialCursor
+          .observeAsync({ removed: function () { publishHandler.stop(); } });
 
-      publishHandler.onStop(function () { handle.stop(); });
+      publishHandler.onStop(function () {
+        Promise.resolve(handle).then((h) => {
+          if (typeof h === "function") { h(); } else if (h && typeof h.stop === "function") h.stop();
+        }).catch((err) => {
+          console.error("Failed to stop credential observer on publication stop:", err);
+        });
+      });
 
       return true;
     }
   };
 
-  Meteor.publish("credentialDetails", function (credentialId) {
+  Meteor.publish("credentialDetails", async function (credentialId) {
     check(credentialId, String);
-    if (!SandstormDb.ensureSubscriberHasCredential(this, credentialId)) return;
+    if (!await SandstormDb.ensureSubscriberHasCredential(this, credentialId)) return;
 
     return Meteor.users.find({ _id: credentialId },
       { fields: {
@@ -256,6 +262,58 @@ SandstormDb.fillInProfileDefaults = function (credential, profile) {
   profile.identicon = credential._id;
 };
 
+SandstormDb.fillInProfileDefaultsAsync = async function (credential, profile) {
+  // Async server-side equivalent of fillInProfileDefaults().
+  if (!profile) {
+    throw new Error("missing profile (maybe using old call signature?)");
+  }
+
+  const services = credential.services || {};
+
+  if (services.github) {
+    profile.name = profile.name || services.github.username || "Name Unknown";
+    profile.handle = profile.handle || filterHandle(services.github.username) ||
+        filterHandle(profile.name);
+  } else if (services.google) {
+    profile.name = profile.name || services.google.name || "Name Unknown";
+    profile.handle = profile.handle || emailToHandle(services.google.email) ||
+        filterHandle(profile.name);
+    profile.pronoun = profile.pronoun || GENDERS[services.google.gender] || "neutral";
+  } else if (services.oidc) {
+    profile.name = profile.name || services.oidc.name || "Name Unknown";
+    profile.handle = profile.handle || emailToHandle(services.oidc.email) ||
+        filterHandle(profile.name);
+  } else if (services.email) {
+    const email = services.email.email;
+    profile.name = profile.name || emailToHandle(email);
+    profile.handle = profile.handle || emailToHandle(email);
+  } else if (services.dev) {
+    const lowerCaseName = services.dev.name.split(" ")[0].toLowerCase();
+    profile.name = profile.name || services.dev.name;
+    profile.handle = profile.handle || filterHandle(lowerCaseName);
+    profile.pronoun = profile.pronoun ||
+        (_.contains(["alice", "carol", "eve"], lowerCaseName) ? "female" :
+         _.contains(["bob", "dave"], lowerCaseName) ? "male" : "neutral");
+  } else if (services.demo) {
+    profile.name = profile.name || "Demo User";
+    profile.handle = profile.handle || "demo";
+  } else if (services.ldap) {
+    const setting = await globalDb.collections.settings.findOneAsync({ _id: "ldapNameField" });
+    const key = setting ? setting.value : "";
+    profile.handle = profile.handle || services.ldap.username;
+    profile.name = profile.name || services.ldap.rawAttrs[key] || profile.handle;
+  } else if (services.saml) {
+    profile.handle = profile.handle || emailToHandle(services.saml.email);
+    profile.name = profile.name || services.saml.displayName || profile.handle;
+  } else {
+    throw new Error("unrecognized authentication service: " +
+                    SandstormDb.getServiceName(credential));
+  }
+
+  profile.pronoun = profile.pronoun || "neutral";
+  profile.identicon = credential._id;
+};
+
 SandstormDb.getIntrinsicName = function (credential, usePrivate) {
   const services = credential.services;
   if (services.github) {
@@ -309,7 +367,18 @@ SandstormDb.prototype.getAccountIntrinsicNames = function (account, usePrivate) 
   });
 };
 
-SandstormDb.getVerifiedEmailsForCredential = function (credential) {
+SandstormDb.prototype.getAccountIntrinsicNamesAsync = async function (account, usePrivate) {
+  const credentialIds = account.loginCredentials.map(cred => cred.id);
+  const credentials = await Meteor.users.find({ _id: { $in: credentialIds } }).fetchAsync();
+  return credentials.map((credential) => {
+    return {
+      service: SandstormDb.getServiceName(credential),
+      name: SandstormDb.getIntrinsicName(credential, usePrivate),
+    };
+  });
+};
+
+SandstormDb.getVerifiedEmailsForCredential = function (credential, ldapEmailField) {
   const services = credential.services;
   if (services.google && services.google.email &&
       services.google.verified_email) { // jscs:ignore requireCamelCaseOrUpperCaseIdentifiers
@@ -325,7 +394,8 @@ SandstormDb.getVerifiedEmailsForCredential = function (credential) {
       .value();
   } else if (services.ldap) {
     // TODO(cleanup): don't create a new SandstormDb here, make this non-static
-    const email = services.ldap.rawAttrs[new SandstormDb().getLdapEmailField()];
+    const emailField = ldapEmailField === undefined ? new SandstormDb().getLdapEmailField() : ldapEmailField;
+    const email = services.ldap.rawAttrs[emailField];
     if (email) {
       return [{ email: email, primary: true }];
     }
@@ -336,35 +406,34 @@ SandstormDb.getVerifiedEmailsForCredential = function (credential) {
   return [];
 };
 
-SandstormDb.prototype.findCredentialsByEmail = function (email) {
+SandstormDb.prototype.findCredentialsByEmail = async function (email) {
   // Returns an array of credentials which have the given email address as one of their verified
   // addresses.
-
   check(email, String);
 
   // For LDAP, the field containing the e-mail address is configurable...
   const ldapQuery = {};
-  ldapQuery["services.ldap.rawAttrs." + this.getLdapEmailField()] = email;
+  const ldapEmailField = await this.getLdapEmailFieldAsync();
+  ldapQuery["services.ldap.rawAttrs." + ldapEmailField] = email;
 
-  return Meteor.users.find({ $or: [
+  return (await Meteor.users.find({ $or: [
     { "services.google.email": email },
     { "services.email.email": email },
     { "services.github.emails.email": email },
     ldapQuery,
     { "services.oidc.email": email },
     { "services.saml.email": email },
-  ], }).fetch().filter(function (credential) {
-    // Verify that the email is verified, since our query doesn't technically do that.
-    return !!_.findWhere(SandstormDb.getVerifiedEmailsForCredential(credential), { email: email });
+  ], }).fetchAsync()).filter((credential) => {
+    return !!_.findWhere(SandstormDb.getVerifiedEmailsForCredential(credential, ldapEmailField), { email: email });
   });
 };
 
-SandstormDb.prototype.findAccountsByEmail = function (email) {
-  const credentialIds = _.pluck(this.findCredentialsByEmail(email), "_id");
-  return Meteor.users.find({ $or: [
+SandstormDb.prototype.findAccountsByEmail = async function (email) {
+  const credentialIds = _.pluck(await this.findCredentialsByEmail(email), "_id");
+  return await Meteor.users.find({ $or: [
     { "loginCredentials.id": { $in: credentialIds } },
     { "nonloginCredentials.id": { $in: credentialIds } },
-  ], }).fetch();
+  ], }).fetchAsync();
 };
 
 SandstormDb.fillInPictureUrl = function (user) {
@@ -439,11 +508,57 @@ SandstormDb.getUserEmails = function (user) {
   return result;
 };
 
-SandstormDb.prototype.addContact = function addContact(ownerId, contactId) {
+SandstormDb.getUserEmailsAsync = async function (user) {
+  // Async server-side equivalent of getUserEmails().
+  const credentialIds = SandstormDb.getUserCredentialIds(user);
+  const verifiedEmails = {};
+  const unverifiedEmails = {};
+  const ldapEmailField = await globalDb.getLdapEmailFieldAsync();
+  const credentials = await Meteor.users.find({ _id: { $in: credentialIds } }).fetchAsync();
+  const credentialsById = {};
+  credentials.forEach((credential) => {
+    credentialsById[credential._id] = credential;
+  });
+
+  credentialIds.forEach((id) => {
+    const credential = credentialsById[id];
+    if (credential && credential.services) {
+      SandstormDb.getVerifiedEmailsForCredential(credential, ldapEmailField).forEach((verifiedEmail) => {
+        if (verifiedEmail) {
+          verifiedEmails[verifiedEmail.email] = true;
+        }
+      });
+    }
+
+    if (credential && credential.unverifiedEmail) {
+      unverifiedEmails[credential.unverifiedEmail] = true;
+    }
+  });
+
+  const result = [];
+  _.keys(verifiedEmails).map((email) => {
+    result.push({ email: email,
+                  verified: true,
+                  primary: user && email === user.primaryEmail, });
+  });
+
+  _.keys(unverifiedEmails).map((email) => {
+    if (!(email in verifiedEmails)) { result.push({ email: email, verified: false }); }
+  });
+
+  if (user && !(user.primaryEmail in verifiedEmails) && result.length > 0) {
+    result[0].primary = true;
+  }
+
+  return result;
+};
+
+SandstormDb.prototype.addContact = async function addContact(ownerId, contactId) {
   check(ownerId, String);
   check(contactId, String);
-  const profile = Meteor.users.findOne(contactId).profile;
-  this.collections.contacts.upsert({ ownerId: ownerId, accountId: contactId }, {
+  const user = await Meteor.users.findOneAsync(contactId);
+  const profile = user && user.profile;
+  await this.collections.contacts.upsertAsync({ ownerId: ownerId, accountId: contactId }, {
     ownerId: ownerId,
     petname: profile && profile.name,
     created: new Date(),

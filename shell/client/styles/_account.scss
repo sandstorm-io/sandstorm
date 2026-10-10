@@ -128,7 +128,7 @@ body>.popup.account>.frame-container {
     &.login-button-disabled, &.login-button-disabled:active {
       color: #ddd;
       background-color: #aaa;
-      border: 1px solid lighten(#aaa, 10%);
+      border: 1px solid color.adjust(#aaa, $lightness: 10%);
       box-shadow: none;
     }
 
@@ -1849,4 +1849,3 @@ ul.credential-card-list {
   padding: 4px;
   background-color: #ffdddd;
 }
-

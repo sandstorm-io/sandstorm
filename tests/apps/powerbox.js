@@ -107,7 +107,7 @@ module.exports["Test Powerbox with failing requirements"] = function (browser) {
     .assert.textContains("#grainTitle", "Untitled PowerboxTest")
 
     // We'll use the debugLog at the bottom of the test, but it's nice to open it early and give it time to load.
-    .click("#openDebugLog")
+    .openDebugLog()
     .waitForElementVisible('.grain-frame', short_wait)
     .grainFrame()
     .waitForElementVisible("#offer", short_wait)

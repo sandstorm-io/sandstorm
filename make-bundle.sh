@@ -113,6 +113,12 @@ cp meteor-bundle-main.js bundle/sandstorm-main.js
 (cd bundle/programs/server && \
  PATH=$METEOR_DEV_BUNDLE/lib/node_modules/.bin:$METEOR_DEV_BUNDLE/bin:$PATH "$METEOR_DEV_BUNDLE/bin/npm" install)
 
+# Ensure node-capnp is present where server startup looks first
+# (process.cwd() starts at /programs/server in the runtime chroot).
+mkdir -p bundle/programs/server/node_modules
+cp node_modules/capnp.js bundle/programs/server/node_modules/capnp.js
+cp node_modules/capnp.node bundle/programs/server/node_modules/capnp.node
+
 # Copy over key binaries.
 mkdir -p bundle/bin
 cp bin/sandstorm-http-bridge bundle/bin/sandstorm-http-bridge

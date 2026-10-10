@@ -22,7 +22,23 @@ import { _ } from "meteor/underscore";
 import { SandstormDb } from "/imports/sandstorm-db/db";
 import { SandstormBackend } from "/imports/server/backend";
 
-const linkCredentialToAccountInternal = function (db, backend, credentialId, accountId, allowLogin) {
+const deleteUnusedAccountForCredential = async function (db, backend, credentialId) {
+  check(credentialId, String);
+  const account = await db.collections.users.findOneAsync({ "loginCredentials.id": credentialId });
+  if (account &&
+      account.loginCredentials.length == 1 &&
+      account.nonloginCredentials.length == 0 &&
+      !(await db.collections.grains.findOneAsync({ userId: account._id }, { fields: {} })) &&
+      !(await db.collections.apiTokens.findOneAsync({ accountId: account._id })) &&
+      (!account.plan || account.plan === "free") &&
+      !(account.payments && account.payments.id) &&
+      !(await db.collections.contacts.findOneAsync({ ownerId: account._id }))) {
+    await db.collections.users.removeAsync({ _id: account._id });
+    backend.deleteUser(account._id);
+  }
+};
+
+const linkCredentialToAccountInternal = async function (db, backend, credentialId, accountId, allowLogin) {
   // Links the credential to the account. If `allowLogin` is true, grants the credential login access
   // if possible. Makes the account durable if it is a demo account.
 
@@ -31,7 +47,7 @@ const linkCredentialToAccountInternal = function (db, backend, credentialId, acc
   check(credentialId, String);
   check(accountId, String);
 
-  const accountUser = Meteor.users.findOne({ _id: accountId });
+  const accountUser = await Meteor.users.findOneAsync({ _id: accountId });
   if (!accountUser) {
     throw new Meteor.Error(404, "No account found with ID " + accountId);
   }
@@ -50,7 +66,7 @@ const linkCredentialToAccountInternal = function (db, backend, credentialId, acc
       "Cannot link a credential that's alread linked to this account.");
   }
 
-  const credentialUser = Meteor.users.findOne({ _id: credentialId });
+  const credentialUser = await Meteor.users.findOneAsync({ _id: credentialId });
 
   if (!credentialUser) {
     throw new Meteor.Error(404, "No credential found with ID " + credentialId);
@@ -60,13 +76,13 @@ const linkCredentialToAccountInternal = function (db, backend, credentialId, acc
     throw new Meteor.Error(400, "Cannot link an account to another account");
   }
 
-  db.deleteUnusedAccount(backend, credentialUser._id);
-  if (Meteor.users.findOne({ "loginCredentials.id": credentialUser._id })) {
+  await deleteUnusedAccountForCredential(db, backend, credentialUser._id);
+  if (await Meteor.users.findOneAsync({ "loginCredentials.id": credentialUser._id })) {
     throw new Meteor.Error(403,
                            "Cannot link a credential that can already log into another account");
   }
 
-  const alreadyLinked = !!Meteor.users.findOne({ "nonloginCredentials.id": credentialUser._id });
+  const alreadyLinked = !!(await Meteor.users.findOneAsync({ "nonloginCredentials.id": credentialUser._id }));
 
   const pushModifier = (alreadyLinked || !allowLogin)
         ? { nonloginCredentials: { id: credentialUser._id } }
@@ -94,33 +110,33 @@ const linkCredentialToAccountInternal = function (db, backend, credentialId, acc
   }
 
   // Make sure not to add the same credential twice.
-  Meteor.users.update({ _id: accountUser._id,
-                        "nonloginCredentials.id": { $ne: credentialUser._id },
-                        "loginCredentials.id": { $ne: credentialUser._id }, },
-                      modifier);
+  await Meteor.users.updateAsync({ _id: accountUser._id,
+                                   "nonloginCredentials.id": { $ne: credentialUser._id },
+                                   "loginCredentials.id": { $ne: credentialUser._id }, },
+                                 modifier);
 
   if (accountUser.expires) {
     const demoCredentialId = SandstormDb.getUserCredentialIds(accountUser)[0];
-    Meteor.users.update({ _id: demoCredentialId },
-                        { $unset: { expires: 1 },
-                          $set: { upgradedFromDemo: Date.now() }, });
+    await Meteor.users.updateAsync({ _id: demoCredentialId },
+                                   { $unset: { expires: 1 },
+                                     $set: { upgradedFromDemo: Date.now() }, });
 
     // The account's existing profile is just "Demo User". Import the new credential's profile.
-    SandstormDb.fillInProfileDefaults(credentialUser, credentialUser.profile);
+    await SandstormDb.fillInProfileDefaultsAsync(credentialUser, credentialUser.profile);
 
     // Mark the demo credential as nonlogin. It'd be nicer if the credential started out as nonlogin,
     // but to get that to work we would need to adjust the account creation and first login logic.
-    Meteor.users.update({ _id: accountUser._id,
-                          "loginCredentials.id": demoCredentialId,
-                          "nonloginCredentials.id": { $not: { $eq: demoCredentialId } }, },
-                        { $pull: { loginCredentials: { id: demoCredentialId } },
-                          $push: { nonloginCredentials: { id: demoCredentialId } },
-                          $set: { profile: credentialUser.profile } });
+    await Meteor.users.updateAsync({ _id: accountUser._id,
+                                     "loginCredentials.id": demoCredentialId,
+                                     "nonloginCredentials.id": { $not: { $eq: demoCredentialId } }, },
+                                   { $pull: { loginCredentials: { id: demoCredentialId } },
+                                     $push: { nonloginCredentials: { id: demoCredentialId } },
+                                     $set: { profile: credentialUser.profile } });
   }
 };
 
 Meteor.methods({
-  loginWithCredential: function (accountUserId) {
+  loginWithCredential: async function (accountUserId) {
     // Logs into the account with ID `accountUserId`. Throws an exception if the current user is
     // not a credential user listed in the account's `loginCredentials` field. This method is not
     // intended to be called directly; client-side code should only invoke it through
@@ -129,12 +145,12 @@ Meteor.methods({
 
     check(accountUserId, String);
 
-    const credentialUser = Meteor.user();
+    const credentialUser = await Meteor.userAsync();
     if (!credentialUser || !credentialUser.profile) {
       throw new Meteor.Error(403, "Must be already logged in as an credential.");
     }
 
-    const accountUser = Meteor.users.findOne(accountUserId);
+    const accountUser = await Meteor.users.findOneAsync({ _id: accountUserId });
     if (!accountUser) {
       throw new Meteor.Error(404, "No such user found: " + accountUserId);
     }
@@ -150,20 +166,22 @@ Meteor.methods({
                                  "credential", function () { return { userId: accountUserId }; });
   },
 
-  createAccountForCredential: function () {
+  createAccountForCredential: async function () {
     // Creates a new account for the currently-logged-in credential.
 
-    const user = Meteor.user();
-    if (user.type !== "credential") {
+    const user = await Meteor.userAsync();
+    if (!user || user.type !== "credential") {
       throw new Meteor.Error(403, "Must be logged in as a credential in order to create an account.");
     }
 
-    if (Meteor.users.findOne({
+    const existingAccount = await Meteor.users.findOneAsync({
       $or: [
         { "loginCredentials.id": user._id },
         { "nonloginCredentials.id": user._id },
       ],
-    })) {
+    });
+
+    if (existingAccount) {
       throw new Meteor.Error(403, "Cannot create an account for a credential that's already " +
                                   "linked to another account.");
     }
@@ -190,7 +208,7 @@ Meteor.methods({
       }
     }
 
-    SandstormDb.fillInProfileDefaults(user, user.profile);
+    await SandstormDb.fillInProfileDefaultsAsync(user, user.profile);
     const options = { profile: user.profile };
 
     // This will throw an error if the credential has been added as a login credential to some
@@ -198,7 +216,7 @@ Meteor.methods({
     return Accounts.insertUserDoc(options, newUser);
   },
 
-  linkCredentialToAccount: function (token) {
+  linkCredentialToAccount: async function (token) {
     // Links the credential of the current user to the account that has `token` as a resume token.
     // If the account is a demo account, makes the account durable and gives the credential login
     // access to it.
@@ -210,13 +228,16 @@ Meteor.methods({
     }
 
     const hashed = Accounts._hashLoginToken(token);
-    const accountUser = Meteor.users.findOne({ "services.resume.loginTokens.hashedToken": hashed });
+    const accountUser = await Meteor.users.findOneAsync({ "services.resume.loginTokens.hashedToken": hashed });
+    if (!accountUser) {
+      throw new Meteor.Error(403, "Invalid or expired linking token.");
+    }
 
-    linkCredentialToAccountInternal(this.connection.sandstormDb, this.connection.sandstormBackend,
-                                    this.userId, accountUser._id, true);
+    await linkCredentialToAccountInternal(this.connection.sandstormDb, this.connection.sandstormBackend,
+                                          this.userId, accountUser._id, true);
   },
 
-  unlinkCredential: function (accountUserId, credentialId) {
+  unlinkCredential: async function (accountUserId, credentialId) {
     // Unlinks the credential with ID `credentialId` from the account with ID `accountUserId`.
 
     check(credentialId, String);
@@ -226,12 +247,19 @@ Meteor.methods({
       throw new Meteor.Error(403, "Not logged in.");
     }
 
-    if (!this.connection.sandstormDb.userHasCredential(this.userId, credentialId)) {
+    const accountUser = await Meteor.users.findOneAsync({
+      _id: this.userId,
+      $or: [
+        { "loginCredentials.id": credentialId },
+        { "nonloginCredentials.id": credentialId },
+      ],
+    }, { fields: { _id: 1 } });
+
+    if (!accountUser) {
       throw new Meteor.Error(403, "Current user does not own credential " + credentialId);
     }
 
-    const credentialUser = Meteor.users.findOne({ _id: credentialId });
-    Meteor.users.update({
+    await Meteor.users.updateAsync({
       _id: accountUserId,
     }, {
       $pull: {
@@ -241,7 +269,7 @@ Meteor.methods({
     });
   },
 
-  setCredentialAllowsLogin: function (credentialId, allowLogin) {
+  setCredentialAllowsLogin: async function (credentialId, allowLogin) {
     // Sets whether the current account allows the credential with ID `credentialId` to log in.
 
     check(credentialId, String);
@@ -250,37 +278,45 @@ Meteor.methods({
       throw new Meteor.Error(403, "Not logged in.");
     }
 
-    if (!this.connection.sandstormDb.userHasCredential(this.userId, credentialId)) {
+    const accountUser = await Meteor.users.findOneAsync({
+      _id: this.userId,
+      $or: [
+        { "loginCredentials.id": credentialId },
+        { "nonloginCredentials.id": credentialId },
+      ],
+    }, { fields: { _id: 1 } });
+
+    if (!accountUser) {
       throw new Meteor.Error(403, "Current user does not own credential " + credentialId);
     }
 
     if (allowLogin) {
-      Meteor.users.update({ _id: this.userId,
-                            "nonloginCredentials.id": credentialId,
-                            "loginCredentials.id": { $not: { $eq: credentialId } }, },
-                          { $pull: { nonloginCredentials: { id: credentialId } },
-                            $push: { loginCredentials: { id: credentialId } }, });
+      await Meteor.users.updateAsync({ _id: this.userId,
+                                       "nonloginCredentials.id": credentialId,
+                                       "loginCredentials.id": { $not: { $eq: credentialId } }, },
+                                     { $pull: { nonloginCredentials: { id: credentialId } },
+                                       $push: { loginCredentials: { id: credentialId } }, });
     } else {
-      Meteor.users.update({ _id: this.userId,
-                            "loginCredentials.id": credentialId,
-                            "nonloginCredentials.id": { $not: { $eq: credentialId } }, },
-                          { $pull: { loginCredentials: { id: credentialId } },
-                            $push: { nonloginCredentials: { id: credentialId } }, });
+      await Meteor.users.updateAsync({ _id: this.userId,
+                                       "loginCredentials.id": credentialId,
+                                       "nonloginCredentials.id": { $not: { $eq: credentialId } }, },
+                                     { $pull: { loginCredentials: { id: credentialId } },
+                                       $push: { nonloginCredentials: { id: credentialId } }, });
     }
   },
 
-  logoutCredentialsOfCurrentAccount: function () {
+  logoutCredentialsOfCurrentAccount: async function () {
     // Logs out all credentials that are allowed to log in to the current account.
-    const user = Meteor.user();
+    const user = await Meteor.userAsync();
     if (user && user.loginCredentials) {
-      user.loginCredentials.forEach(function (credential) {
-        Meteor.users.update({ _id: credential.id }, { $set: { "services.resume.loginTokens": [] } });
-      });
+      await Promise.all(user.loginCredentials.map((credential) => {
+        return Meteor.users.updateAsync({ _id: credential.id }, { $set: { "services.resume.loginTokens": [] } });
+      }));
     }
   },
 });
 
-Accounts.linkCredentialToAccount = function (db, backend, credentialId, accountId, allowLogin) {
+Accounts.linkCredentialToAccount = async function (db, backend, credentialId, accountId, allowLogin) {
   // Links the credential to the account. If the account is a demo account, makes it durable.
   // If `allowLogin` is true, attempts to give the credential login access.
   check(db, SandstormDb);
@@ -288,21 +324,21 @@ Accounts.linkCredentialToAccount = function (db, backend, credentialId, accountI
   check(credentialId, String);
   check(accountId, String);
   check(allowLogin, Boolean);
-  linkCredentialToAccountInternal(db, backend, credentialId, accountId, allowLogin);
+  await linkCredentialToAccountInternal(db, backend, credentialId, accountId, allowLogin);
 };
 
-Meteor.publish("accountsOfCredential", function (credentialId) {
+Meteor.publish("accountsOfCredential", async function (credentialId) {
   check(credentialId, String);
-  if (!SandstormDb.ensureSubscriberHasCredential(this, credentialId)) return;
+  if (!await SandstormDb.ensureSubscriberHasCredential(this, credentialId)) return;
 
   // Map from credential ID to `true` for each credential we've published already.
   const loginCredentials = {};
 
   const _this = this;
-  function addCredentialsOfAccount(account) {
-    account.loginCredentials.forEach(function (credential) {
+  async function addCredentialsOfAccount(account) {
+    for (const credential of account.loginCredentials) {
       if (!(credential.id in loginCredentials)) {
-        const user = Meteor.users.findOne({ _id: credential.id });
+        const user = await Meteor.users.findOneAsync({ _id: credential.id });
         if (user) {
           user.intrinsicName = SandstormDb.getIntrinsicName(user);
           user.loginId = SandstormDb.getLoginId(user);
@@ -316,7 +352,7 @@ Meteor.publish("accountsOfCredential", function (credentialId) {
 
         loginCredentials[credential.id] = true;
       }
-    });
+    }
   }
 
   const cursor = Meteor.users.find({
@@ -326,13 +362,24 @@ Meteor.publish("accountsOfCredential", function (credentialId) {
     ],
   });
 
-  const handle = cursor.observe({
+  // Publish initial rows before signaling readiness so clients don't race into
+  // `createAccountForCredential()` while linked-account data is still loading.
+  const initialAccounts = await cursor.fetchAsync();
+  for (const account of initialAccounts) {
+    await addCredentialsOfAccount(account);
+  }
+
+  const handle = await cursor.observeAsync({
     added: function (account) {
-      addCredentialsOfAccount(account);
+      addCredentialsOfAccount(account).catch((err) => {
+        console.error("accountsOfCredential added observer failed:", err);
+      });
     },
 
     changed: function (newAccount, oldAccount) {
-      addCredentialsOfAccount(newAccount);
+      addCredentialsOfAccount(newAccount).catch((err) => {
+        console.error("accountsOfCredential changed observer failed:", err);
+      });
     },
 
     removed: function (account) {
@@ -347,7 +394,11 @@ Meteor.publish("accountsOfCredential", function (credentialId) {
   this.ready();
 
   this.onStop(function () {
-    handle.stop();
+    Promise.resolve(handle).then((h) => {
+      if (typeof h === "function") { h(); } else if (h && typeof h.stop === "function") h.stop();
+    }).catch((err) => {
+      console.error("Failed to stop accountsOfCredential observer:", err);
+    });
     Object.keys(loginCredentials).forEach(function (credentialId) {
       delete loginCredentials[credentialId];
     });

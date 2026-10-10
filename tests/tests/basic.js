@@ -35,6 +35,27 @@ module.exports = {
       .assert.textContains(".topbar .account>.show-popup", "TestingLogin")
       .end();
   },
+
+  "Test setup session clear invalidates token": function (browser) {
+    browser
+      .url(browser.launch_url + "/")
+      .timeouts("script", utils.medium_wait);
+
+    utils.callMeteorTestMethod(browser, "testRegressionSetupSessionClear");
+
+    browser.end();
+  },
+
+  "Test OIDC signin URL and index migration coverage": function (browser) {
+    browser
+      .url(browser.launch_url + "/")
+      .timeouts("script", utils.medium_wait);
+
+    utils.callMeteorTestMethod(browser, "testRegressionOidcSigninAndIndexMigration");
+
+    browser.end();
+  },
+
 };
 if (run_xfail) {
   // https://github.com/sandstorm-io/sandstorm/issues/3615

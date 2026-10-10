@@ -19,12 +19,11 @@ import { pipeline, Writable } from "stream";
 
 import { Meteor } from "meteor/meteor";
 import { _ } from "meteor/underscore";
+import Request from "request";
 
-import { inMeteor, waitPromise } from "/imports/server/async-helpers";
+import { inMeteor } from "/imports/server/async-helpers";
 import { ssrfSafeLookupOrProxy } from "/imports/server/networking";
 import { globalDb } from "/imports/db-deprecated";
-
-const Request = HTTPInternals.NpmModules.request.module;
 
 let installers;  // set to {} on main replica
 // To protect against race conditions, we require that each row in the Packages
@@ -39,7 +38,7 @@ const verifyIsMainReplica = () => {
   }
 };
 
-const deletePackageInternal = (pkg) => {
+const deletePackageInternal = async (pkg) => {
   verifyIsMainReplica();
 
   const packageId = pkg._id;
@@ -51,27 +50,28 @@ const deletePackageInternal = (pkg) => {
   installers[packageId] = "uninstalling";
 
   try {
-    const action = globalDb.collections.userActions.findOne({ packageId: packageId });
-    const grain = globalDb.collections.grains.findOne({ packageId: packageId });
+    const action = await globalDb.collections.userActions.findOneAsync({ packageId: packageId });
+    const grain = await globalDb.collections.grains.findOneAsync({ packageId: packageId });
     const notificationQuery = {};
     notificationQuery["appUpdates." + pkg.appId + ".packageId"] = packageId;
-    if (!grain && !action && !globalDb.collections.notifications.findOne(notificationQuery)
-        && !globalDb.getAppIdForPreinstalledPackage(packageId)) {
-      globalDb.collections.packages.update({
+    if (!grain && !action && !await globalDb.collections.notifications.findOneAsync(notificationQuery)
+        && !await globalDb.getAppIdForPreinstalledPackage(packageId)) {
+      await globalDb.collections.packages.updateAsync({
         _id: packageId,
       }, {
         $set: { status: "delete" },
         $unset: { shouldCleanup: "" },
       });
-      waitPromise(globalBackend.cap().deletePackage(packageId));
-      globalDb.collections.packages.remove(packageId);
+      await globalThis.globalBackend.cap().deletePackage(packageId);
+      await globalDb.collections.packages.removeAsync(packageId);
 
       // Clean up assets (icon, etc).
-      getAllManifestAssets(pkg.manifest).forEach((assetId) => {
-        globalDb.unrefStaticAsset(assetId);
-      });
+      await Promise.all(getAllManifestAssets(pkg.manifest).map(async (assetId) => {
+        await globalDb.unrefStaticAsset(assetId);
+      }));
     } else {
-      globalDb.collections.packages.update({ _id: packageId }, { $unset: { shouldCleanup: "" } });
+      await globalDb.collections.packages.updateAsync(
+          { _id: packageId }, { $unset: { shouldCleanup: "" } });
     }
 
     delete installers[packageId];
@@ -94,7 +94,9 @@ const startInstallInternal = (pkg) => {
 };
 
 export function cancelDownload(packageId) {
-  globalDb.collections.packages.remove({ _id: packageId, status: "download" });
+  globalDb.collections.packages.removeAsync({ _id: packageId, status: "download" }).catch((err) => {
+    console.error("Failed to cancel package download:", err);
+  });
 }
 
 const cancelDownloadInternal = (pkg) => {
@@ -116,17 +118,29 @@ if (!Meteor.settings.replicaNumber) {
 
   Meteor.startup(() => {
     // Restart any deletions that were killed while in-progress.
-    globalDb.collections.packages.find({ status: "delete" }).forEach(deletePackageInternal);
+    globalDb.collections.packages.find({ status: "delete" }).forEachAsync((pkg) => {
+      deletePackageInternal(pkg).catch((err) => {
+        console.error("Failed deleting package:", err);
+      });
+    });
 
     // Watch for new installation requests and fulfill them.
-    globalDb.collections.packages.find({ status: { $in: ["download", "verify", "unpack", "analyze"] } }).observe({
+    globalDb.collections.packages.find({ status: { $in: ["download", "verify", "unpack", "analyze"] } }).observeAsync({
       added: startInstallInternal,
       removed: cancelDownloadInternal,
+    }).catch((err) => {
+      console.error("Failed to observe active package installs:", err);
     });
 
     // Watch for new cleanup requests and fulfill them.
-    globalDb.collections.packages.find({ status: "ready", shouldCleanup: true }).observe({
-      added: deletePackageInternal,
+    globalDb.collections.packages.find({ status: "ready", shouldCleanup: true }).observeAsync({
+      added(pkg) {
+        deletePackageInternal(pkg).catch((err) => {
+          console.error("Failed deleting package:", err);
+        });
+      },
+    }).catch((err) => {
+      console.error("Failed to observe package cleanup requests:", err);
     });
   });
 }
@@ -202,10 +216,10 @@ class AppInstaller {
     // occur in exactly the order in which we generate them, so we use a promise chain to serialize
     // them.
     this.writeChain = this.writeChain.then(() => {
-      return inMeteor(() => {
-        if (manifest) extractManifestAssets(manifest);
+      return inMeteor(async () => {
+        if (manifest) await extractManifestAssets(manifest);
 
-        globalDb.collections.packages.update(_this.packageId, {
+        await globalDb.collections.packages.updateAsync(_this.packageId, {
           $set: {
             status: _this.status,
             progress: _this.progress,
@@ -273,7 +287,7 @@ class AppInstaller {
     return this.wrapCallback(() => {
       this.cleanup();
 
-      globalBackend.cap().tryGetPackage(this.packageId).then(this.wrapCallback((info) => {
+      globalThis.globalBackend.cap().tryGetPackage(this.packageId).then(this.wrapCallback((info) => {
         if (info.appId) {
           this.appId = info.appId;
           this.authorPgpKeyFingerprint = info.authorPgpKeyFingerprint;
@@ -295,8 +309,7 @@ class AppInstaller {
     console.log("Downloading app:", this.url);
     this.updateProgress("download");
 
-    inMeteor(this.wrapCallback(function () {
-      const safe = ssrfSafeLookupOrProxy(globalDb, this.url);
+    inMeteor(() => ssrfSafeLookupOrProxy(globalDb, this.url)).then(this.wrapCallback(function (safe) {
 
       let bytesExpected = undefined;
       let bytesReceived = 0;
@@ -326,7 +339,7 @@ class AppInstaller {
         if ("content-length" in response.headers) {
           bytesExpected = parseInt(response.headers["content-length"]);
         }
-        readPackageFromStream(response, globalBackend, (chunkLen) => {
+        readPackageFromStream(response, globalThis.globalBackend, (chunkLen) => {
           bytesReceived += chunkLen;
           updateDownloadProgress();
         }).then(({info}) => {
@@ -342,6 +355,8 @@ class AppInstaller {
       }))
 
       this.downloadRequest = request;
+    })).catch(this.wrapCallback((err) => {
+      throw err;
     }));
   }
 
@@ -350,27 +365,27 @@ class AppInstaller {
     this.updateProgress("ready", 1, undefined, manifest);
     const _this = this;
     _this.writeChain = _this.writeChain.then(() => {
-      return inMeteor(() => {
+      return inMeteor(async () => {
         if (_this.isAutoUpdated) {
-          globalDb.sendAppUpdateNotifications(_this.appId, _this.packageId,
+          await globalDb.sendAppUpdateNotifications(_this.appId, _this.packageId,
             (manifest.appTitle && manifest.appTitle.defaultText), manifest.appVersion,
             (manifest.appMarketingVersion && manifest.appMarketingVersion.defaultText));
         }
 
-        if (globalDb.getPackageIdForPreinstalledApp(_this.appId) &&
-            globalDb.collections.appIndex.findOne({
-              _id: _this.appId,
-              packageId: _this.packageId,
-            })) {
+        const appIndexEntry = await globalDb.collections.appIndex.findOneAsync({
+          _id: _this.appId,
+          packageId: _this.packageId,
+        });
+        if (await globalDb.getPackageIdForPreinstalledApp(_this.appId) && appIndexEntry) {
           // Only mark app as preinstall ready if its appId is in the preinstalledApps setting
           // and if it's the latest package version in the appIndex. The updateAppIndex function
           // will always trigger updates of preinstalled apps, even if a concurrent download of
           // an older package is going on.
-          globalDb.setPreinstallAppAsReady(_this.appId, _this.packageId);
+          await globalDb.setPreinstallAppAsReady(_this.appId, _this.packageId);
         }
 
         // Reset any sessions that were blocked by this package ID missing.
-        globalDb.collections.sessions.remove({missingPackageId: _this.packageId});
+        await globalDb.collections.sessions.removeAsync({ missingPackageId: _this.packageId });
       });
     }).then(() => {
       delete installers[_this.packageId];
@@ -378,15 +393,15 @@ class AppInstaller {
   }
 }
 
-function extractManifestAssets(manifest) {
+async function extractManifestAssets(manifest) {
   const metadata = manifest.metadata;
   if (!metadata) return;
 
   const icons = metadata.icons;
   if (icons) {
-    const handleIcon = (icon) => {
+    const handleIcon = async (icon) => {
       if (icon.svg) {
-        icon.assetId = globalDb.addStaticAsset({ mimeType: "image/svg+xml" }, icon.svg);
+        icon.assetId = await globalDb.addStaticAsset({ mimeType: "image/svg+xml" }, icon.svg);
         icon.format = "svg";
         delete icon.svg;
         return true;
@@ -395,11 +410,11 @@ function extractManifestAssets(manifest) {
         const normalDpi = icon.png.dpi1x || icon.png.dpi2x;
         if (!normalDpi) return false;
         icon.format = "png";
-        icon.assetId = globalDb.addStaticAsset({ mimeType: "image/png" }, normalDpi);
+        icon.assetId = await globalDb.addStaticAsset({ mimeType: "image/png" }, normalDpi);
 
         if (icon.png.dpi1x && icon.png.dpi2x) {
           // Icon specifies both resolutions, so also record a 2x DPI option.
-          icon.assetId2xDpi = globalDb.addStaticAsset({ mimeType: "image/png" }, icon.png.dpi2x);
+          icon.assetId2xDpi = await globalDb.addStaticAsset({ mimeType: "image/png" }, icon.png.dpi2x);
         }
 
         delete icon.png;
@@ -410,36 +425,37 @@ function extractManifestAssets(manifest) {
       }
     };
 
-    if (icons.appGrid && !handleIcon(icons.appGrid)) delete icons.appGrid;
-    if (icons.grain && !handleIcon(icons.grain)) delete icons.grain;
+    if (icons.appGrid && !await handleIcon(icons.appGrid)) delete icons.appGrid;
+    if (icons.grain && !await handleIcon(icons.grain)) delete icons.grain;
 
     // We don't need the market icons.
     if (icons.market) delete icons.market;
     if (icons.marketBig) delete icons.marketBig;
   }
 
-  const handleLocalizedText = (text) => {
+  const handleLocalizedText = async (text) => {
     if (text.defaultText) {
-      text.defaultTextAssetId = globalDb.addStaticAsset({ mimeType: "text/plain" }, text.defaultText);
+      text.defaultTextAssetId = await globalDb.addStaticAsset(
+          { mimeType: "text/plain" }, text.defaultText);
       delete text.defaultText;
     }
 
     if (text.localizations) {
-      text.localizations.forEach((localization) => {
+      for (const localization of text.localizations) {
         if (localization.text) {
-          localization.assetId = globalDb.addStaticAsset(
+          localization.assetId = await globalDb.addStaticAsset(
               { mimeType: "text/plain" }, localization.text);
           delete localization.text;
         }
-      });
+      }
     }
   };
 
   const license = metadata.license;
   if (license) {
-    if (license.proprietary) license.proprietary = handleLocalizedText(license.proprietary);
-    if (license.publicDomain) license.publicDomain = handleLocalizedText(license.proprietary);
-    if (license.notices) license.notices = handleLocalizedText(license.notices);
+    if (license.proprietary) license.proprietary = await handleLocalizedText(license.proprietary);
+    if (license.publicDomain) license.publicDomain = await handleLocalizedText(license.proprietary);
+    if (license.notices) license.notices = await handleLocalizedText(license.notices);
   }
 
   const author = metadata.author;
@@ -452,13 +468,13 @@ function extractManifestAssets(manifest) {
   if (metadata.pgpKeyring) delete metadata.pgpKeyring;
 
   // Perhaps used by the 'about' page?
-  if (metadata.description) metadata.description = handleLocalizedText(metadata.description);
+  if (metadata.description) metadata.description = await handleLocalizedText(metadata.description);
 
   // Screenshots are for app marketing; we don't use them post-install.
   if (metadata.screenshots) delete metadata.screenshots;
 
   // We might allow the user to view the changelog.
-  if (metadata.changeLog) metadata.changeLog = handleLocalizedText(metadata.changeLog);
+  if (metadata.changeLog) metadata.changeLog = await handleLocalizedText(metadata.changeLog);
 }
 
 function getAllManifestAssets(manifest) {

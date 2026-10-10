@@ -23,7 +23,32 @@ import { Meteor } from "meteor/meteor";
 import { Accounts } from "meteor/accounts-base";
 import { globalDb } from "/imports/db-deprecated";
 
+const serverServiceSettings = {};
+if (Meteor.isServer) {
+  Meteor.startup(() => {
+    globalDb.collections.settings.find({
+      _id: { $in: ["github", "google", "emailToken", "ldap", "oidc"] },
+    }).observeAsync({
+      added(doc) {
+        serverServiceSettings[doc._id] = !!doc.value;
+      },
+      changed(newDoc) {
+        serverServiceSettings[newDoc._id] = !!newDoc.value;
+      },
+      removed(oldDoc) {
+        delete serverServiceSettings[oldDoc._id];
+      },
+    }).catch((err) => {
+      console.error("Failed to observe login service settings:", err);
+    });
+  });
+}
+
 function serviceEnabled(name) {
+  if (Meteor.isServer) {
+    return !!serverServiceSettings[name];
+  }
+
   const setting = globalDb.collections.settings.findOne({ _id: name });
   return setting && !!setting.value;
 }

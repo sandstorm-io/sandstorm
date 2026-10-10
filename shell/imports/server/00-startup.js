@@ -39,45 +39,56 @@ process.on('uncaughtException', (err) => {
   console.error("Unhandled exception: ", err);
 });
 
-globalFrontendRefRegistry = new FrontendRefRegistry();
+globalThis.globalFrontendRefRegistry = new FrontendRefRegistry();
 
-SandstormPowerbox.registerUiViewQueryHandler(globalFrontendRefRegistry);
+globalThis.SandstormPowerbox.registerUiViewQueryHandler(globalThis.globalFrontendRefRegistry);
 
-if (Meteor.settings.public.stripePublicKey && BlackrockPayments.registerPaymentsApi) {
-  // TODO(cleanup): Meteor.startup() needed because unwrapFrontendCap is not defined yet when this
+if (Meteor.settings.public.stripePublicKey && globalThis.BlackrockPayments.registerPaymentsApi) {
+  // TODO(cleanup): Meteor.startup() needed because globalThis.unwrapFrontendCap is not defined yet when this
   //   first runs. Move it into an import.
   Meteor.startup(() => {
-    BlackrockPayments.registerPaymentsApi(
-        globalFrontendRefRegistry, PersistentImpl, unwrapFrontendCap);
+    globalThis.BlackrockPayments.registerPaymentsApi(
+        globalThis.globalFrontendRefRegistry, PersistentImpl, globalThis.unwrapFrontendCap);
   });
 }
 
-getWildcardOrigin = globalDb.getWildcardOrigin.bind(globalDb);
+globalThis.getWildcardOrigin = globalDb.getWildcardOrigin.bind(globalDb);
 
 Meteor.onConnection((connection) => {
   // TODO(cleanup): This is the best way I've thought of so far to allow methods declared in
   //   packages to actually use the DB, but it's pretty sad.
   connection.sandstormDb = globalDb;
-  connection.frontendRefRegistry = globalFrontendRefRegistry;
+  connection.frontendRefRegistry = globalThis.globalFrontendRefRegistry;
 });
 SandstormDb.periodicCleanup(5 * 60 * 1000, SandstormPermissions.cleanupSelfDestructing(globalDb));
 SandstormDb.periodicCleanup(10 * 60 * 1000,
                             SandstormPermissions.cleanupClientPowerboxTokens(globalDb));
 SandstormDb.periodicCleanup(60 * 60 * 1000, () => {
-  globalDb.cleanupExpiredAssetUploads();
+  globalDb.cleanupExpiredAssetUploads().catch((err) => {
+    console.error("Error cleaning up expired asset uploads:", err);
+  });
 });
 SandstormDb.periodicCleanup(24 * 60 * 60 * 1000, () => {
-  SandstormAutoupdateApps.updateAppIndex(globalDb);
+  SandstormAutoupdateApps.updateAppIndex(globalDb).catch((err) => {
+    console.error("Error updating app index:", err);
+  });
 });
-const deleteAccount = Meteor.settings.public.stripePublicKey && BlackrockPayments.deleteAccount;
+const deleteAccount = Meteor.settings.public.stripePublicKey && globalThis.BlackrockPayments.deleteAccount;
 SandstormDb.periodicCleanup(24 * 60 * 60 * 1000, () => {
-  globalDb.deletePendingAccounts(ACCOUNT_DELETION_SUSPENSION_TIME, globalBackend,
-    deleteAccount);
+  globalDb.deletePendingAccounts(ACCOUNT_DELETION_SUSPENSION_TIME, globalThis.globalBackend,
+      deleteAccount).catch((err) => {
+    console.error("Error deleting pending accounts:", err);
+  });
 });
 
 monkeyPatchHttp(globalDb, HTTP);
 
-Meteor.startup(() => { migrateToLatest(globalDb, globalBackend); });
+Meteor.startup(() => {
+  migrateToLatest(globalDb, globalThis.globalBackend).catch((err) => {
+    console.error("Migration startup failed:", err.stack || err);
+    throw err;
+  });
+});
 
 // If there are multiple replicas, prefix every log message with our replica number.
 if ("replicaNumber" in Meteor.settings) {
@@ -102,37 +113,28 @@ if ("replicaNumber" in Meteor.settings) {
   patchConsole("error");
 }
 
-// Make the fiber pool size infinite(ish)!
-//
-// Each fiber created adds an entry to `v8::Isolate::ThreadDataTable`. Unfortunatley, items are
-// never deleted from this table. So if we create and delete a lot of fibers, then we leak memory.
-// Worse yet, the table is represented as a linked list, and v8 performs a linear scan of this
-// linked list every time we switch fibers. We've seen cases where Sandstorm was spending 65% of
-// its CPU time just scanning this list! The v8 people say this is "working as intended".
-//
-// The fibers package has implemented a work-around by maintaining a fiber pool. Fibers are not
-// deleted; they are returned to the pool. Unfortunately the pool has a default size of 120. So
-// if we pass 120 simultaneous fibers, we start leaking and slowing down. It's very easy to hit
-// this number with a few dozen users present.
-//
-// Up until it hits the limit, the fibers module will grow the pool dynamically, starting with an
-// empty pool and adding each new fiber to it. Therefore, if we set the pool size to an impossibly
-// large number, we effectively get a pool size equal to the maximum number of simultaneous fibers
-// seen. This is exactly what we want! Now no fibers are ever deleted, so we never leak. A
-// Sandstorm server that sees a brief surge of traffic may end up holding on to unused RAM
-// long-term, but this is a relatively obscure problem.
-//
-// I initially tried to use the value `Infinity` here, but somehow when this made its way down into
-// the C++ code and was converted to an integer, that integer ended up being zero. So instead we
-// use 1e9 (1 billion), which ought to be enough for anyone.
-//
-// Third-party issues, for reference:
-//
-//    https://bugs.chromium.org/p/v8/issues/detail?id=5338
-//    https://bugs.chromium.org/p/v8/issues/detail?id=3777
-//    https://github.com/laverdet/node-fibers/issues/305
-import Fiber from "fibers";
-Fiber.poolSize = 1e9;
+const standaloneDomainsCache = new Set();
+Meteor.startup(() => {
+  globalDb.collections.standaloneDomains.find({}).observeAsync({
+    added(doc) {
+      standaloneDomainsCache.add(doc._id);
+    },
+
+    changed(newDoc, oldDoc) {
+      if (oldDoc && oldDoc._id !== newDoc._id) {
+        standaloneDomainsCache.delete(oldDoc._id);
+      }
+
+      standaloneDomainsCache.add(newDoc._id);
+    },
+
+    removed(doc) {
+      standaloneDomainsCache.delete(doc._id);
+    },
+  }).catch((err) => {
+    console.error("Failed to observe standaloneDomains cache updates:", err);
+  });
+});
 
 OAuth._checkRedirectUrlOrigin = function (redirectUrl) {
   // Mostly copied from meteor/packages/oauth/oauth_server.js
@@ -147,6 +149,6 @@ OAuth._checkRedirectUrlOrigin = function (redirectUrl) {
   return !(
     redirectUrl.substr(0, appHost.length) === appHost ||
     redirectUrl.substr(0, appHostReplacedLocalhost.length) === appHostReplacedLocalhost ||
-    globalDb.hostIsStandalone(redirectParsed.hostname)
+    standaloneDomainsCache.has(redirectParsed.hostname)
   );
 };

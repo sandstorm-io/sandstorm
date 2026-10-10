@@ -1,7 +1,7 @@
 import { Meteor } from "meteor/meteor";
 import { Template } from "meteor/templating";
 import { ReactiveVar } from "meteor/reactive-var";
-import { Router } from "meteor/iron:router";
+import { Router } from "meteor/vlasky:galvanized-iron-router";
 import { _ } from "meteor/underscore";
 
 import { iconSrcForPackage } from "/imports/sandstorm-identicons/helpers";
@@ -483,7 +483,7 @@ Template.sandstormAppDetailsPage.events({
     if (window.confirm("Really uninstall " + getAppTitle(ref) + "?")) {
       // TODO(soon): make this a method on SandstormDb to uninstall an app for a user by appId/userId
       db.collections.userActions.find({ appId: ref._appId, userId: Meteor.userId() }).forEach(function (action) {
-        Meteor.call("removeUserAction", action._id);
+        globalThis.callMeteor("removeUserAction", action._id);
       });
 
       Router.go("apps");
@@ -497,7 +497,7 @@ Template.sandstormAppDetailsPage.events({
   "click .upgradeGrains": function (event) {
     const ref = Template.instance().data;
     const pkg = latestPackageForAppId(ref._db, ref._appId);
-    Meteor.call("upgradeGrains", ref._appId, pkg.manifest.appVersion, pkg._id);
+    globalThis.callMeteor("upgradeGrains", ref._appId, pkg.manifest.appVersion, pkg._id);
   },
 
   "click button.toggle-show-trash": function (event, instance) {

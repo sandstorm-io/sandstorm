@@ -287,6 +287,7 @@ module.exports["Test collections anonymous user"] = function (browser) {
         .waitForElementVisible(".popup.request .selected-card>form input[value='0']", short_wait)
         .click(".popup.request .selected-card>form input[value='0']")
         .click(".popup.request .selected-card>form button.connect-button")
+        .waitForElementNotPresent(".popup.request", medium_wait)
 
         // Visit token A anonymously. The link should still work.
         .frame(null)

@@ -100,7 +100,7 @@ function stubUser(test, userId) {
   });
 }
 
-Tinytest.add("test update notifications", function (test) {
+Tinytest.addAsync("test update notifications", function (test, onComplete) {
   globalDb.collections.appIndex.remove({});
   globalDb.collections.userActions.remove({});
   globalDb.collections.notifications.remove({});
@@ -126,14 +126,18 @@ Tinytest.add("test update notifications", function (test) {
     });
 
     Meteor.call("addUserActions", "mock-package-id1");
-    SandstormAutoupdateApps.updateAppIndex(globalDb);
+    SandstormAutoupdateApps.updateAppIndex(globalDb).then(() => {
+      // This blocking call to findOne was having some weird interaction with sinon.test. I've moved it,
+      // and the rest of the test out of the sinon.test block.
+      const notification = globalDb.collections.notifications.findOne();
+      const appUpdate = notification.appUpdates["mock-app-id"];
+      test.isNotNull(appUpdate);
+      test.equal(appUpdate.name, "Mock App");
+      test.equal(appUpdate.marketingVersion, "0.2");
+      onComplete();
+    }).catch((err) => {
+      test.fail(err && err.stack || err);
+      onComplete();
+    });
   })(test);
-
-  // This blocking call to findOne was having some weird interaction with sinon.test. I've moved it,
-  // and the rest of the test out of the sinon.test block.
-  const notification = globalDb.collections.notifications.findOne();
-  const appUpdate = notification.appUpdates["mock-app-id"];
-  test.isNotNull(appUpdate);
-  test.equal(appUpdate.name, "Mock App");
-  test.equal(appUpdate.marketingVersion, "0.2");
 });

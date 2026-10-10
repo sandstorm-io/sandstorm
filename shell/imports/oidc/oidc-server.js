@@ -17,7 +17,7 @@ const oidcServiceHandler = async ({code, state: _}) => {
   // We don't care about checking `state` -- this has been done by accounts-oauth before:
   // https://github.com/meteor/meteor/blob/85a66b8/packages/accounts-oauth/oauth_server.js#L19
 
-  const config = getConfiguration();
+  const config = await getConfiguration();
   const issuer = new Issuer(config.issuer);
   const client = new issuer.Client({
     client_id                 : config.clientId,
@@ -60,10 +60,10 @@ const oidcServiceHandler = async ({code, state: _}) => {
   };
 };
 
-OAuth.registerService("oidc", 2, null, query => oidcServiceHandler(query).await());
+OAuth.registerService("oidc", 2, null, async query => await oidcServiceHandler(query));
 
-const getConfiguration = () => {
-  const config = ServiceConfiguration.configurations.findOne({ service: "oidc" });
+const getConfiguration = async () => {
+  const config = await ServiceConfiguration.configurations.findOneAsync({ service: "oidc" });
   if (!config) {
     throw new ServiceConfiguration.ConfigError("Service oidc not configured.");
   }
@@ -76,14 +76,14 @@ export const Oidc = {
 }
 
 Meteor.methods({
-  resolveOidcSigninUrl(state) {
+  async resolveOidcSigninUrl(state) {
     check(state, String);
 
     // Strictly, this method does not need to run on the server: It just builds
     // a URL from the information contained in config.issuer. However, the `Issuer`
     // and `Client` classes cannot easily be used from the browser.
 
-    const config = ServiceConfiguration.configurations.findOne({service: "oidc"});
+    const config = await ServiceConfiguration.configurations.findOneAsync({ service: "oidc" });
     if (!config) {
       throw new ServiceConfiguration.ConfigError("Service oidc not configured.");
     }

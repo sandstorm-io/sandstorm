@@ -575,7 +575,8 @@
     "identityProviders": {
       "name": "Login providers",
       "providers": {
-        "emailPassLess": "E-mail (passwordless)"
+        "emailPassLess": "E-mail (passwordless)",
+        "passkey": "Passkey"
       },
       "subtext": "How users log in.",
       "newAdminIdentity": {
@@ -725,6 +726,15 @@
         "enableButton": "Enable",
         "cancelButton": "Cancel",
         "disableButton": "Disable"
+      },
+      "adminIdentityProviderConfigurePasskey": {
+        "title": "Passkey",
+        "explanation": "Passkeys let users sign in with biometrics, security keys, or their phone. No passwords needed. The server derives its identity from its URL automatically.",
+        "enableButton": "Enable",
+        "saveButton": "Save",
+        "disableButton": "Disable",
+        "cancelButton": "Cancel",
+        "error": "Error: %s"
       },
       "adminIdentityProviderTable": {
         "title": "Login provider",
@@ -1521,6 +1531,17 @@
         "saveButton": "Save",
         "continueButton": "Continue",
         "cancelButton": "Cancel"
+      },
+      "passkey": {
+        "title": "Passkeys",
+        "noPasskeys": "No passkeys registered.",
+        "addButton": "Add passkey",
+        "renameButton": "Rename",
+        "removeButton": "Remove",
+        "saveButton": "Save",
+        "cancelButton": "Cancel",
+        "added": "Added",
+        "lastUsed": "last used"
       }
     },
     "loginButtons": {
@@ -1598,6 +1619,9 @@
       },
       "_loginButtonsSeparator": {
         "or": "or"
+      },
+      "passkeyLoginForm": {
+        "label": "with Passkey"
       }
     },
     "identity": {

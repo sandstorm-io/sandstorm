@@ -18,6 +18,7 @@ const idpData = function (configureCallback) {
   const githubEnabled = (githubSetting && githubSetting.value) || false;
   const ldapEnabled = globalDb.getSettingWithFallback("ldap", false);
   const samlEnabled = globalDb.getSettingWithFallback("saml", false);
+  const passkeyEnabled = globalDb.getSettingWithFallback("passkey", false);
   return [
     {
       id: "email-token",
@@ -79,6 +80,16 @@ const idpData = function (configureCallback) {
       popupTemplate: "adminLoginProviderConfigureSaml",
       onConfigure() {
         configureCallback("saml");
+      },
+    },
+    {
+      id: "passkey",
+      label: "Passkey",
+      icon: "/passkey.svg",
+      enabled: passkeyEnabled,
+      popupTemplate: "adminLoginProviderConfigurePasskey",
+      onConfigure() {
+        configureCallback("passkey");
       },
     },
   ];
@@ -921,5 +932,45 @@ Template.adminLoginProviderConfigureSaml.events({
     // double invocation because there's no way to pass a callback function around in Blaze without
     // invoking it, and we need to pass it to modalDialogWithBackdrop
     instance.data.onDismiss()();
+  },
+});
+
+// Passkey form.
+Template.adminLoginProviderConfigurePasskey.onCreated(function () {
+  this.errorMessage = new ReactiveVar(undefined);
+  this.setAccountSettingCallback = setAccountSettingCallback.bind(this);
+});
+
+Template.adminLoginProviderConfigurePasskey.onRendered(function () {
+  this.find("button.idp-modal-save").focus();
+});
+
+Template.adminLoginProviderConfigurePasskey.events({
+  "click .idp-modal-disable"(evt) {
+    const instance = Template.instance();
+    const token = Iron.controller().state.get("token");
+    Meteor.call("setAccountSetting", token, "passkey", false, instance.setAccountSettingCallback);
+  },
+
+  "click .idp-modal-save"(evt) {
+    const instance = Template.instance();
+    const token = Iron.controller().state.get("token");
+    Meteor.call("setAccountSetting", token, "passkey", true, instance.setAccountSettingCallback);
+  },
+
+  "click .idp-modal-cancel"(evt) {
+    const instance = Template.instance();
+    instance.data.onDismiss()();
+  },
+});
+
+Template.adminLoginProviderConfigurePasskey.helpers({
+  passkeyEnabled() {
+    return globalDb.getSettingWithFallback("passkey", false);
+  },
+
+  errorMessage() {
+    const instance = Template.instance();
+    return instance.errorMessage.get();
   },
 });

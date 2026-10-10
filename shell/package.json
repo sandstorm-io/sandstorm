@@ -20,6 +20,8 @@
     "@root/csr": "^0.8.1",
     "@root/keypairs": "^0.10.3",
     "@root/pem": "^1.0.4",
+    "@simplewebauthn/browser": "^11.0.0",
+    "@simplewebauthn/server": "^11.0.0",
     "@types/fibers": "^3.1.1",
     "@types/meteor": "2.9.11",
     "acme-dns-01-cloudflare": "git+https://github.com/sandstorm-org/acme-dns-01-cloudflare.git#v1.3.0",

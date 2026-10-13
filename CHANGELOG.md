@@ -1,3 +1,6 @@
+### v0.310 (2026-10-12)
+- This update contains no changes and is an end-to-end test of the automatic update mechanism.
+
 ### v0.309 (2026-10-08)
 - This is the first community release of Sandstorm. Thanks @kentonv for creating this project and the excellent stewardship of it over the years.
 - Most references to sandstorm.io have been changed to new infrastructure at sandstorm.org.

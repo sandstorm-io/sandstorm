@@ -17,7 +17,7 @@ make clean
 
 . branch.conf
 
-if [ $(git rev-parse --abbrev-ref HEAD) = master ]; then
+if [ $(git rev-parse --abbrev-ref HEAD) = dev ]; then
   CHANNEL=dev
 elif [ $IS_STABLE = true ]; then
   CHANNEL=stable
@@ -27,7 +27,7 @@ fi
 
 echo "**** Determining next build number for $CHANNEL channel ****"
 
-LAST_BUILD=$(curl -fs https://install.sandstorm.io/$CHANNEL)
+LAST_BUILD=$(curl -fs https://install.sandstorm.org/$CHANNEL)
 
 if (( LAST_BUILD / 1000 > BRANCH_NUMBER )); then
   echo "ERROR: $CHANNEL has already moved past this branch!" >&2
@@ -156,11 +156,11 @@ git tag -u $SIGNING_KEY_ID "$TAG_NAME" "$GIT_REVISION" -m "Release Sandstorm ${D
 git push origin "$TAG_NAME"
 
 # Remember to push it to master too...
-git push origin master
+git push origin dev
 
 echo "**** Pushing build $BUILD ****"
 
-rm -f "$TARBALL.sig" install.sh.sig
+rm -f "$TARBALL.sig" install.sh.sig migrate.sh.sig
 
 # Sign the tarball and the install script. Note that we don't sign the channel build number because
 # it wouldn't accomplish anything: If an attacker wanted to provide an old number, they could
@@ -169,12 +169,4 @@ rm -f "$TARBALL.sig" install.sh.sig
 # exists.
 sign-release-file "$TARBALL"
 sign-release-file install.sh
-
-echo $BUILD > tmp/$CHANNEL
-gce-ss copy-files $TARBALL alpha2:/var/www/dl.sandstorm.io
-gce-ss copy-files $TARBALL.sig alpha2:/var/www/dl.sandstorm.io
-gce-ss copy-files tmp/$CHANNEL alpha2:/var/www/install.sandstorm.io
-gce-ss copy-files install.sh alpha2:/var/www/install.sandstorm.io
-gce-ss copy-files install.sh.sig alpha2:/var/www/install.sandstorm.io
-
-gce-ss ssh alpha2 --command 'sudo sandstorm update dev'
+sign-release-file migrate.sh

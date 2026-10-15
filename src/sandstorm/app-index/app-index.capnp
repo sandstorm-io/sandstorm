@@ -161,12 +161,12 @@ const submitPermission :UInt32 = 2;
 const reviewAppHtml :Text = embed "review.html";
 
 const pkgdef :Package.PackageDefinition = (
-  id = "ghze43a24vg5rck3w5kegeuhu1hy52nh17j8qm7vf40ekc3r5z3h",
+  id = "hdcwr7f5xw9057zwk5jnjfh4k3kpf7e64dvnq3t2m83zy5887cjh",
 
   manifest = (
     appTitle = (defaultText = "Sandstorm App Index"),
-    appVersion = 5,
-    appMarketingVersion = (defaultText = "2020-09-17"),
+    appVersion = 6,
+    appMarketingVersion = (defaultText = "2026-10-13"),
 
     actions = [
       ( title = (defaultText = "New Sandstorm App Index"),
@@ -176,7 +176,13 @@ const pkgdef :Package.PackageDefinition = (
     continueCommand = (argv = ["/app-index"]),
 
     metadata = (
-      author = (contactEmail = "support@sandstorm.io"),
+      icons = (
+        appGrid = (svg = embed "../../icons/appmarket.svg"),
+        grain = (svg = embed "../../icons/appmarket.svg"),
+        market = (svg = embed "../../icons/appmarket.svg"),
+        marketBig = (svg = embed "../../icons/appmarket.svg"),
+      ),
+      author = (contactEmail = "jacob@sandstorm.org"),
       categories = [developerTools],
       license = (openSource = apache2),
       shortDescription = (defaultText = "App Market")

@@ -129,6 +129,15 @@ const appIdReplacementList :List(AppIdReplacement) = [
   # by Jacob Weisz in order to fix a bug in this release.
 
   # ---- end MediaWiki entry ----
+  
+  # ---- Sandstorm App Index entry ----
+  
+  (original = "ghze43a24vg5rck3w5kegeuhu1hy52nh17j8qm7vf40ekc3r5z3h",
+   replacement = "hdcwr7f5xw9057zwk5jnjfh4k3kpf7e64dvnq3t2m83zy5887cjh"),
+  # We will replace Kenton's app index in our fork with our own version of the app index. This will
+  # include app replacements merged in our fork.
+  
+  # ---- end Sandstorm App Index entry ----
 
   # Add your entry here!
 ];

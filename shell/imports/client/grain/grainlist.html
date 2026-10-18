@@ -140,7 +140,13 @@
             <td class="select-all-grains">
               <input title={{selectAllTitle}} type="checkbox" checked={{selectAllChecked}}>
             </td>
-            <td class="td-app-icon"></td>
+            <td class="td-app-icon">
+              {{> sortColumnHeading
+                    text=(_ "grains.grainlist.sandstormGrainTable.tableHeader.app")
+                    key="appTitle"
+                    sortOrder=sortOrder
+              }}
+            </td>
             <td class="grain-name">
               {{> sortColumnHeading
                     text=(_ "grains.grainlist.sandstormGrainTable.tableHeader.title")

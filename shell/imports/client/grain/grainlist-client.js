@@ -121,18 +121,19 @@ const sortGrains = function (grains, sortRules) {
   //
   // grains is an Array of grain row objects
   // sortRules is an Array of objects containing:
-  //   key: String ("lastUsed" or "size" or "title")
+  //   key: String ("lastUsed" or "size" or "title" or "appTitle")
   //   order: String ("ascending" or "descending")
   //
   // Sort rules are given in order from highest precedence to lowest precedence.
   const compileComparator = function (rule) {
     const { key, order } = rule;
     const multiplier = (order === "ascending" ? 1 : -1);
-    if (key === "title") {
+    if (key === "title" || key === "appTitle") {
       // Compare strings case-insensitively.
       return function (a, b) {
-        const aRaw = a[key];
-        const bRaw = b[key];
+        // appTitle may be empty if the package isn't known; treat missing values as "".
+        const aRaw = a[key] || "";
+        const bRaw = b[key] || "";
 
         // Use locale-aware comparison if available.  Not all browsers support this.
         if (String.prototype.localeCompare) {
@@ -616,7 +617,14 @@ Template.sandstormGrainTable.helpers({
 
   sortedGrains(grains) {
     const instance = Template.instance();
-    return sortGrains(grains, [instance.sortOrder.get()]);
+    const sortOrder = instance.sortOrder.get();
+    const sortRules = [sortOrder];
+    if (sortOrder.key === "appTitle") {
+      // Many grains share the same app, so within each app, show the most recently used first.
+      sortRules.push({ key: "lastUsed", order: "descending" });
+    }
+
+    return sortGrains(grains, sortRules);
   },
 
   sortOrder() {
@@ -632,6 +640,20 @@ Template.sortColumnHeading.helpers({
 });
 
 Template.sandstormGrainTable.events({
+  "click thead td.td-app-icon"(evt) {
+    const instance = Template.instance();
+    const currentSortOrder = instance.sortOrder.get();
+    const newSortOrder = {
+      key: "appTitle",
+      order: "ascending",
+    };
+    if (currentSortOrder.key === "appTitle" && currentSortOrder.order === "ascending") {
+      newSortOrder.order = "descending";
+    }
+
+    instance.sortOrder.set(newSortOrder);
+  },
+
   "click thead td.grain-name"(evt) {
     const instance = Template.instance();
     const currentSortOrder = instance.sortOrder.get();

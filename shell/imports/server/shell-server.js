@@ -41,20 +41,37 @@ import { globalDb } from "/imports/db-deprecated";
 
 BrowserPolicy.framing.disallow();  // Disallow framing of the UI.
 Meteor.startup(() => {
-  const frameSetter = () => {
+  const frameSetter = async () => {
     BrowserPolicy.content.disallowFrame(); // This clears all the old rules
-    BrowserPolicy.content.allowFrameOrigin(getWildcardOrigin());
-    const billingPromptUrl = globalDb.getBillingPromptUrl();
+    BrowserPolicy.content.allowFrameOrigin(globalThis.getWildcardOrigin());
+    const billingPromptSetting = await globalDb.collections.settings.findOneAsync({ _id: "billingPromptUrl" });
+    const billingPromptUrl = billingPromptSetting && billingPromptSetting.value;
     if (billingPromptUrl) {
       BrowserPolicy.content.allowFrameOrigin(billingPromptUrl);
     }
   };
 
-  frameSetter(); // Call once on startup
-  globalDb.collections.settings.find({ _id: "billingPromptUrl" }).observe({
-    added: frameSetter,
-    changed: frameSetter,
-    removed: frameSetter,
+  frameSetter().catch((err) => {
+    console.error("Failed to set initial frame policy:", err);
+  }); // Call once on startup
+  globalDb.collections.settings.find({ _id: "billingPromptUrl" }).observeAsync({
+    added: () => {
+      frameSetter().catch((err) => {
+        console.error("Failed to update frame policy (added):", err);
+      });
+    },
+    changed: () => {
+      frameSetter().catch((err) => {
+        console.error("Failed to update frame policy (changed):", err);
+      });
+    },
+    removed: () => {
+      frameSetter().catch((err) => {
+        console.error("Failed to update frame policy (removed):", err);
+      });
+    },
+  }).catch((err) => {
+    console.error("Failed to start billingPromptUrl observer:", err);
   });
 });
 
@@ -67,25 +84,27 @@ BrowserPolicy.content.allowConnectOrigin(staticAssetHost);
 BrowserPolicy.content.allowConnectOrigin("wss:");
 BrowserPolicy.content.allowConnectOrigin("ws:");
 
-Meteor.publish("grainsMenu", function () {
+Meteor.publish("grainsMenu", async function () {
   if (this.userId) {
-    if (globalDb.isQuotaEnabled()) {
+    const quotaEnabled = Meteor.settings.public.quotaEnabled ||
+        !!((await globalDb.collections.settings.findOneAsync({ _id: "quotaEnabled" })) || {}).value;
+    if (quotaEnabled) {
       // Hack: Fire off an asynchronous update to the user's storage usage whenever they open the
       //   front page.
       // TODO(someday): Implement the ability to reactively subscribe to storage usage from the
       //   back-end?
       const userId = this.userId;
-      globalBackend.cap().getUserStorageUsage(userId).then(function (results) {
-        inMeteor(function () {
-          Meteor.users.update(userId, { $set: { storageUsage: parseInt(results.size) } });
+      globalThis.globalBackend.cap().getUserStorageUsage(userId).then(function (results) {
+        return inMeteor(async function () {
+          await Meteor.users.updateAsync(userId, { $set: { storageUsage: parseInt(results.size, 10) } });
         });
-      }).catch(function (err) {
+      }).catch(async function (err) {
         if (err.kjType === "unimplemented") {
           // Compute based on sum of grain sizes instead.
-          let total = 0;
-          globalDb.collections.grains.find({ userId: userId }, { fields: { size: 1 } })
-              .forEach(grain => total += (grain.size || 0));
-          Meteor.users.update(userId, { $set: { storageUsage: total } });
+          const grains = await globalDb.collections.grains.find(
+              { userId: userId }, { fields: { size: 1 } }).fetchAsync();
+          const total = grains.reduce((acc, grain) => acc + (grain.size || 0), 0);
+          await Meteor.users.updateAsync(userId, { $set: { storageUsage: total } });
         } else {
           console.error(err.stack);
         }
@@ -106,30 +125,31 @@ Meteor.publish("devPackages", function () {
   return globalDb.collections.devPackages.find();
 });
 
-Meteor.publish("hasUsers", function () {
+Meteor.publish("hasUsers", async function () {
   // Publish pseudo-collection which tells the client if there are any users at all.
   //
   // TODO(cleanup):  This seems overcomplicated.  Does Meteor have a better way?
-  const cursor = Meteor.users.find();
-  if (cursor.count() > 0) {
-    this.added("hasUsers", "hasUsers", { hasUsers: true });
-  } else {
-    let handle = cursor.observeChanges({
-      added: (_id) => {
+  let published = false;
+  const handle = await Meteor.users.find({}, { fields: { _id: 1 }, limit: 1 }).observeChangesAsync({
+    added: (_id) => {
+      if (!published) {
         this.added("hasUsers", "hasUsers", { hasUsers: true });
-        handle.stop();
-        handle = null;
-      },
+        published = true;
+      }
+    },
+  });
+  this.onStop(function () {
+    Promise.resolve(handle).then((h) => {
+      if (typeof h === "function") { h(); } else if (h && typeof h.stop === "function") h.stop();
+    }).catch((err) => {
+      console.error("Failed to stop hasUsers observer:", err);
     });
-    this.onStop(function () {
-      if (handle) handle.stop();
-    });
-  }
+  });
 
   this.ready();
 });
 
-Meteor.publish("referralInfoPseudo", function () {
+Meteor.publish("referralInfoPseudo", async function () {
   // This publishes a pseudo-collection called referralInfo whose documents have the following
   // form:
   //
@@ -141,6 +161,14 @@ Meteor.publish("referralInfoPseudo", function () {
   if (!this.userId) {
     return [];
   }
+
+  const stopHandle = (maybeHandle, label) => {
+    Promise.resolve(maybeHandle).then((h) => {
+      if (typeof h === "function") { h(); } else if (h && typeof h.stop === "function") h.stop();
+    }).catch((err) => {
+      console.error(`Failed to stop ${label}:`, err);
+    });
+  };
 
   // Implementation note:
   //
@@ -160,7 +188,7 @@ Meteor.publish("referralInfoPseudo", function () {
       "profile.name": 1,
     },
   });
-  const notCompletedReferralAccountsHandle = notCompletedReferralAccountsCursor.observeChanges({
+  const notCompletedReferralAccountsHandle = await notCompletedReferralAccountsCursor.observeChangesAsync({
     // The added function gets called with the id of Bob when Alice refers Bob.
     added: (id, fields) => {
       this.added("referralInfo", id, { name: fields.profile.name, completed: false });
@@ -195,25 +223,25 @@ Meteor.publish("referralInfoPseudo", function () {
     const handleForProfileName = handleForProfileNameByAccountId[accountId];
     if (handleForProfileName) {
       this.removed("referralInfo", accountId);
-      handleForProfileName.stop();
+      stopHandle(handleForProfileName, `referralInfo profile observer for ${accountId}`);
       // delete is safe because we iterate across `Object.keys()` which returns a copy.
       delete handleForProfileNameByAccountId[accountId];
     }
   };
 
-  const watchAccountAndPublishReferralSuccess = (accountId) => {
+  const watchAccountAndPublishReferralSuccess = async (accountId) => {
     let handleForProfileName = handleForProfileNameByAccountId[accountId];
     if (handleForProfileName) {
       return;
     }
 
-    handleForProfileName = Meteor.users.find({
+    handleForProfileName = await Meteor.users.find({
       _id: accountId,
     }, {
       fields: {
         "profile.name": 1,
       },
-    }).observeChanges({
+    }).observeChangesAsync({
       added: (id, fields) => {
         this.added("referralInfo", id, { name: fields.profile.name, completed: true });
       },
@@ -230,20 +258,22 @@ Meteor.publish("referralInfoPseudo", function () {
     handleForProfileNameByAccountId[accountId] = handleForProfileName;
   };
 
-  const completedAccountIdsHandle = Meteor.users.find({
+  const completedAccountIdsHandle = await Meteor.users.find({
     _id: this.userId,
     referredAccountIds: { $exists: true },
   }, {
     fields: {
       referredAccountIds: true,
     },
-  }).observeChanges({
+  }).observeChangesAsync({
     // `added` gets called when a user gets their first completed referral.
     added: (id, fields) => {
       for (let i = 0; i < fields.referredAccountIds.length; i++) {
         // Unconditionally mark these as successful referrals and start watching.
         watchAccountAndPublishReferralSuccess(
-          fields.referredAccountIds[i]);
+          fields.referredAccountIds[i]).catch((err) => {
+            console.error("Failed to watch completed referral account (added):", err);
+          });
       }
     },
     // `changed` gets called when a user adds/removes referredAccountIds, usually when a
@@ -271,7 +301,9 @@ Meteor.publish("referralInfoPseudo", function () {
       // Task 2. Subscribe where needed.
       for (let i = 0; i < fields.referredAccountIds.length; i++) {
         // The watch... function will avoid double-creating subscriptions, so this is safe.
-        watchAccountAndPublishReferralSuccess(fields.referredAccountIds[i]);
+        watchAccountAndPublishReferralSuccess(fields.referredAccountIds[i]).catch((err) => {
+          console.error("Failed to watch completed referral account (changed):", err);
+        });
       }
     },
     // `removed` gets called when a User suddenly has no referredAccountIds.
@@ -284,8 +316,8 @@ Meteor.publish("referralInfoPseudo", function () {
   // With cases 1 and 2 handled, register a cleanup function, then declare victory.
   this.onStop(() => {
     stopWatchingAllAccounts();
-    notCompletedReferralAccountsHandle.stop();
-    completedAccountIdsHandle.stop();
+    stopHandle(notCompletedReferralAccountsHandle, "notCompletedReferralAccounts observer");
+    stopHandle(completedAccountIdsHandle, "completedAccountIds observer");
   });
 
   this.ready();

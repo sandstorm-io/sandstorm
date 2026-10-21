@@ -1,7 +1,7 @@
 var util = require("util");
 var events = require("events");
 var MailComposer = require("mailcomposer");
-var simplesmtp = require("simplesmtp");
+var simplesmtp = require("simplesmtp/index.js");
 
 var SMTP_LISTEN_PORT = parseInt(process.env.SMTP_LISTEN_PORT, 10) || 30025;
 var pool = simplesmtp.createClientPool(SMTP_LISTEN_PORT);

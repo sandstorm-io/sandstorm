@@ -617,7 +617,7 @@ body>.topbar {
           display: block;
           position: relative;
           background-repeat: no-repeat;
-          background-position: (($navbar-width-desktop-shrunk - 24px) / 2) center;
+          background-position: math.div($navbar-width-desktop-shrunk - 24px, 2) center;
           background-size: 24px 24px;
           font-size: 150%;
           line-height: 48px;
@@ -738,11 +738,11 @@ body>.topbar {
           @extend %pseudo-img-tag;
           position: absolute;
           top: 4px;
-          left: (($navbar-width-desktop-shrunk - 24px) / 2);
+          left: math.div($navbar-width-desktop-shrunk - 24px, 2);
           width: 24px;
           height: 24px;
           @media #{$mobile} {
-            left: (($navbar-width-desktop-shrunk - 40px) / 2);
+            left: math.div($navbar-width-desktop-shrunk - 40px, 2);
             width: 40px;
             height: 40px;
           }
@@ -1104,10 +1104,10 @@ body>.popup {
                 cursor: pointer;
               }
             }
-            background-color: lighten($sandstorm-purple-color, 30%);
+            background-color: color.adjust($sandstorm-purple-color, $lightness: 30%);
           }
           &:hover {
-            background-color: darken($sandstorm-purple-color, 10%);
+            background-color: color.adjust($sandstorm-purple-color, $lightness: -10%);
           }
           .picture {
             width: 14px;

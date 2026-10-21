@@ -5,7 +5,7 @@ import { check } from "meteor/check";
 import { Accounts } from "meteor/accounts-base";
 
 // Register login handler with Meteor
-Accounts.registerLoginHandler("ldap", function (loginRequest) {
+Accounts.registerLoginHandler("ldap", async function (loginRequest) {
   // If 'ldap' isn't set in loginRequest object,
   // then this isn't the proper handler (return undefined)
   if (!loginRequest.ldap) {
@@ -26,7 +26,7 @@ Accounts.registerLoginHandler("ldap", function (loginRequest) {
   let ldapObj = new LDAP();
 
   // Call ldapCheck and get response
-  let ldapResponse = ldapObj.ldapCheck(this.connection.sandstormDb, loginRequest);
+  let ldapResponse = await ldapObj.ldapCheck(this.connection.sandstormDb, loginRequest);
 
   if (ldapResponse.error) {
     return {
@@ -48,8 +48,9 @@ Accounts.registerLoginHandler("ldap", function (loginRequest) {
 });
 
 Meteor.methods({
-  updateQuota() {
-    return this.connection.sandstormDb.updateUserQuota(Meteor.user());
+  async updateQuota() {
+    const account = await Meteor.users.findOneAsync({ _id: this.userId });
+    return await this.connection.sandstormDb.updateUserQuota(account);
     // This is a no-op if settings aren't enabled
   },
 });

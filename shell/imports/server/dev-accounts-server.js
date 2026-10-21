@@ -19,7 +19,7 @@ import { Match, check }  from "meteor/check";
 import { Accounts } from "meteor/accounts-base";
 
 Meteor.methods({
-  createDevAccount: function (displayName, isAdmin, profile, unverifiedEmail) {
+  createDevAccount: async function (displayName, isAdmin, profile, unverifiedEmail) {
     // This is a login method that creates or logs in a dev account with the given displayName
 
     check(displayName, String);
@@ -27,7 +27,7 @@ Meteor.methods({
     check(profile, Match.OneOf(undefined, null, Object));
     check(unverifiedEmail, Match.OneOf(undefined, null, String));
 
-    if (!this.connection.sandstormDb.allowDevAccounts()) {
+    if (!await this.connection.sandstormDb.allowDevAccountsAsync()) {
       throw new Meteor.Error(404, "Dev accounts are not enabled on this server");
     }
 
@@ -37,13 +37,13 @@ Meteor.methods({
     profile.name = profile.name || displayName;
     const hasCompletedSignup = !!unverifiedEmail && !!profile.pronoun && !!profile.handle;
 
-    const user = Meteor.users.findOne({ "services.dev.name": displayName });
+    const user = await Meteor.users.findOneAsync({ "services.dev.name": displayName });
     let userId;
 
     if (user) {
       userId = user._id;
     } else {
-      userId = Accounts.insertUserDoc({
+      userId = await Accounts.insertUserDoc({
         profile: profile,
         unverifiedEmail: unverifiedEmail,
       }, {
@@ -55,7 +55,15 @@ Meteor.methods({
           },
         },
       });
+
+      // Meteor 3 may return a result object in some code paths; normalize to the string id.
+      if (userId && typeof userId === "object") {
+        userId = userId.id || userId.userId || userId._id;
+      }
     }
+
+    check(userId, String);
+
     // Log them in on this connection.
     return Accounts._loginMethod(this, "createDevAccount", arguments,
         "dev", function () { return { userId: userId }; });

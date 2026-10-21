@@ -18,7 +18,7 @@ import { Meteor } from "meteor/meteor";
 import { Random } from "meteor/random";
 import { Session } from "meteor/session";
 import { Tracker } from "meteor/tracker";
-import { Router } from "meteor/iron:router";
+import { Router } from "meteor/vlasky:galvanized-iron-router";
 import { HTTP } from "meteor/http";
 
 Meteor.subscribe("publicAdminSettings");

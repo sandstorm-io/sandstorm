@@ -61,11 +61,11 @@
   cursor: auto;
   color: #777777;
   background-color: #efefef;
-  border: 1px solid lighten(#afafaf, 10%);
+  border: 1px solid color.adjust(#afafaf, $lightness: 10%);
   &:hover {
     color: #777777;
     background-color: #efefef;
-    border: 1px solid lighten(#afafaf, 10%);
+    border: 1px solid color.adjust(#afafaf, $lightness: 10%);
   }
 }
 
@@ -80,7 +80,7 @@
   // A button coloring for the primary action of a form.
   background-color: $darker-purple-color;
   color: white;
-  border: 1px solid darken($darker-purple-color, 10%);
+  border: 1px solid color.adjust($darker-purple-color, $lightness: -10%);
   &:hover {
     background-color: #714daa;
   }
@@ -93,9 +93,9 @@
   // A button coloring for secondary (less important) actions.
   background-color: white;
   color: black;
-  border: 1px solid darken(white, 30%);
+  border: 1px solid color.adjust(white, $lightness: -30%);
   &:hover {
-    background-color: darken(white, 10%);
+    background-color: color.adjust(white, $lightness: -10%);
   }
   &:disabled {
     @extend %button-disabled;
@@ -105,7 +105,7 @@
 %button-danger {
   color: #900;
   background-color: white;
-  border: 1px solid darken(white, 30%);
+  border: 1px solid color.adjust(white, $lightness: -30%);
   &:hover {
     background-color: #af1010;
     color: white;

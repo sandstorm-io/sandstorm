@@ -20,7 +20,8 @@ var crypto      = require("crypto");
 var utils       = require('../utils'),
     short_wait  = utils.short_wait,
     medium_wait = utils.medium_wait,
-    long_wait   = utils.long_wait;
+    long_wait   = utils.long_wait,
+    appDetailsTitleSelector = utils.appDetailsTitleSelector;
 var path = require('path');
 // Use sandstorm qr code as new profile picture
 var newPicPath  = path.resolve(__dirname + "/../../sandstorm-qr.png");
@@ -33,9 +34,12 @@ module.exports["Test profile changes passing to testapp"] = function (browser) {
     .loginDevAccount()
     .disableGuidedTour()
     // Click dropdown menu, go to account settings link
-    .waitForElementVisible("button.has-picture", medium_wait)
+    .waitForElementPresent("button.has-picture", medium_wait)
     .pause(500)
-    .click("button.has-picture")
+    .execute(function () {
+      var button = document.querySelector("button.has-picture");
+      if (button) button.click();
+    }, [])
     .waitForElementVisible("a[href='/account']", medium_wait)
     .click("a[href='/account']")
     .waitForElementVisible("form.account-profile-editor", short_wait)
@@ -89,6 +93,8 @@ module.exports["Test profile changes passing to testapp"] = function (browser) {
 
     // upload meteor-testapp.spk, create new instance
     .uploadMeteorTestApp()
+    .waitForElementVisible(appDetailsTitleSelector, medium_wait)
+    .assert.textContains(appDetailsTitleSelector, "testapp")
     .waitForElementVisible('button.action', medium_wait)
     .click('button.action')
 

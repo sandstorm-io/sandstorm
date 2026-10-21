@@ -4,8 +4,8 @@
   "version": "0.0.1",
   "devDependencies": {
     "@puppeteer/browsers": "^2.12.1",
-    "chromedriver": "144.0.1",
-    "nightwatch": "^2.6.0"
+    "chromedriver": "145.0.1",
+    "nightwatch": "^3.15.0"
   },
   "repository": {
     "type": "git",

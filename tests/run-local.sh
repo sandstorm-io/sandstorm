@@ -137,6 +137,19 @@ while ! curl -s localhost:$PORT > /dev/null; do
 done;
 echo
 
+echo -n "Waiting for front-end runtime to be ready."
+COUNT=0
+while ! curl -sf "$LAUNCH_URL/apps" | grep -q "__meteor_runtime_config__"; do
+  if [ "$COUNT" -gt 1800 ]; then  # wait up to 180 seconds for front-end startup/migrations
+    echo "Sandstorm front-end failed to become ready"
+    cleanExit 1
+  fi
+  COUNT=$(($COUNT+1))
+  echo -n .
+  sleep .1
+done
+echo
+
 set +e
 
 export RUN_XFAIL="${RUN_XFAIL:-false}"

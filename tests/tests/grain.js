@@ -136,7 +136,6 @@ module.exports = utils.testAllLogins({
   "Test grain restart" : function (browser) {
     browser
       .click('#restartGrain')
-      .pause(short_wait)
       .grainFrame()
       .waitForElementPresent('#publish', medium_wait)
       .assert.textContains('#publish', 'Publish')
@@ -145,12 +144,11 @@ module.exports = utils.testAllLogins({
 
   "Test grain debug" : function (browser) {
     browser
-      .click('#openDebugLog')
-      .pause(short_wait)
+      .openDebugLog()
       .windowHandles(function (windows) {
         browser.switchWindow(windows.value[1]);
       })
-      .pause(short_wait)
+      .waitForElementVisible('.grainlog-title', medium_wait)
       .assert.textContains('.grainlog-title', 'Debug log: ' + expectedHackerCMSGrainTitle)
       .closeWindow()
       .end();
@@ -168,6 +166,46 @@ module.exports["Test grain not found"] = function (browser) {
     .waitForElementVisible(".grain-not-found", medium_wait)
     .assert.textContains(".grain-not-found", "No grain found")
     .end()
+}
+
+module.exports["Test clone grain title"] = function(browser) {
+  var originalTitle = 'Untitled Test App test page';
+  var copyTitle = 'Copy of ' + originalTitle;
+
+  browser
+    .loginDevAccount()
+    // sandstorm-test-python, v0
+    .installApp("https://alpha-hlngxit86q1mrs2iplnx.sandstorm.io/test-0.spk", "9111a8c70938276d28a00468a18a25c7", "rwyva77wj1pnj01cjdj2kvap7c059n9ephyyg5k4s5enh5yw9rxh")
+    .assert.textContains('#grainTitle', originalTitle)
+    .clickTopbarButton("#cloneGrain")
+    .executeAsync(function (expectedTitle, timeout, done) {
+      var start = Date.now();
+
+      (function waitForTitle() {
+        var title = document.querySelector("#grainTitle");
+        var text = title && title.textContent;
+        if (text && text.indexOf(expectedTitle) !== -1) {
+          done({ success: true, title: text });
+          return;
+        }
+
+        if (Date.now() - start > timeout) {
+          done({
+            success: false,
+            title: text,
+            url: window.location.href,
+          });
+          return;
+        }
+
+        setTimeout(waitForTitle, 100);
+      })();
+    }, [copyTitle, medium_wait], function (result) {
+      var value = result && result.value;
+      browser.assert.ok(value && value.success,
+          "cloned grain title should be " + copyTitle + ", got " + (value && value.title));
+    })
+    .end();
 }
 
 module.exports["Sign in at grain URL"] = function (browser) {

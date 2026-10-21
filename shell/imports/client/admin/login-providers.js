@@ -2,10 +2,11 @@
 import { Meteor } from "meteor/meteor";
 import { Template } from "meteor/templating";
 import { ReactiveVar } from "meteor/reactive-var";
-import { TAPi18n } from "meteor/tap:i18n";
-import { Iron } from "meteor/iron:core";
+import { TAPi18n } from "/imports/tapi18n";
+import { Iron } from "meteor/vlasky:galvanized-iron-router";
 import { ServiceConfiguration } from "meteor/service-configuration";
 
+import { getClientLdapSettings, getClientSamlSettings } from "/imports/client/admin/client-settings";
 import { globalDb } from "/imports/db-deprecated";
 
 const idpData = function (configureCallback) {
@@ -405,25 +406,17 @@ Template.adminLoginProviderConfigureGitHub.events({
 
 // LDAP form.
 Template.adminLoginProviderConfigureLdap.onCreated(function () {
-  const url = globalDb.getLdapUrl();
-  const searchBindDn = globalDb.getLdapSearchBindDn();
-  const searchBindPassword = globalDb.getLdapSearchBindPassword();
-  const base = globalDb.getLdapBase(); //"ou=users,dc=example,dc=com"
-  const searchUsername = globalDb.getLdapSearchUsername() || "uid";
-  const nameField = globalDb.getLdapNameField() || "cn";
-  const emailField = globalDb.getLdapEmailField() || "mail";
-  const filter = globalDb.getLdapFilter();
-  const ldapCaCert = globalDb.getLdapCaCert();
+  const ldap = getClientLdapSettings(globalDb);
 
-  this.ldapUrl = new ReactiveVar(url);
-  this.ldapSearchBindDn = new ReactiveVar(searchBindDn);
-  this.ldapSearchBindPassword = new ReactiveVar(searchBindPassword);
-  this.ldapBase = new ReactiveVar(base);
-  this.ldapSearchUsername = new ReactiveVar(searchUsername);
-  this.ldapNameField = new ReactiveVar(nameField);
-  this.ldapEmailField = new ReactiveVar(emailField);
-  this.ldapFilter = new ReactiveVar(filter);
-  this.ldapCaCert = new ReactiveVar(ldapCaCert);
+  this.ldapUrl = new ReactiveVar(ldap.url);
+  this.ldapSearchBindDn = new ReactiveVar(ldap.searchBindDn);
+  this.ldapSearchBindPassword = new ReactiveVar(ldap.searchBindPassword);
+  this.ldapBase = new ReactiveVar(ldap.base);
+  this.ldapSearchUsername = new ReactiveVar(ldap.searchUsername);
+  this.ldapNameField = new ReactiveVar(ldap.nameField);
+  this.ldapEmailField = new ReactiveVar(ldap.emailField);
+  this.ldapFilter = new ReactiveVar(ldap.filter);
+  this.ldapCaCert = new ReactiveVar(ldap.caCert);
   this.errorMessage = new ReactiveVar(undefined);
   this.formChanged = new ReactiveVar(false);
   this.setAccountSettingCallback = setAccountSettingCallback.bind(this);
@@ -778,15 +771,12 @@ Template.adminLoginProviderConfigureOidc.events({
 
 // SAML form.
 Template.adminLoginProviderConfigureSaml.onCreated(function () {
-  const samlEntryPoint = globalDb.getSamlEntryPoint();
-  const samlLogout = globalDb.getSamlLogout();
-  const samlPublicCert = globalDb.getSamlPublicCert();
-  const samlEntityId = globalDb.getSamlEntityId() || window.location.hostname;
+  const saml = getClientSamlSettings(globalDb);
 
-  this.samlEntryPoint = new ReactiveVar(samlEntryPoint);
-  this.samlLogout = new ReactiveVar(samlLogout);
-  this.samlPublicCert = new ReactiveVar(samlPublicCert);
-  this.samlEntityId = new ReactiveVar(samlEntityId);
+  this.samlEntryPoint = new ReactiveVar(saml.entryPoint);
+  this.samlLogout = new ReactiveVar(saml.logout);
+  this.samlPublicCert = new ReactiveVar(saml.publicCert);
+  this.samlEntityId = new ReactiveVar(saml.entityId);
   this.errorMessage = new ReactiveVar(undefined);
   this.formChanged = new ReactiveVar(false);
   this.setAccountSettingCallback = setAccountSettingCallback.bind(this);

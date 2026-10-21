@@ -33,7 +33,6 @@ module.exports["Test appdemo link"] = function (browser) {
                 "nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh",
                 true)
     .execute("window.Meteor.logout()")
-    .pause(short_wait)
     .init()
     .url(browser.launch_url + "/appdemo/nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh")
     .waitForElementVisible(".demo-startup-modal .start", medium_wait)

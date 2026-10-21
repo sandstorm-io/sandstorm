@@ -131,7 +131,7 @@ module.exports["Test backup and restore"] = function(browser) {
       });
       done();
     })
-    .click('#backupGrain', function() {
+    .clickTopbarButton("#backupGrain", function() {
       downloadPromise = new Promise(function(resolve, reject) {
         watcherPromise.then(resolve);
         // Expect the zip download to complete within 5 seconds of clicking the button.

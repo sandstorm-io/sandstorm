@@ -27,9 +27,15 @@
     </span>
   {{else}}
     {{#if mayJumpTo}}
-      {{#linkTo route=route class=linkClassName}}
-        {{> Template.contentBlock}}
-      {{/linkTo}}
+      {{#if linkRoute}}
+        {{#linkTo route=linkRoute class=linkClassName}}
+          {{> Template.contentBlock}}
+        {{/linkTo}}
+      {{else}}
+        <span class="setup-not-current-step">
+          {{> Template.contentBlock}}
+        </span>
+      {{/if}}
     {{else}}
       <span class="setup-not-current-step">
         {{> Template.contentBlock}}

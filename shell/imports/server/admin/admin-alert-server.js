@@ -1,6 +1,6 @@
 import { Meteor } from "meteor/meteor";
 import { Match, check } from "meteor/check";
-import { checkAuth } from "/imports/server/auth";
+import { checkAuthAsync } from "/imports/server/auth";
 
 const maintenanceMessageShape = {
   text: String,
@@ -9,13 +9,13 @@ const maintenanceMessageShape = {
 };
 
 Meteor.methods({
-  setMaintenanceMessage(params) {
-    checkAuth(undefined);
+  async setMaintenanceMessage(params) {
+    await checkAuthAsync(this.connection.sandstormDb, this.userId);
     check(params, maintenanceMessageShape);
     const db = this.connection.sandstormDb;
     // TODO(soon): make this a single write to a single settings object
-    db.collections.settings.upsert({ _id: "adminAlertTime" }, { value: params.time });
-    db.collections.settings.upsert({ _id: "adminAlertUrl" }, { value: params.url });
-    db.collections.settings.upsert({ _id: "adminAlert" }, { value: params.text });
+    await db.collections.settings.upsertAsync({ _id: "adminAlertTime" }, { value: params.time });
+    await db.collections.settings.upsertAsync({ _id: "adminAlertUrl" }, { value: params.url });
+    await db.collections.settings.upsertAsync({ _id: "adminAlert" }, { value: params.text });
   },
 });

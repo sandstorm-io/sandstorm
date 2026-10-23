@@ -407,6 +407,7 @@
           }
         },
         "tableHeader": {
+          "app": "App",
           "title": "Name",
           "size": "Size",
           "lastUsed": "Last activity",

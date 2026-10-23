@@ -136,7 +136,7 @@
     border-bottom: 1px solid #aaa;
     >td {
       border: 1px solid white;
-      &.grain-name:hover, &.grain-size:hover, &.last-used:hover {
+      &.td-app-icon:hover, &.grain-name:hover, &.grain-size:hover, &.last-used:hover {
         background-color: $grainlist-table-header-background-color-hover;
         cursor: pointer;
       }

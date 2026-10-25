@@ -66,12 +66,26 @@ expected_version=$(cd "$app_dir" && meteor node -p process.version)
 install -m 0755 "$node_path" "$runtime_dir/bin/node"
 install -m 0644 "$app_dir/scripts/start.js" "$runtime_dir/start.js"
 
+# Use the repository's native module, built against the Meteor Node headers,
+# rather than the obsolete module bundled with meteor-spk.
+mkdir -p "$runtime_dir/node_modules"
+install -m 0644 "$repo_dir/deps/node-capnp/src/node-capnp/capnp.js" "$runtime_dir/node_modules/capnp.js"
+install -m 0755 "$repo_dir/tmp/node-capnp/capnp.node" "$runtime_dir/node_modules/capnp.node"
+# Copy the schemas themselves: packaging src/ directly preserves its capnp
+# symlink, whose target does not exist inside the grain.
+mkdir -p "$runtime_dir/node_modules/"{capnp,sandstorm}
+install -m 0644 "$repo_dir/src/capnp/"*.capnp "$runtime_dir/node_modules/capnp/"
+install -m 0644 "$repo_dir/src/sandstorm/"*.capnp "$runtime_dir/node_modules/sandstorm/"
+NODE_PATH="$app_dir/capnp" "$node_path" \
+  -e 'require(process.argv[1]).importSystem("meteor-testapp.capnp")' \
+  "$runtime_dir/node_modules/capnp.js"
+
 while IFS= read -r library; do
   [ -n "$library" ] || continue
   install -D -m 0644 "$library" "$runtime_dir$library"
-done < <(ldd "$node_path" | awk '
+done < <(ldd "$node_path" "$runtime_dir/node_modules/capnp.node" | awk '
   /=> \/[^ ]+/ { print $3 }
-  /^[[:space:]]*\/[^ ]+/ { print $1 }
+  $1 ~ /^\// && ($2 == "=>" || $2 ~ /^\(/) { print $1 }
 ')
 
 actual_version=$("$runtime_dir/bin/node" -p process.version)
@@ -80,9 +94,9 @@ if [ "$actual_version" != "$expected_version" ]; then
   exit 1
 fi
 
-if ldd "$runtime_dir/bin/node" | grep -q "not found"; then
-  echo "The staged Node executable has unresolved shared libraries." >&2
-  ldd "$runtime_dir/bin/node" >&2
+if ldd "$runtime_dir/bin/node" "$runtime_dir/node_modules/capnp.node" | grep -q "not found"; then
+  echo "The staged Node runtime has unresolved shared libraries." >&2
+  ldd "$runtime_dir/bin/node" "$runtime_dir/node_modules/capnp.node" >&2
   exit 1
 fi
 

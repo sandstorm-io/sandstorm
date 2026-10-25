@@ -138,11 +138,7 @@ const pkgdef :Spk.PackageDefinition = (
     # The following directories will be copied into your package.
     searchPath = [
       (
-        # For the capnp sources. Ideally we'd only include the .capnp
-        # files themselves; this will pull in a bunch of c++ source and
-        # header files as well, plus a few other things. But I(zenhack)
-        # am unsure how to go about excluding those cleanly.
-        sourcePath = "../src",
+        sourcePath = "capnp",
         packagePath = "usr/include",
       ),
       (
@@ -167,7 +163,7 @@ const pkgdef :Spk.PackageDefinition = (
     # https://docs.sandstorm.org/en/latest/developing/auth/
     # and advanced details in the "BridgeConfig" section of
     # https://github.com/sandstorm-io/sandstorm/blob/master/src/sandstorm/package.capnp
-    expectAppHooks = false,
+    expectAppHooks = true,
 
     viewInfo = (
       # For details on the viewInfo field, consult "ViewInfo" in

@@ -441,7 +441,7 @@ test-app-dev: tmp/.ekam-run
 # ====================================================================
 # meteor-testapp.spk
 
-meteor-testapp-stage:
+meteor-testapp-stage: tmp/.ekam-run
 	METEOR_PACKAGE_DIRS="$(PWD)/shell/packages" ./meteor-testapp/scripts/stage-runtime.sh
 
 meteor-testapp-dev: tmp/.ekam-run meteor-testapp-stage
@@ -455,6 +455,7 @@ tests/assets/meteor-testapp.spk: \
 		meteor-testapp/server/* \
 		meteor-testapp/.meteor/* \
 		meteor-testapp/scripts/* \
+		meteor-testapp/capnp/* \
 		shell/packages/accounts-sandstorm/*
 	@cd meteor-testapp && PATH="$(PWD)/bin:$(PATH)" \
 		spk pack -kmeteor-testapp.key -I../src -I../tmp ../tests/assets/meteor-testapp.spk

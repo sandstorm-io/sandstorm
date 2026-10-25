@@ -14,45 +14,80 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-const {short_wait, medium_wait, long_wait, run_xfail} = require('../utils');
+"use strict";
 
-if (run_xfail) {
-  // https://github.com/sandstorm-io/sandstorm/issues/3353
-  module.exports['Test saving and restoring capabilities via AppHooks'] = function(browser) {
-    browser
-      .loginDevAccount()
-      .uploadMeteorTestApp()
-      .waitForElementVisible('button.action', medium_wait)
-      .click('button.action')
-      // click the "Got it!" button in the "this is your first grain" popup.
-      // This shadows the debug log so we have to clear it in order to open the
-      // log.
-      .waitForElementVisible(".introjs-skipbutton", short_wait)
-      .click(".introjs-skipbutton")
-      .waitForElementVisible("#openDebugLog", short_wait)
-      // We also want to wait a moment before clicking the debug log button, so the
-      // first grain popup has actually gotten out of our way:
-      .pause(short_wait)
-      .openDebugLog()
-      .waitForElementVisible('.grain-frame', medium_wait)
-      .grainFrame()
-      .execute(function() {
-        Meteor.call('schedule', 'someObjectId')
-      })
-      .frameParent()
-      .pause(short_wait)
-      .execute(function() {
-        Meteor.call("runDueJobsAt", Date.now() + 1000 * 60 * 60);
-      })
-      .pause(short_wait)
-      .windowHandles(windows => browser.switchWindow(windows.value[1]))
-      .assert.textContains(".grainlog-contents > pre", "Running callback: someObjectId")
+const { medium_wait, long_wait } = require("../utils");
 
-      // Close the grain log and switch back to the main window, to avoid
-      // confusing future tests:
-      browser.windowHandles(windows => {
-        browser.closeWindow()
-        browser.switchWindow(windows.value[0])
-      })
-  }
+function callMeteor(browser, method, args) {
+  return browser.executeAsync(function (method, args, done) {
+    const meteor = window.Package.meteor.Meteor;
+    meteor.call(method, ...args, function (error) {
+      done(error ? { error: error.message } : { ok: true });
+    });
+  }, [method, args], function (result) {
+    browser.assert.deepEqual(result.value, { ok: true }, method + " completed successfully");
+  });
 }
+
+module.exports["Test saving and restoring capabilities via AppHooks"] = function (browser) {
+  const objectId = "apphooks-persistent-callback";
+
+  browser
+    .loginDevAccount()
+    .disableGuidedTour()
+    .timeouts("script", long_wait)
+    .uploadMeteorTestApp()
+    .waitForElementVisible("button.action", medium_wait)
+    .click("button.action")
+    .grainFrame()
+    // This response proves the fixture's DDP connection is ready.
+    .waitForElementVisible("#serverRuntime", medium_wait)
+    .assert.textContains("#serverRuntime", "serverRuntime: " +
+        (process.env.EXPECTED_SERVER_RUNTIME === undefined ? "classic" :
+          process.env.EXPECTED_SERVER_RUNTIME))
+    .perform(function () {
+      callMeteor(browser, "schedule", [objectId]);
+    })
+    .frame(null)
+    .url(function (result) {
+      const grainUrl = result.value;
+      const grainId = new URL(grainUrl).pathname.split("/")[2];
+      // Remove the grain iframe before shutdown so DDP cannot restart it.
+      browser.click(".navbar-grains>li[data-grainid='" + grainId + "']>button.close-button")
+        .waitForElementNotPresent("#grain-frame-" + grainId, medium_wait)
+        .url(browser.launch_url + "/apps")
+        .waitForElementVisible(".upload-button", medium_wait);
+      callMeteor(browser, "shutdownGrain", [grainId]);
+      callMeteor(browser, "runDueJobsAt", [Date.now() + 2 * 60 * 60 * 1000]);
+      browser.url(grainUrl)
+        .waitForElementVisible("#openDebugLog", medium_wait)
+        .openDebugLog();
+    })
+    .windowHandles(function (windows) {
+      browser.switchWindow(windows.value[1])
+        .waitForElementVisible(".grainlog-contents > pre", medium_wait)
+        .executeAsync(function (objectId, timeout, done) {
+          const deadline = Date.now() + timeout;
+          function check() {
+            const text = document.querySelector(".grainlog-contents > pre").textContent;
+            const saved = text.indexOf("saving: " + objectId);
+            const restored = text.indexOf("restoring: " + objectId, saved + 1);
+            const ran = text.indexOf("Running callback: " + objectId, restored + 1);
+            if (saved !== -1 && restored > saved && ran > restored) {
+              done({ ok: true });
+            } else if (Date.now() >= deadline) {
+              done({ error: text });
+            } else {
+              setTimeout(check, 100);
+            }
+          }
+          check();
+        }, [objectId, medium_wait], function (result) {
+          browser.assert.deepEqual(result.value, { ok: true },
+              "Callback was saved, restored after shutdown, and run through AppHooks");
+        })
+        .closeWindow()
+        .switchWindow(windows.value[0]);
+    })
+    .end();
+};

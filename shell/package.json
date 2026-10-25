@@ -36,7 +36,7 @@
     "acme-dns-01-dnsimple": "^3.0.0",
     "acme-dns-01-duckdns": "^3.0.1",
     "acme-dns-01-gandi": "^3.0.0",
-    "acme-dns-01-gcp": "file:npm-packages/acme-dns-01-gcp",
+    "acme-dns-01-gcp": "git+https://github.com/sandstorm-org/acme-dns-01-gcp.git#de87e9aab706f44785c5bc59bb1925e6cfcab623",
     "acme-dns-01-godaddy": "^3.0.1",
     "acme-dns-01-namecheap": "git+https://github.com/sandstorm-org/acme-dns-01-namecheap.git#v3.1.0",
     "acme-dns-01-namedotcom": "^3.0.1",

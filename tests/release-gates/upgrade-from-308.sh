@@ -7,7 +7,7 @@
 set -euo pipefail
 
 REPO_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
-BUILD_308_URL=https://dl.sandstorm.io/sandstorm-308.tar.xz
+BUILD_308_URL=https://dl.sandstorm.org/sandstorm-308.tar.xz
 BUILD_308_SHA256=f1317754765b11f260a757724b28e92d5318d8b277f970c99662c01bd9291879
 GATE_PORT=${SANDSTORM_UPGRADE_GATE_PORT:-9120}
 GATE_MONGO_PORT=$((GATE_PORT + 1))
@@ -49,7 +49,7 @@ wait_for_shell() {
   local attempts=${1:-120}
   local i
   for i in $(seq 1 "$attempts"); do
-    if curl -sf --max-time 2 -H "Host: local.sandstorm.io:$GATE_PORT" \
+    if curl -sf --max-time 2 -H "Host: local.sandstorm.org:$GATE_PORT" \
         "http://127.0.0.1:$GATE_PORT/apps" >/dev/null; then
       return
     fi
@@ -87,7 +87,7 @@ run_old_profile_test() {
   (
     cd "$REPO_ROOT/tests"
     SANDSTORM_DIR="$INSTALL_DIR" \
-    LAUNCH_URL="http://local.sandstorm.io:$GATE_PORT" \
+    LAUNCH_URL="http://local.sandstorm.org:$GATE_PORT" \
     SANDSTORM_TESTAPP_PATH="$REPO_ROOT/tests/assets/meteor-testapp.spk" \
     EXPECTED_SERVER_RUNTIME= \
     TESTCASE="tests/account-settings.js Test profile changes passing to testapp" \
@@ -99,7 +99,7 @@ run_upgraded_grain_test() {
   (
     cd "$REPO_ROOT/tests"
     SANDSTORM_DIR="$INSTALL_DIR" \
-    LAUNCH_URL="http://local.sandstorm.io:$GATE_PORT" \
+    LAUNCH_URL="http://local.sandstorm.org:$GATE_PORT" \
     UPGRADE_GRAIN_ID="$(json_field grainId)" \
     UPGRADE_DEV_NAME="$(json_field devName)" \
     UPGRADE_PROFILE_NAME="$(json_field profileName)" \
@@ -124,8 +124,8 @@ OVERRIDE_SANDSTORM_DEFAULT_DIR="$INSTALL_DIR" \
 sed -i \
   -e "s/^PORT=.*/PORT=$GATE_PORT/" \
   -e "s/^MONGO_PORT=.*/MONGO_PORT=$GATE_MONGO_PORT/" \
-  -e "s|^BASE_URL=.*|BASE_URL=http://local.sandstorm.io:$GATE_PORT|" \
-  -e "s|^WILDCARD_HOST=.*|WILDCARD_HOST=*.local.sandstorm.io:$GATE_PORT|" \
+  -e "s|^BASE_URL=.*|BASE_URL=http://local.sandstorm.org:$GATE_PORT|" \
+  -e "s|^WILDCARD_HOST=.*|WILDCARD_HOST=*.local.sandstorm.org:$GATE_PORT|" \
   -e "s/^UPDATE_CHANNEL=.*/UPDATE_CHANNEL=none/" \
   "$INSTALL_DIR/sandstorm.conf"
 if grep -q "^IS_TESTING=" "$INSTALL_DIR/sandstorm.conf"; then
@@ -221,7 +221,7 @@ for _ in $(seq 1 45); do
   sleep 1
 done
 test "$failure_seen" = yes || fail "intentional migration failure was not observed"
-if curl -sf --max-time 2 -H "Host: local.sandstorm.io:$GATE_PORT" \
+if curl -sf --max-time 2 -H "Host: local.sandstorm.org:$GATE_PORT" \
     "http://127.0.0.1:$GATE_PORT/apps" >/dev/null; then
   fail "shell became externally reachable after a migration failure"
 fi

@@ -110,7 +110,7 @@ module.exports["Test profile changes passing to testapp"] = function (browser) {
     .waitForElementVisible('#name', medium_wait)
     .pause(5000)
     .assert.textContains('#name', devName2)
-    .assert.textContains('#picture', 'sandstorm.io')
+    .assert.textContains('#picture', 'sandstorm.org')
     .assert.textContains('#preferredHandle', devName2.toLowerCase())
     .assert.textContains('#pronouns', 'robot')
     .assert.textContains('#serverRuntime', expectedServerRuntime)

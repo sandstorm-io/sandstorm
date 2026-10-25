@@ -12,7 +12,7 @@
 
   "test_settings": {
     "default": {
-      "launch_url": "http://local.sandstorm.io:6080",
+      "launch_url": "http://local.sandstorm.org:6080",
       "globals": {
         "waitForConditionPollInterval": 100
       },
@@ -38,7 +38,7 @@
             "--no-sandbox",
             "--disable-dev-shm-usage",
             "--disable-gpu",
-            "--host-resolver-rules=MAP local.sandstorm.io 127.0.0.1,MAP *.local.sandstorm.io 127.0.0.1"
+            "--host-resolver-rules=MAP local.sandstorm.org 127.0.0.1,MAP *.local.sandstorm.org 127.0.0.1"
           ],
           "prefs": {
             "download.prompt_for_download": false,

@@ -42,7 +42,7 @@ cat > $SETTINGS << __EOF__
     "allowDevAccounts": true,
     "allowUninvited": ${ALLOW_UNINVITED:-false},
     "isTesting": true,
-    "wildcardHost": "*.local.sandstorm.io"
+    "wildcardHost": "*.local.sandstorm.org"
   }
 }
 __EOF__

@@ -26,46 +26,6 @@ var expectedHackerCMSGrainTitle = "Untitled Hacker CMS site";
 var expectedGitWebGrainTitle = "Untitled GitWeb repository";
 var hackerCmsAppId = "nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh";
 
-function waitForLogout(browser) {
-  return browser.executeAsync(function (done) {
-    var meteorPkg = window.Package && window.Package.meteor;
-    var MeteorObj = meteorPkg && meteorPkg.Meteor;
-    if (!MeteorObj || typeof MeteorObj.logout !== "function") {
-      done({ success: false, error: "Meteor.logout unavailable" });
-      return;
-    }
-
-    MeteorObj.logout(function (err) {
-      if (err) {
-        done({ success: false, error: err.reason || err.message || String(err) });
-        return;
-      }
-
-      var start = Date.now();
-      (function waitForLogoutCommit() {
-        var userId = typeof MeteorObj.userId === "function" ? MeteorObj.userId() : null;
-        if (!userId) {
-          done({ success: true });
-          return;
-        }
-
-        if (Date.now() - start > 5000) {
-          done({ success: false, error: "timed out waiting for Meteor.userId() to clear" });
-          return;
-        }
-
-        setTimeout(waitForLogoutCommit, 25);
-      })();
-    });
-  }, [], function (result) {
-    var ok = result.status === 0 && result.value && result.value.success;
-    if (!ok && result.value && result.value.error) {
-      console.log("Logout error:", result.value.error);
-    }
-    browser.assert.ok(ok, "logout completed successfully");
-  });
-}
-
 module.exports["Test open direct share link"] = function (browser) {
   // The first dev user will be automatically created with the call to installApp().
   // We need to prepend 'A' so that the default handle is always valid.
@@ -76,7 +36,7 @@ module.exports["Test open direct share link"] = function (browser) {
       done(Meteor.userId());
     }, [], function (result) {
       var devAccountId2 = result.value;
-      waitForLogout(browser)
+      browser.logoutAndWait()
         .loginDevAccount()
         .installApp("https://dl.sandstorm.org/testapps/ssjekyll8.spk", "ca690ad886bf920026f8b876c19539c1",
                     hackerCmsAppId)
@@ -110,43 +70,7 @@ module.exports["Test open direct share link"] = function (browser) {
             .frame(null)
 
             // Next, try visiting the link while not logged in.
-            .executeAsync(function (done) {
-              var meteorPkg = window.Package && window.Package.meteor;
-              var MeteorObj = meteorPkg && meteorPkg.Meteor;
-              if (!MeteorObj || typeof MeteorObj.logout !== "function") {
-                done({ success: false, error: "Meteor.logout unavailable" });
-                return;
-              }
-
-              MeteorObj.logout(function (err) {
-                if (err) {
-                  done({ success: false, error: err.reason || err.message || String(err) });
-                  return;
-                }
-
-                var start = Date.now();
-                (function waitForLogoutCommit() {
-                  var userId = typeof MeteorObj.userId === "function" ? MeteorObj.userId() : null;
-                  if (!userId) {
-                    done({ success: true });
-                    return;
-                  }
-
-                  if (Date.now() - start > 5000) {
-                    done({ success: false, error: "timed out waiting for Meteor.userId() to clear" });
-                    return;
-                  }
-
-                  setTimeout(waitForLogoutCommit, 25);
-                })();
-              });
-            }, [], function (result) {
-              var ok = result.status === 0 && result.value && result.value.success;
-              if (!ok && result.value && result.value.error) {
-                console.log("Logout error:", result.value.error);
-              }
-              browser.assert.ok(ok, "logout completed successfully");
-            })
+            .logoutAndWait()
             .url(browser.launch_url + "/shared/" + result.value.result.token)
             .waitForElementVisible(".grain-interstitial", short_wait)
             .assert.textContains(".grain-interstitial",
@@ -164,43 +88,7 @@ module.exports["Test open direct share link"] = function (browser) {
             .frame(null)
 
             // Now try while logged in as a third user.
-            .executeAsync(function (done) {
-              var meteorPkg = window.Package && window.Package.meteor;
-              var MeteorObj = meteorPkg && meteorPkg.Meteor;
-              if (!MeteorObj || typeof MeteorObj.logout !== "function") {
-                done({ success: false, error: "Meteor.logout unavailable" });
-                return;
-              }
-
-              MeteorObj.logout(function (err) {
-                if (err) {
-                  done({ success: false, error: err.reason || err.message || String(err) });
-                  return;
-                }
-
-                var start = Date.now();
-                (function waitForLogoutCommit() {
-                  var userId = typeof MeteorObj.userId === "function" ? MeteorObj.userId() : null;
-                  if (!userId) {
-                    done({ success: true });
-                    return;
-                  }
-
-                  if (Date.now() - start > 5000) {
-                    done({ success: false, error: "timed out waiting for Meteor.userId() to clear" });
-                    return;
-                  }
-
-                  setTimeout(waitForLogoutCommit, 25);
-                })();
-              });
-            }, [], function (result) {
-              var ok = result.status === 0 && result.value && result.value.success;
-              if (!ok && result.value && result.value.error) {
-                console.log("Logout error:", result.value.error);
-              }
-              browser.assert.ok(ok, "logout completed successfully");
-            })
+            .logoutAndWait()
             .loginDevAccount()
             .url(browser.launch_url + "/shared/" + result.value.result.token)
             .waitForElementVisible(".grain-interstitial", short_wait)
@@ -269,7 +157,7 @@ module.exports["Test share popup no permission"] = function (browser) {
     .assert.textContains("#grainTitle", expectedHackerCMSGrainTitle)
     .waitForElementVisible(sharePopupSelector, medium_wait)
     .url(function (grainUrl) {
-      waitForLogout(browser)
+      browser.logoutAndWait()
         .url(browser.launch_url)
         .url(grainUrl.value)
         .waitForElementVisible(".grain-interstitial.request-access", medium_wait)

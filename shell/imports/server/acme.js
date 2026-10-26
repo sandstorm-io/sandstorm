@@ -19,7 +19,6 @@ import ACME from "@root/acme";
 import CSR from "@root/csr";
 import PEM from "@root/pem";
 import Keypairs from "@root/keypairs";
-import { pki, asn1 } from "node-forge";
 import { SandstormDb } from "/imports/sandstorm-db/db";
 import { globalDb } from "/imports/db-deprecated";
 import URL from "url";
@@ -224,7 +223,12 @@ async function renewCertificateWhenNeeded(certChain) {
     return;
   }
 
-  let validity = pki.certificateFromPem(certChain).validity;
+  // Read the leaf certificate with Node's parser, which also supports non-RSA public keys.
+  let certificate = new Crypto.X509Certificate(certChain);
+  let validity = {
+    notBefore: new Date(certificate.validFrom),
+    notAfter: new Date(certificate.validTo),
+  };
   let now = Date.now();
 
   // Calculate the point in time that is 2/3 through the validity period, though if the validity

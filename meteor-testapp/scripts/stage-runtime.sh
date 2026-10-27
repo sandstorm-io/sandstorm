@@ -7,7 +7,6 @@ repo_dir=$(cd "$app_dir/.." && pwd)
 stage_dir="$app_dir/.meteor-spk"
 runtime_dir="$stage_dir/runtime"
 bundle_dir="$stage_dir/bundle"
-package_dirs="$repo_dir/shell/packages"
 
 audit_runtime() {
   local attempt audit_log
@@ -49,8 +48,8 @@ mkdir -p "$runtime_dir/bin"
 
 (
   cd "$app_dir"
-  METEOR_PACKAGE_DIRS="$package_dirs" meteor npm install
-  METEOR_PACKAGE_DIRS="$package_dirs" meteor build --directory "$stage_dir" --server-only
+  meteor npm install
+  meteor build --directory "$stage_dir" --server-only
   cd "$bundle_dir/programs/server"
   chmod u+w package.json npm-shrinkwrap.json
   meteor npm pkg set \

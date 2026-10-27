@@ -12,5 +12,5 @@ standard-minifier-css
 standard-minifier-js
 ecmascript
 
-kenton:accounts-sandstorm
+sandstormorg:accounts-sandstorm@0.10.0
 rspack

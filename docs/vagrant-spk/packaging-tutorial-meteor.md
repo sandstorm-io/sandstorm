@@ -56,7 +56,7 @@ Sandstorm packages rely on the Sandstorm platform to handle user login
 and access control. You can read more in the [App Developer
 Handbook](../developing/handbook.md). You can use an Atmosphere
 package called
-[kenton:accounts-sandstorm](https://github.com/sandstorm-io/meteor-accounts-sandstorm)
+[sandstormorg:accounts-sandstorm](https://atmospherejs.com/sandstormorg/accounts-sandstorm)
 to integrate with that.
 
 ## Prepare the app

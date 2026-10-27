@@ -4,9 +4,9 @@ import { Template } from "meteor/templating";
 import { ReactiveVar } from "meteor/reactive-var";
 import { ReactiveDict } from "meteor/reactive-dict";
 import { Session } from "meteor/session";
-import { Router } from "meteor/iron:router";
-import { _ } from "meteor/underscore";
-import { TAPi18n } from "meteor/tap:i18n";
+import { Router } from "meteor/vlasky:galvanized-iron-router";
+import { groupBy, indexBy, sortBy, unique } from "/imports/shared/collection-utils";
+import { TAPi18n } from "/imports/tapi18n";
 
 import { introJs } from "intro.js";
 import { isDevelopmentServer } from "/imports/client/dev-mode";
@@ -14,16 +14,14 @@ import { identiconForApp } from "/imports/sandstorm-identicons/helpers";
 import { SandstormDb } from "/imports/sandstorm-db/db";
 import { makeAndDownloadBackup } from "/imports/client/backups";
 
-SandstormGrainListPage = {};
+const SandstormGrainListPage = {};
+globalThis.SandstormGrainListPage = SandstormGrainListPage;
 
 SandstormGrainListPage.mapGrainsToTemplateObject = function (grains, db) {
   // Do package lookup all at once, rather than doing N queries for N grains
-  const packageIds = _.chain(grains)
-      .pluck("packageId")
-      .uniq()
-      .value();
+  const packageIds = unique(grains.map(grain => grain.packageId));
   const packages = db.collections.packages.find({ _id: { $in: packageIds } }).fetch();
-  const packagesById = _.indexBy(packages, "_id");
+  const packagesById = indexBy(packages, "_id");
   return grains.map(function (grain) {
     const pkg = packagesById[grain.packageId];
     const iconSrc = pkg ? db.iconSrcForPackage(pkg, "grain") : "";
@@ -55,11 +53,11 @@ function bulkActionNoneSelected(numMineSelected, numSharedSelected) {
 }
 
 SandstormGrainListPage.mapApiTokensToTemplateObject = function (apiTokens, staticAssetHost) {
-  const tokensForGrain = _.groupBy(apiTokens, "grainId");
+  const tokensForGrain = groupBy(apiTokens, "grainId");
   const grainIdsForApiTokens = Object.keys(tokensForGrain);
   return grainIdsForApiTokens.map(function (grainId) {
     // Pick the oldest one.
-    const token = _.sortBy(tokensForGrain[grainId], "created")[0];
+    const token = sortBy(tokensForGrain[grainId], "created")[0];
 
     const ownerData = token.owner.user;
     const grainInfo = ownerData.denormalizedGrainMetadata;
@@ -109,10 +107,7 @@ const compileMatchFilter = function (searchString) {
 
   return function matchFilter(item) {
     if (searchKeys.length === 0) return true;
-    return _.chain(searchKeys)
-        .map(function (searchKey) { return matchesAppOrGrainTitle(searchKey, item); })
-        .reduce(function (a, b) { return a && b; })
-        .value();
+    return searchKeys.every(searchKey => matchesAppOrGrainTitle(searchKey, item));
   };
 };
 
@@ -214,10 +209,7 @@ const filteredGrains = function (showTrash) {
 
   const itemsFromSharedGrains = SandstormGrainListPage.mapApiTokensToTemplateObject(apiTokens, ref._staticHost);
   const filter = compileMatchFilter(Template.instance()._filter.get());
-  return _.chain([itemsFromGrains, itemsFromSharedGrains])
-      .flatten()
-      .filter(filter)
-      .value();
+  return itemsFromGrains.concat(itemsFromSharedGrains).filter(filter);
 };
 
 SandstormGrainListPage.bulkActionButtons = function (showTrash) {
@@ -242,11 +234,11 @@ SandstormGrainListPage.bulkActionButtons = function (showTrash) {
 
         onClicked: function (ownedGrainIds, sharedGrainIds) {
           ownedGrainIds.forEach((grainId) => {
-            Meteor.call("deleteGrain", grainId);
+            globalThis.callMeteor("deleteGrain", grainId);
           });
 
           sharedGrainIds.forEach((grainId) => {
-            Meteor.call("forgetGrain", grainId);
+            globalThis.callMeteor("forgetGrain", grainId);
           });
         },
       },
@@ -262,7 +254,7 @@ SandstormGrainListPage.bulkActionButtons = function (showTrash) {
         },
 
         onClicked: function (ownedGrainIds, sharedGrainIds) {
-          Meteor.call("moveGrainsOutOfTrash", ownedGrainIds.concat(sharedGrainIds));
+          globalThis.callMeteor("moveGrainsOutOfTrash", ownedGrainIds.concat(sharedGrainIds));
         },
       },
     ];
@@ -281,7 +273,7 @@ SandstormGrainListPage.bulkActionButtons = function (showTrash) {
         },
 
         onClicked: function (ownedGrainIds, sharedGrainIds) {
-          Meteor.call("moveGrainsToTrash", ownedGrainIds.concat(sharedGrainIds));
+          globalThis.callMeteor("moveGrainsToTrash", ownedGrainIds.concat(sharedGrainIds));
         },
       },
       {
@@ -478,14 +470,14 @@ Template.sandstormGrainListPage.events({
       trashed: { $exists: true },
     }, { _id: 1 });
 
-    const myGrains = _.pluck(myGrainsCursor.fetch(), "_id");
+    const myGrains = myGrainsCursor.fetch().map(grain => grain._id);
 
     const myTokens = instance.data._db.collections.apiTokens.find({
       "owner.user.accountId": Meteor.userId(),
       trashed: { $exists: true },
     }).fetch();
 
-    const grainsSharedWithMe = Object.keys(_.groupBy(myTokens, "grainId"));
+    const grainsSharedWithMe = Object.keys(groupBy(myTokens, "grainId"));
 
     let deletePhrase = "" + myGrains.length + " grain" + (myGrains.length > 1 ? "s" : "");
     let forgetPhrase = "" + grainsSharedWithMe.length + " grain" +
@@ -504,11 +496,11 @@ Template.sandstormGrainListPage.events({
 
     if (window.confirm(message)) {
       myGrains.forEach((grainId) => {
-        Meteor.call("deleteGrain", grainId);
+        globalThis.callMeteor("deleteGrain", grainId);
       });
 
       grainsSharedWithMe.forEach((grainId) => {
-        Meteor.call("forgetGrain", grainId);
+        globalThis.callMeteor("forgetGrain", grainId);
       });
     }
   },

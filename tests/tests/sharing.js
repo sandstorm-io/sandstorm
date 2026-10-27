@@ -36,7 +36,7 @@ module.exports["Test open direct share link"] = function (browser) {
       done(Meteor.userId());
     }, [], function (result) {
       var devAccountId2 = result.value;
-      browser.execute("window.Meteor.logout()")
+      browser.logoutAndWait()
         .loginDevAccount()
         .installApp("https://dl.sandstorm.org/testapps/ssjekyll8.spk", "ca690ad886bf920026f8b876c19539c1",
                     hackerCmsAppId)
@@ -58,8 +58,8 @@ module.exports["Test open direct share link"] = function (browser) {
              // First, try visiting the link while already logged in.
             .loginDevAccount(devName2)
             .url(browser.launch_url + "/shared/" + result.value.result.token)
-            .waitForElementVisible("iframe.grain-frame", medium_wait)
-            .waitForElementVisible("#grainTitle", medium_wait)
+            .waitForElementPresent("iframe.grain-frame", medium_wait)
+            .waitForElementPresent("#grainTitle", medium_wait)
             .assert.textContains("#grainTitle", "user2 title")
             .url(function(grainUrl) {
               browser.assert.equal(0, grainUrl.value.indexOf(browser.launch_url + "/grain/"));
@@ -70,14 +70,14 @@ module.exports["Test open direct share link"] = function (browser) {
             .frame(null)
 
             // Next, try visiting the link while not logged in.
-            .execute("window.Meteor.logout()")
+            .logoutAndWait()
             .url(browser.launch_url + "/shared/" + result.value.result.token)
             .waitForElementVisible(".grain-interstitial", short_wait)
             .assert.textContains(".grain-interstitial",
                                  "This link was intended for the user:")
             .click(".grain-interstitial button.sign-in")
-            .waitForElementVisible("iframe.grain-frame", medium_wait)
-            .waitForElementVisible("#grainTitle", medium_wait)
+            .waitForElementPresent("iframe.grain-frame", medium_wait)
+            .waitForElementPresent("#grainTitle", medium_wait)
             .assert.textContains("#grainTitle", "user2 title")
             .url(function(grainUrl) {
               browser.assert.equal(0, grainUrl.value.indexOf(browser.launch_url + "/grain/"));
@@ -88,15 +88,15 @@ module.exports["Test open direct share link"] = function (browser) {
             .frame(null)
 
             // Now try while logged in as a third user.
-            .execute("window.Meteor.logout()")
+            .logoutAndWait()
             .loginDevAccount()
             .url(browser.launch_url + "/shared/" + result.value.result.token)
             .waitForElementVisible(".grain-interstitial", short_wait)
             .assert.textContains(".grain-interstitial",
                                  "This link was intended for the user:")
             .click(".grain-interstitial button.sign-in")
-            .waitForElementVisible("iframe.grain-frame", medium_wait)
-            .waitForElementVisible("#grainTitle", medium_wait)
+            .waitForElementPresent("iframe.grain-frame", medium_wait)
+            .waitForElementPresent("#grainTitle", medium_wait)
             .assert.textContains("#grainTitle", "user2 title")
             .url(function(grainUrl) {
               browser.assert.equal(0, grainUrl.value.indexOf(browser.launch_url + "/grain/"));
@@ -128,11 +128,13 @@ module.exports["Test revoked share link"] = function (browser) {
       browser.assert.equal(!result.value.error, true)
       browser.executeAsync(function(tokenId, done) {
         Meteor.call("updateApiToken", tokenId, { revoked: true }, function (error) {
-          Meteor.logout();
-          done(error)
+          Meteor.logout(function (logoutErr) {
+            done({ updateError: error, logoutError: logoutErr });
+          });
         });
       }, [result.value.result.id], function(error) {
-        browser.assert.equal(!error.value, true);
+        browser.assert.equal(!error.value.updateError, true);
+        browser.assert.equal(!error.value.logoutError, true);
         browser
           .url(browser.launch_url + "/shared/" + result.value.result.token)
           .waitForElementVisible(".grain-interstitial", medium_wait)
@@ -155,8 +157,7 @@ module.exports["Test share popup no permission"] = function (browser) {
     .assert.textContains("#grainTitle", expectedHackerCMSGrainTitle)
     .waitForElementVisible(sharePopupSelector, medium_wait)
     .url(function (grainUrl) {
-      browser
-        .execute("window.Meteor.logout()")
+      browser.logoutAndWait()
         .url(browser.launch_url)
         .url(grainUrl.value)
         .waitForElementVisible(".grain-interstitial.request-access", medium_wait)

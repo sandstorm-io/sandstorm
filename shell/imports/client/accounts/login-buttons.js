@@ -24,8 +24,7 @@ import { check } from "meteor/check";
 import { Template } from "meteor/templating";
 import { ReactiveVar } from "meteor/reactive-var";
 import { Accounts } from "meteor/accounts-base";
-import { _ } from "meteor/underscore";
-import { Router } from "meteor/iron:router";
+import { Router } from "meteor/vlasky:galvanized-iron-router";
 
 import {
   loginWithEmailToken,
@@ -38,6 +37,7 @@ import { loginWithOidc } from "/imports/oidc/oidc-client";
 import AccountsUi from "/imports/client/accounts/accounts-ui";
 import { SandstormDb } from "/imports/sandstorm-db/db";
 import { globalDb } from "/imports/db-deprecated";
+import { coerceTemplateText } from "/imports/shared/template-values";
 
 // for convenience
 const loginButtonsSession = Accounts._loginButtonsSession;
@@ -110,8 +110,8 @@ Template.accountButtons.helpers({
 });
 
 function getServices() {
-  return _.keys(Accounts.loginServices).map(function (key) {
-    return _.extend(Accounts.loginServices[key], { name: key });
+  return Object.keys(Accounts.loginServices).map(function (key) {
+    return Object.assign(Accounts.loginServices[key], { name: key });
   }).filter(function (service) {
     return service.isEnabled() && !!service.loginTemplate;
   }).sort(function (s1, s2) { return s1.loginTemplate.priority - s2.loginTemplate.priority; });
@@ -150,7 +150,7 @@ const loginResultCallback = function (serviceName, err) {
 //
 Accounts.onPageLoadLogin(function (attemptInfo) {
   // Ignore if we have a left over login attempt for a service that is no longer registered.
-  if (_.contains(_.pluck(getServices(), "name"), attemptInfo.type))
+  if (getServices().map((service) => service.name).includes(attemptInfo.type))
     loginResultCallback(attemptInfo.type, attemptInfo.error);
 });
 
@@ -259,7 +259,8 @@ const loginWithToken = function (email, token) {
 
 Template.loginButtonsDialog.helpers({
   labelOrFallback() {
-    if (this.label) return this.label;
+    const label = coerceTemplateText(this && this.label);
+    if (label) return label;
     return Meteor.settings.public.allowUninvited ? "Create account" : "Sign in";
   },
 

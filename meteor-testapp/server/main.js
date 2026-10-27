@@ -1,50 +1,45 @@
-import { Meteor } from 'meteor/meteor';
+import { Meteor } from "meteor/meteor";
+import { check } from "meteor/check";
 
-const capnp = Npm.require('capnp');
-const { PersistentCallback, TestAppAppHooks } = capnp.importSystem('meteor-testapp.capnp');
-const { SandstormHttpBridge } = capnp.importSystem('sandstorm/sandstorm-http-bridge.capnp');
+// Staged alongside Node, using the same native module as the Sandstorm shell.
+const capnp = Npm.require("/node_modules/capnp.js");
+const { PersistentCallback, TestAppAppHooks } = capnp.importSystem("meteor-testapp.capnp");
+const { SandstormHttpBridge } = capnp.importSystem("sandstorm/sandstorm-http-bridge.capnp");
 
-
-const makeCallback = (objectId) => {
-  const cb = {
+function makeCallback(objectId) {
+  return new capnp.Capability({
     save() {
-      console.log("saving:", objectId)
-      return { objectId }
+      console.log("saving:", objectId);
+      return { objectId };
     },
-
     run() {
-      console.log("Running callback:", objectId )
-      return { cancelFutureRuns: true }
-    }
-  }
-  return new capnp.Capability(cb, PersistentCallback);
+      console.log("Running callback:", objectId);
+      return { cancelFutureRuns: true };
+    },
+  }, PersistentCallback);
 }
 
-const appHooks = {
+const connection = capnp.connect("unix:/tmp/sandstorm-api", new capnp.Capability({
   restore(objectId) {
-    console.log("restoring:", objectId)
-    return { cap: makeCallback(objectId) }
+    console.log("restoring:", objectId);
+    return { cap: makeCallback(objectId) };
   },
-};
+}, TestAppAppHooks));
+const bridge = connection.restore(null, SandstormHttpBridge);
+const api = bridge.getSandstormApi().api;
 
-const conn = capnp.connect(
-  'unix:/tmp/sandstorm-api',
-  new capnp.Capability(appHooks, TestAppAppHooks),
-);
-
-const bridge = conn.restore(null, SandstormHttpBridge);
-
-Meteor.startup(() => {
-  Meteor.methods({
-    getServerRuntime() {
-      return process.env.SERVER_RUNTIME;
-    },
-    schedule(objectId) {
-      bridge.getSandstormApi().api.schedule(
-        { defaultText: 'test job' },
-        makeCallback(objectId),
-        { periodic: 'hourly' }
-      );
+Meteor.methods({
+  getServerRuntime() {
+    return process.env.SERVER_RUNTIME;
+  },
+  async schedule(objectId) {
+    check(objectId, String);
+    const callback = makeCallback(objectId);
+    try {
+      // The test must not shut down the grain until the callback has been saved.
+      await api.schedule({ defaultText: "AppHooks test job" }, callback, { periodic: "hourly" });
+    } finally {
+      callback.close();
     }
-  })
+  },
 });

@@ -15,12 +15,10 @@
 // limitations under the License.
 
 import { Meteor } from "meteor/meteor";
-import { waitPromise } from "/imports/server/async-helpers";
 import ACME from "@root/acme";
 import CSR from "@root/csr";
 import PEM from "@root/pem";
 import Keypairs from "@root/keypairs";
-import { pki, asn1 } from "node-forge";
 import { SandstormDb } from "/imports/sandstorm-db/db";
 import { globalDb } from "/imports/db-deprecated";
 import URL from "url";
@@ -44,7 +42,7 @@ const SECONDS = 1000;
 const HOURS = 3600 * SECONDS;
 const DAYS = 24 * HOURS;
 
-function createAcmeClient(directory) {
+async function createAcmeClient(directory) {
   // Compute package agent identifier (like a User-Agent).
   let build = Meteor.settings && Meteor.settings.public && Meteor.settings.public.build;
   let packageAgent;
@@ -64,7 +62,7 @@ function createAcmeClient(directory) {
   });
 
   if (directory) {
-    waitPromise(acme.init(directory));
+    await acme.init(directory);
   }
 
   return acme;
@@ -80,16 +78,16 @@ if (!Maintainers.init) {
 }
 Maintainers.init = (me) => {};
 
-export function createAcmeAccount(directory, email, agreeToTerms) {
-  let accountKeypair = waitPromise(Keypairs.generate({ kty: 'EC', format: 'jwk' }));
+export async function createAcmeAccount(directory, email, agreeToTerms) {
+  let accountKeypair = await Keypairs.generate({ kty: 'EC', format: 'jwk' });
   let accountKey = accountKeypair.private;
 
-  let acme = createAcmeClient(directory);
+  let acme = await createAcmeClient(directory);
 
-  let account = waitPromise(acme.accounts.create({
-      subscriberEmail: email, agreeToTerms, accountKey}));
+  let account = await acme.accounts.create({
+      subscriberEmail: email, agreeToTerms, accountKey});
 
-  globalDb.collections.settings.upsert({_id: "acmeAccount"}, {$set: {
+  await globalDb.collections.settings.upsertAsync({_id: "acmeAccount"}, {$set: {
     value: {
       directory,
       email,
@@ -101,8 +99,8 @@ export function createAcmeAccount(directory, email, agreeToTerms) {
 
 let currentlyRenewing = false;
 
-export function renewCertificateNow() {
-  let accountInfo = globalDb.getSetting("acmeAccount");
+export async function renewCertificateNow() {
+  let accountInfo = await globalDb.getSettingAsync("acmeAccount");
   if (!accountInfo) {
     console.log("Can't renew certificate because ACME account info is not configured.");
     return false;
@@ -115,7 +113,7 @@ export function renewCertificateNow() {
       options: getSandcatsAcmeOptions()
     };
   } else {
-    challengeOpts = globalDb.getSetting("acmeChallenge");
+    challengeOpts = await globalDb.getSettingAsync("acmeChallenge");
     if (!challengeOpts) {
       console.log("Can't renew certificate because ACME challenge is not configured.");
       return false;
@@ -130,15 +128,17 @@ export function renewCertificateNow() {
 
   currentlyRenewing = true;
   try {
-    globalDb.collections.settings.upsert({_id: "tlsStatus"}, {$set: {"value.currentlyRenewing": true}});
-    renewCertificateNowImpl(accountInfo, challengeOpts)
+    await globalDb.collections.settings
+        .upsertAsync({_id: "tlsStatus"}, {$set: {"value.currentlyRenewing": true}});
+    return await renewCertificateNowImpl(accountInfo, challengeOpts);
   } finally {
     currentlyRenewing = false;
-    globalDb.collections.settings.upsert({_id: "tlsStatus"}, {$set: {"value.currentlyRenewing": false}});
+    await globalDb.collections.settings
+        .upsertAsync({_id: "tlsStatus"}, {$set: {"value.currentlyRenewing": false}});
   }
 }
 
-function renewCertificateNowImpl(accountInfo, challengeOpts) {
+async function renewCertificateNowImpl(accountInfo, challengeOpts) {
   let challenge = Npm.require("acme-dns-01-" + challengeOpts.module)
       .create(challengeOpts.options);
 
@@ -154,11 +154,11 @@ function renewCertificateNowImpl(accountInfo, challengeOpts) {
   }
 
   // Generate private key.
-  let tlsKeypair = waitPromise(Keypairs.generate({ kty: "RSA", format: "jwk" }));
-  let privatePem = waitPromise(Keypairs.export({jwk: tlsKeypair.private}));
+  let tlsKeypair = await Keypairs.generate({ kty: "RSA", format: "jwk" });
+  let privatePem = await Keypairs.export({jwk: tlsKeypair.private});
 
   // Generate CSR.
-  let csrDer = waitPromise(CSR.csr({jwk: tlsKeypair.private, domains, encoding: "der"}));
+  let csrDer = await CSR.csr({jwk: tlsKeypair.private, domains, encoding: "der"});
   let csr = PEM.packBlock({type: "CERTIFICATE REQUEST", bytes: csrDer});
 
   // Compute package agent identifier (like a User-Agent).
@@ -171,10 +171,10 @@ function renewCertificateNowImpl(accountInfo, challengeOpts) {
   }
 
   // Create ACME client.
-  let acme = createAcmeClient(accountInfo.directory);
+  let acme = await createAcmeClient(accountInfo.directory);
 
   // Get the certificates!
-  let pems = waitPromise(acme.certificates.create({
+  let pems = await acme.certificates.create({
     account: accountInfo.account,
     accountKey: accountInfo.key,
     csr, domains,
@@ -183,13 +183,13 @@ function renewCertificateNowImpl(accountInfo, challengeOpts) {
     // Sandcats doesn't support setting TXT on arbitrary hostnames, therefore doesn't support dry
     // runs.
     skipDryRun: baseHost.endsWith(".sandcats.io")
-  }));
+  });
 
   let certChain = pems.cert + "\n" + pems.chain + "\n";
 
   // Stick them in the database, which automatically triggers updating the gateway to use the new
   // keys.
-  globalDb.collections.settings.upsert({_id: "tlsKeys"}, {$set: {
+  await globalDb.collections.settings.upsertAsync({_id: "tlsKeys"}, {$set: {
     value: {
       key: privatePem,
       certChain
@@ -211,7 +211,7 @@ function removeAllCertificateExpirationNotifications() {
 
 let nextRenewalTimeout = null;
 let renewSchedulerVersion = 0;
-function renewCertificateWhenNeeded(certChain) {
+async function renewCertificateWhenNeeded(certChain) {
   if (nextRenewalTimeout) {
     Meteor.clearTimeout(nextRenewalTimeout);
     nextRenewalTimeout = null;
@@ -223,7 +223,12 @@ function renewCertificateWhenNeeded(certChain) {
     return;
   }
 
-  let validity = pki.certificateFromPem(certChain).validity;
+  // Read the leaf certificate with Node's parser, which also supports non-RSA public keys.
+  let certificate = new Crypto.X509Certificate(certChain);
+  let validity = {
+    notBefore: new Date(certificate.validFrom),
+    notAfter: new Date(certificate.validTo),
+  };
   let now = Date.now();
 
   // Calculate the point in time that is 2/3 through the validity period, though if the validity
@@ -239,13 +244,13 @@ function renewCertificateWhenNeeded(certChain) {
   // just re-run the whole timeout computation then.
   let timeout = Math.min(7 * DAYS, targetTime - now);
 
-  globalDb.collections.settings.upsert({_id: "tlsStatus"},
+  await globalDb.collections.settings.upsertAsync({_id: "tlsStatus"},
       {$set: {"value.expires": validity.notAfter, "value.renewAt": new Date(targetTime)}});
 
   if (now > targetTime) {
     console.log("TLS certificate is near expiration; renewing now.");
     try {
-      if (!renewCertificateNow()) {
+      if (!(await renewCertificateNow())) {
         notifyAdminOfCertificateExpiration(validity.notAfter);
       }
       return;
@@ -263,7 +268,9 @@ function renewCertificateWhenNeeded(certChain) {
     return;
   } else {
     nextRenewalTimeout = Meteor.setTimeout(() => {
-      renewCertificateWhenNeeded(certChain);
+      renewCertificateWhenNeeded(certChain).catch((err) => {
+        console.error("Failed to schedule certificate renewal:", err.stack);
+      });
     }, timeout);
 
     removeAllCertificateExpirationNotifications();
@@ -274,14 +281,30 @@ function renewCertificateWhenNeeded(certChain) {
 // needed.
 if (!Meteor.settings.replicaNumber) {
   Meteor.startup(() => {
-    globalDb.collections.settings.remove({_id: "tlsStatus"});
+    globalDb.collections.settings.removeAsync({_id: "tlsStatus"}).catch((err) => {
+      console.error("Failed removing tlsStatus at startup:", err);
+    });
 
     // We don't want this to block startup, so put it in a zero-time setTimeout().
     Meteor.setTimeout(() => {
-      globalDb.collections.settings.find({_id: "tlsKeys"}).observe({
-        added(setting) { renewCertificateWhenNeeded(setting.value.certChain); },
-        changed(newSetting, oldSetting) { renewCertificateWhenNeeded(newSetting.value.certChain); },
-        removed(setting) { renewCertificateWhenNeeded(null); },
+      globalDb.collections.settings.find({_id: "tlsKeys"}).observeAsync({
+        added(setting) {
+          renewCertificateWhenNeeded(setting.value.certChain).catch((err) => {
+            console.error("Failed to evaluate certificate renewal schedule:", err.stack);
+          });
+        },
+        changed(newSetting, oldSetting) {
+          renewCertificateWhenNeeded(newSetting.value.certChain).catch((err) => {
+            console.error("Failed to evaluate certificate renewal schedule:", err.stack);
+          });
+        },
+        removed(setting) {
+          renewCertificateWhenNeeded(null).catch((err) => {
+            console.error("Failed to evaluate certificate renewal schedule:", err.stack);
+          });
+        },
+      }).catch((err) => {
+        console.error("Failed to observe tlsKeys for certificate renewal scheduling:", err);
       });
     }, 0);
   });

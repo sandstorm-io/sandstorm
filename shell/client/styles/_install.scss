@@ -1,9 +1,13 @@
+@use "partials";
+@use "app-details";
+@use "geometry";
+
 .install {
   position: relative;
-  @media #{$desktop} {
+  @media #{geometry.$desktop} {
     padding: 24px 32px;
   }
-  @media #{$mobile} {
+  @media #{geometry.$mobile} {
     padding: 0px 8px;
   }
   button {

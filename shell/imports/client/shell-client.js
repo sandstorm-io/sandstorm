@@ -24,8 +24,8 @@ import { Tracker } from "meteor/tracker";
 import { ReactiveVar } from "meteor/reactive-var";
 import { Accounts } from "meteor/accounts-base";
 import { Session } from "meteor/session";
-import { Router } from "meteor/iron:router";
-import { TAPi18n } from "meteor/tap:i18n";
+import { Router } from "meteor/vlasky:galvanized-iron-router";
+import { TAPi18n } from "/imports/tapi18n";
 
 import getBuildInfo from "/imports/client/build-info";
 import SandstormAccountSettingsUi from "/imports/client/accounts/account-settings-ui";
@@ -33,16 +33,18 @@ import { isDevelopmentServer } from "/imports/client/dev-mode";
 import { isStandalone } from "/imports/client/standalone";
 import { SandstormDb } from "/imports/sandstorm-db/db";
 import { globalDb } from "/imports/db-deprecated";
+import { coerceTemplateText } from "/imports/shared/template-values";
 
 // Subscribe to basic grain information first and foremost, since
 // without it we might e.g. redirect to the wrong place on login.
-globalSubs = [
+const globalSubs = [
   Meteor.subscribe("grainsMenu"),
   Meteor.subscribe("userPackages"),
   Meteor.subscribe("devPackages"),
   Meteor.subscribe("credentials"),
   Meteor.subscribe("accountCredentials"),
 ];
+globalThis.globalSubs = globalSubs;
 
 if (Meteor.isClient) {
   Meteor.startup(function () {
@@ -105,7 +107,7 @@ Tracker.autorun(function () {
 
 // export: called by sandstorm-accounts-ui/login_buttons.js
 //               and grain-client.js
-logoutSandstorm = function () {
+const logoutSandstorm = function () {
   const logoutHelper = function () {
     sessionStorage.removeItem("linkingIdentityLoginToken");
     Accounts._loginButtonsSession.closeDropdown();
@@ -135,6 +137,7 @@ logoutSandstorm = function () {
     });
   }
 };
+globalThis.logoutSandstorm = logoutSandstorm;
 
 const makeAccountSettingsUi = function () {
   return new SandstormAccountSettingsUi(globalTopbar, globalDb,
@@ -314,7 +317,7 @@ const isDemoExpired = function () {
 };
 
 // export: this is also used by grain.js
-makeDateString = function (date) {
+const makeDateString = function (date) {
   if (!date) {
     return "";
   }
@@ -336,9 +339,10 @@ makeDateString = function (date) {
 
   return result;
 };
+globalThis.makeDateString = makeDateString;
 
 // export: used in sandstorm-ui-grainlist
-prettySize = function (size) {
+const prettySize = function (size) {
   if (!size) return "";
 
   let suffix = "B";
@@ -355,9 +359,10 @@ prettySize = function (size) {
 
   return size.toPrecision(3) + suffix;
 };
+globalThis.prettySize = prettySize;
 
 // export: used in shared/demo.js
-launchAndEnterGrainByPackageId = function (packageId, options) {
+const launchAndEnterGrainByPackageId = function (packageId, options) {
   const action = globalDb.collections.userActions.findOne({ packageId: packageId });
   if (!action) {
     alert("Somehow, you seem to have attempted to launch a package you have not installed.");
@@ -366,9 +371,10 @@ launchAndEnterGrainByPackageId = function (packageId, options) {
     launchAndEnterGrainByActionId(action._id, null, null, options);
   }
 };
+globalThis.launchAndEnterGrainByPackageId = launchAndEnterGrainByPackageId;
 
 // export: used in sandstorm-ui-app-details
-launchAndEnterGrainByActionId = function (actionId, devPackageId, devIndex, options) {
+const launchAndEnterGrainByActionId = function (actionId, devPackageId, devIndex, options) {
   // Note that this takes a devPackageId and a devIndex as well. If provided,
   // they override the actionId.
   let packageId;
@@ -430,15 +436,19 @@ launchAndEnterGrainByActionId = function (actionId, devPackageId, devIndex, opti
     }
   });
 };
+globalThis.launchAndEnterGrainByActionId = launchAndEnterGrainByActionId;
 
 // export global - used in grain.js
-globalQuotaEnforcer = {
+const globalQuotaEnforcer = {
   ifQuotaAvailable: ifQuotaAvailable,
   ifPlanAllowsCustomApps: ifPlanAllowsCustomApps,
 };
+globalThis.globalQuotaEnforcer = globalQuotaEnforcer;
 
-HasUsers = new Mongo.Collection("hasUsers");  // dummy collection defined above
-ReferralInfo = new Meteor.Collection("referralInfo"); // pseudo-collection
+const HasUsers = new Mongo.Collection("hasUsers");  // dummy collection defined above
+globalThis.HasUsers = HasUsers;
+const ReferralInfo = new Meteor.Collection("referralInfo"); // pseudo-collection
+globalThis.ReferralInfo = ReferralInfo;
 
 if (Meteor.settings.public.quotaEnabled) {
   window.testDisableQuotaClientSide = function () {
@@ -678,7 +688,8 @@ Template.layout.events({
   },
 });
 
-credentialsSubscription = Meteor.subscribe("credentials");
+const credentialsSubscription = Meteor.subscribe("credentials");
+globalThis.credentialsSubscription = credentialsSubscription;
 
 Template.registerHelper("dateString", makeDateString);
 Template.registerHelper("hideNavbar", function () {
@@ -700,7 +711,16 @@ Template.registerHelper("referralsEnabled", function () {
 });
 
 Template.registerHelper("con", function () {
-  return Array.prototype.slice.call(arguments, 0, -1).join('.')
+  const args = Array.prototype.slice.call(arguments);
+  const last = args[args.length - 1];
+  // Blaze may pass a trailing options object, but not in every call shape.
+  if (last && typeof last === "object" && Object.prototype.hasOwnProperty.call(last, "hash")) {
+    args.pop();
+  }
+
+  return args.map((arg) => {
+    return coerceTemplateText(arg) || "";
+  }).join(".");
 });
 
 Template.root.helpers({
@@ -803,7 +823,7 @@ const startUpload = function (file, endpoint, onComplete) {
   Router.go("uploadStatus");
 };
 
-restoreBackup = function (file) {
+const restoreBackup = function (file) {
   // This function is global so tests can call it
   Meteor.call("newRestoreToken", function (err, token) {
     if (err) {
@@ -828,12 +848,14 @@ restoreBackup = function (file) {
     }
   });
 };
+globalThis.restoreBackup = restoreBackup;
 
-promptRestoreBackup = function (input) {
+const promptRestoreBackup = function (input) {
   promptForFile(input, restoreBackup);
 };
+globalThis.promptRestoreBackup = promptRestoreBackup;
 
-uploadApp = function (file) {
+const uploadApp = function (file) {
   // This function is global so tests can call it
   Meteor.call("newUploadToken", function (err, token) {
     if (err) {
@@ -847,10 +869,12 @@ uploadApp = function (file) {
     }
   });
 };
+globalThis.uploadApp = uploadApp;
 
-promptUploadApp = function (input) {
+const promptUploadApp = function (input) {
   promptForFile(input, uploadApp);
 };
+globalThis.promptUploadApp = promptUploadApp;
 
 Template.uploadTest.events({
   "change #upload-app": function (event, tmpl) {

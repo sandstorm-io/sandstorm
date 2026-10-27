@@ -1,3 +1,4 @@
+@use "partials";
 form.stats-request {
   // We eschew %standard-form here to avoid getting .button-link overridden by more specific
   // selectors for button[type=button].

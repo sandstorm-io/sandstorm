@@ -19,7 +19,7 @@
 
 import { Meteor } from "meteor/meteor";
 import { Match, check } from "meteor/check";
-import { _ } from "meteor/underscore";
+import { findWhere } from "/imports/shared/collection-utils";
 
 import { SandstormDb } from "/imports/sandstorm-db/db";
 
@@ -29,7 +29,7 @@ const ValidHandle = Match.Where(function (handle) {
 });
 
 Meteor.methods({
-  updateProfile: function (obsolete, profile) {
+  updateProfile: async function (obsolete, profile) {
     check(profile, {
       name: String,
       handle: ValidHandle,
@@ -41,7 +41,9 @@ Meteor.methods({
       throw new Meteor.Error(403, "not logged in");
     }
 
-    const userToUpdate = Meteor.user();
+    const userToUpdate = Meteor.isServer
+        ? await Meteor.users.findOneAsync({ _id: this.userId })
+        : Meteor.user();
 
     const newValues = {
       "profile.name": profile.name,
@@ -49,47 +51,71 @@ Meteor.methods({
       "profile.pronoun": profile.pronoun,
     };
 
-    Meteor.users.update({ _id: userToUpdate._id }, { $set: newValues });
+    if (Meteor.isServer) {
+      await Meteor.users.updateAsync({ _id: userToUpdate._id }, { $set: newValues });
+    } else {
+      Meteor.users.update({ _id: userToUpdate._id }, { $set: newValues });
+    }
 
-    if (!Meteor.user().hasCompletedSignup) {
-      Meteor.users.update({ _id: this.userId }, { $set: { hasCompletedSignup: true } });
+    const currentUser = Meteor.isServer
+        ? await Meteor.users.findOneAsync({ _id: this.userId })
+        : Meteor.user();
+    if (!currentUser.hasCompletedSignup) {
+      if (Meteor.isServer) {
+        await Meteor.users.updateAsync({ _id: this.userId }, { $set: { hasCompletedSignup: true } });
+      } else {
+        Meteor.users.update({ _id: this.userId }, { $set: { hasCompletedSignup: true } });
+      }
     }
   },
 
-  testFirstSignup: function (profile) {
+  testFirstSignup: async function (profile) {
     if (!this.userId) {
       throw new Meteor.Error(403, "not logged in");
     }
 
-    Meteor.users.update(this.userId, { $unset: { hasCompletedSignup: "" } });
+    if (Meteor.isServer) {
+      await Meteor.users.updateAsync(this.userId, { $unset: { hasCompletedSignup: "" } });
+    } else {
+      Meteor.users.update(this.userId, { $unset: { hasCompletedSignup: "" } });
+    }
   },
 
-  uploadProfilePicture: function (obsolete) {
+  uploadProfilePicture: async function (obsolete) {
     if (!this.userId) {
       throw new Meteor.Error(403, "not logged in");
     }
 
-    return this.connection.sandstormDb.newAssetUpload({
+    return await this.connection.sandstormDb.newAssetUpload({
       profilePicture: { userId: this.userId },
     });
   },
 
-  cancelUploadProfilePicture: function (id) {
+  cancelUploadProfilePicture: async function (id) {
     check(id, String);
-    this.connection.sandstormDb.fulfillAssetUpload(id);
+    await this.connection.sandstormDb.fulfillAssetUpload(id);
   },
 
-  setPrimaryEmail: function (email) {
+  setPrimaryEmail: async function (email) {
     check(email, String);
     if (!this.userId) {
       throw new Meteor.Error(403, "Not logged in.");
     }
 
-    const emails = SandstormDb.getUserEmails(Meteor.user());
-    if (!_.findWhere(emails, { email: email, verified: true })) {
+    const currentUser = Meteor.isServer
+        ? await Meteor.users.findOneAsync({ _id: this.userId })
+        : Meteor.user();
+    const emails = Meteor.isServer
+        ? await SandstormDb.getUserEmailsAsync(currentUser)
+        : SandstormDb.getUserEmails(currentUser);
+    if (!findWhere(emails, { email: email, verified: true })) {
       throw new Meteor.Error(403, "Not a verified email of the current user: " + email);
     }
 
-    Meteor.users.update({ _id: this.userId }, { $set: { primaryEmail: email } });
+    if (Meteor.isServer) {
+      await Meteor.users.updateAsync({ _id: this.userId }, { $set: { primaryEmail: email } });
+    } else {
+      Meteor.users.update({ _id: this.userId }, { $set: { primaryEmail: email } });
+    }
   },
 });

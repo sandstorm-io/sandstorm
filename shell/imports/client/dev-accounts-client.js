@@ -15,9 +15,9 @@
 // limitations under the License.
 
 import { Accounts } from "meteor/accounts-base";
-import { Router } from "meteor/iron:router";
+import { Router } from "meteor/vlasky:galvanized-iron-router";
 
-loginDevAccount = function (displayName, isAdmin, callback) {
+const loginDevAccount = function (displayName, isAdmin, callback) {
   Accounts.callLoginMethod({
     methodName: "createDevAccount",
     methodArguments: [displayName, isAdmin],
@@ -30,8 +30,12 @@ loginDevAccount = function (displayName, isAdmin, callback) {
     },
   });
 };
+globalThis.loginDevAccount = loginDevAccount;
+if (typeof window !== "undefined") {
+  window.loginDevAccount = loginDevAccount;
+}
 
-loginDevAccountFast = function (displayName, isAdmin) {
+const loginDevAccountFast = function (displayName, isAdmin) {
   return new Promise(function (resolve, reject) {
     // This skips the firstSignUp page. Mostly used for testing purposes.
     const profile = {
@@ -54,4 +58,7 @@ loginDevAccountFast = function (displayName, isAdmin) {
     });
   });
 };
-
+globalThis.loginDevAccountFast = loginDevAccountFast;
+if (typeof window !== "undefined") {
+  window.loginDevAccountFast = loginDevAccountFast;
+}

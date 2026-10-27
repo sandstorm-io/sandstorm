@@ -1,11 +1,10 @@
 import { Meteor } from "meteor/meteor";
-import { Router } from "meteor/iron:router";
+import { Router } from "meteor/vlasky:galvanized-iron-router";
 import { Random } from "meteor/random";
-import { _ } from "meteor/underscore";
 
 import Crypto from "crypto";
 import Fs from "fs";
-import { checkAuth } from "/imports/server/auth";
+import { checkAuthAsync } from "/imports/server/auth";
 
 import { SANDSTORM_LOGDIR } from "/imports/server/constants";
 
@@ -19,8 +18,8 @@ const SYSTEM_LOG_DOWNLOAD_TOKENS = {};
 const SYSTEM_LOG_DOWNLOAD_TOKEN_VALIDITY_DURATION = 60000; // 60 seconds
 
 Meteor.methods({
-  adminGetServerLogDownloadToken(setupToken) {
-    checkAuth(setupToken);
+  async adminGetServerLogDownloadToken(setupToken) {
+    await checkAuthAsync(this.connection.sandstormDb, this.userId, setupToken);
 
     const token = Random.id(22);
     SYSTEM_LOG_DOWNLOAD_TOKENS[token] = Date.now();
@@ -70,11 +69,11 @@ Router.map(function () {
   });
 });
 
-Meteor.publish("systemStatus", function () {
+Meteor.publish("systemStatus", async function () {
   // A pseudocollection containing the number of active grain sessions and unique
   // userIds associated with these sessions
   const db = this.connection.sandstormDb;
-  if (!db.isAdminById(this.userId)) {
+  if (!await db.isAdminById(this.userId)) {
     throw new Meteor.Error(403, "User must be admin to view system status.");
   }
 
@@ -91,7 +90,7 @@ Meteor.publish("systemStatus", function () {
   });
 
   const query = db.collections.sessions.find();
-  const handle = query.observe({
+  const handle = await query.observeAsync({
     added(session) {
       const hashedSessionId = hashSessionId(session._id);
       const changed = {};
@@ -105,7 +104,7 @@ Meteor.publish("systemStatus", function () {
         }
 
         userIdToSessionHashes[session.userId] =
-            _.union(userIdToSessionHashes[session.userId], [hashedSessionId]);
+            Array.from(new Set([...userIdToSessionHashes[session.userId], hashedSessionId]));
       }
 
       // Update grainId cache.
@@ -116,9 +115,9 @@ Meteor.publish("systemStatus", function () {
       }
 
       grainIdToSessionHashes[session.grainId] =
-          _.union(grainIdToSessionHashes[session.grainId], [hashedSessionId]);
+          Array.from(new Set([...grainIdToSessionHashes[session.grainId], hashedSessionId]));
 
-      if (!_.isEmpty(changed)) {
+      if (Object.keys(changed).length > 0) {
         _this.changed("systemStatus", "globalStatus", changed);
       }
     },
@@ -129,7 +128,7 @@ Meteor.publish("systemStatus", function () {
 
       if (session.userId) {
         userIdToSessionHashes[session.userId] =
-            _.without(userIdToSessionHashes[session.userId], hashedSessionId);
+            userIdToSessionHashes[session.userId].filter(value => value !== hashedSessionId);
 
         if (userIdToSessionHashes[session.userId].length === 0) {
           delete userIdToSessionHashes[session.userId];
@@ -139,7 +138,7 @@ Meteor.publish("systemStatus", function () {
       }
 
       grainIdToSessionHashes[session.grainId] =
-          _.without(grainIdToSessionHashes[session.grainId], hashedSessionId);
+          grainIdToSessionHashes[session.grainId].filter(value => value !== hashedSessionId);
 
       if (grainIdToSessionHashes[session.grainId].length === 0) {
         delete grainIdToSessionHashes[session.grainId];
@@ -147,23 +146,27 @@ Meteor.publish("systemStatus", function () {
         changed.activeGrains = grainIdCount;
       }
 
-      if (!_.isEmpty(changed)) {
+      if (Object.keys(changed).length > 0) {
         _this.changed("systemStatus", "globalStatus", changed);
       }
     },
   });
 
   this.onStop(() => {
-    handle.stop();
+    Promise.resolve(handle).then((h) => {
+      if (typeof h === "function") { h(); } else if (h && typeof h.stop === "function") h.stop();
+    }).catch((err) => {
+      console.error("Failed to stop systemStatus observer:", err);
+    });
   });
   this.ready();
 });
 
-Meteor.publish("adminDemoUsers", function () {
+Meteor.publish("adminDemoUsers", async function () {
   // Publishes expiry information about demo accounts to admins, so demo users can be counted
   // clientside and reactively updated.
   const db = this.connection.sandstormDb;
-  if (!db.isAdminById(this.userId)) {
+  if (!await db.isAdminById(this.userId)) {
     throw new Meteor.Error(403, "User must be admin to view system status.");
   }
 

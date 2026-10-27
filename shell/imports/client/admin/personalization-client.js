@@ -1,7 +1,6 @@
 import { Meteor } from "meteor/meteor";
 import { Template } from "meteor/templating";
 import { ReactiveVar } from "meteor/reactive-var";
-import { HTTP } from "meteor/http";
 
 import { DEFAULT_SIGNUP_DIALOG } from "/imports/client/personalization";
 import { globalDb } from "/imports/db-deprecated";
@@ -32,10 +31,10 @@ Template.newAdminPersonalization.onCreated(function () {
   this.doUpload = (token, file) => {
     const staticHost = globalDb.makeWildcardHost("static");
     const path = `${window.location.protocol}//${staticHost}/${token}`;
-    HTTP.post(path, { content: file, }, (err, result) => {
-      if (err) {
-        this.logoError.set(err.message);
-      }
+    fetch(path, { method: "POST", body: file }).then((response) => {
+      if (!response.ok) throw new Error("Upload failed with status " + response.status);
+    }).catch((err) => {
+      this.logoError.set(err.message);
     });
   };
 

@@ -18,8 +18,7 @@ import { Meteor } from "meteor/meteor";
 import { Random } from "meteor/random";
 import { Session } from "meteor/session";
 import { Tracker } from "meteor/tracker";
-import { Router } from "meteor/iron:router";
-import { HTTP } from "meteor/http";
+import { Router } from "meteor/vlasky:galvanized-iron-router";
 
 Meteor.subscribe("publicAdminSettings");
 
@@ -84,33 +83,29 @@ const newAdminRoute = RouteController.extend({
 
       Session.set("alreadyBeganTestingWildcardHost", true);
 
-      HTTP.call(
-        "GET", "//" + makeWildcardHost("selftest-" + Random.hexString(20)),
-        { timeout: 30 * 1000 }, (error, response) => {
+      fetch("//" + makeWildcardHost("selftest-" + Random.hexString(20)), {
+        signal: AbortSignal.timeout(30 * 1000),
+      }).then((response) => {
           Session.set("alreadyTestedWildcardHost", true);
-          let looksGood;
-          if (error) {
-            looksGood = false;
-            console.error("Sandstorm WILDCARD_HOST self-test failed. Details:", error);
-            console.log(
-              "Look here in the JS console, above or below this text, for further " +
-                "details provided by your browser.  starting with selftest-*.");
-            console.log(
-              "See also docs: https://docs.sandstorm.org/en/latest/administering/faq/#why-do-i-see-an-error-when-i-try-to-launch-an-app-even-when-the-sandstorm-interface-works-fine");
-            console.log(
-              "Slow DNS or intermittent Internet connectivity can cause this message " +
-                "to appear unnecessarily; in that case, reloading the page should make " +
-                "it go away.");
+          if (response.status === 200) {
+            Session.set("wildcardHostWorks", true);
           } else {
-            if (response.statusCode === 200) {
-              looksGood = true;
-            } else {
-              console.log("Surpring status code from self test domain", response.statusCode);
-              looksGood = false;
-            }
+            console.log("Surprising status code from self test domain", response.status);
+            Session.set("wildcardHostWorks", false);
           }
-
-          Session.set("wildcardHostWorks", looksGood);
+        }).catch((error) => {
+          Session.set("alreadyTestedWildcardHost", true);
+          Session.set("wildcardHostWorks", false);
+          console.error("Sandstorm WILDCARD_HOST self-test failed. Details:", error);
+          console.log(
+            "Look here in the JS console, above or below this text, for further " +
+              "details provided by your browser.  starting with selftest-*.");
+          console.log(
+            "See also docs: https://docs.sandstorm.org/en/latest/administering/faq/#why-do-i-see-an-error-when-i-try-to-launch-an-app-even-when-the-sandstorm-interface-works-fine");
+          console.log(
+            "Slow DNS or intermittent Internet connectivity can cause this message " +
+              "to appear unnecessarily; in that case, reloading the page should make " +
+              "it go away.");
         });
     };
 

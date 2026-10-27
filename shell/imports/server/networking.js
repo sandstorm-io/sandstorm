@@ -18,10 +18,11 @@ import { Meteor } from "meteor/meteor";
 import Dns from "dns";
 import { Address4, Address6 } from "ip-address";
 import Url from "url";
+import { Agent, ProxyAgent, fetch as undiciFetch } from "undici";
 
 import { SPECIAL_IPV4_ADDRESSES, SPECIAL_IPV6_ADDRESSES } from "/imports/constants";
 
-const lookupInFiber = Meteor.wrapAsync(Dns.lookup, Dns);
+const lookupAsync = Dns.lookup.bind(Dns);
 
 function parseAddress(addr) {
   if (Address4.isValid(addr)) {
@@ -111,22 +112,10 @@ function parseCidr(cidr) {
 
 const SPECIAL_FILTERS = SPECIAL_IPV4_ADDRESSES.concat(SPECIAL_IPV6_ADDRESSES).map(parseCidr);
 
-function ssrfSafeLookup(db, url) {
-  // Given an HTTP/HTTPS URL, look up the hostname, verify it doesn't point to a blacklisted IP,
-  // then return an object of {url, host}, where `url` has the original hostname substituted with
-  // an IP address, and `host` is the original hostname suitable for sending in the `Host` header.
-
-  const parsedUrl = Url.parse(url);
-
-  if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") {
-    throw new Error("not an HTTP nor HTTPS URL: " + url);
-  }
-
-  const addresses = lookupInFiber(parsedUrl.hostname, { all: true, hints: Dns.ADDRCONFIG });
-
+async function selectSafeAddress(db, parsedUrl, addresses) {
   // TODO(perf): Subscribe to blacklist changes so that we don't have to do a new lookup and
   //   parse each time.
-  const blacklist = db.getSettingWithFallback("ipBlacklist", "")
+  const blacklist = ((await db.getSettingAsync("ipBlacklist")) || "")
       .split("\n").map(parseCidr).filter(x => x);
 
   for (let i in addresses) {
@@ -140,9 +129,16 @@ function ssrfSafeLookup(db, url) {
 
     if (ok) {
       const host = parsedUrl.host;
+      const servername = parsedUrl.hostname;
       delete parsedUrl.host;
       parsedUrl.hostname = address.address;
-      return { url: Url.format(parsedUrl), host };
+      return {
+        url: Url.format(parsedUrl),
+        host,
+        address: address.address,
+        family: address.family,
+        servername,
+      };
     }
   }
 
@@ -155,7 +151,31 @@ function ssrfSafeLookup(db, url) {
   }
 }
 
-function ssrfSafeLookupOrProxy(db, url) {
+async function ssrfSafeLookup(db, url) {
+  // Given an HTTP/HTTPS URL, look up the hostname, verify it doesn't point to a blacklisted IP,
+  // then return an object of {url, host}, where `url` has the original hostname substituted with
+  // an IP address, and `host` is the original hostname suitable for sending in the `Host` header.
+
+  const parsedUrl = Url.parse(url);
+
+  if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") {
+    throw new Error("not an HTTP nor HTTPS URL: " + url);
+  }
+
+  const addresses = await new Promise((resolve, reject) => {
+    lookupAsync(parsedUrl.hostname, { all: true, hints: Dns.ADDRCONFIG }, (err, result) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(result);
+      }
+    });
+  });
+
+  return await selectSafeAddress(db, parsedUrl, addresses);
+}
+
+async function ssrfSafeLookupOrProxy(db, url) {
   // If there is an HTTP proxy, then it will have to do the work of blacklisting IPs, because it's
   // the proxy that does the DNS lookup.
   const httpProxy = process.env.HTTP_PROXY || process.env.http_proxy;
@@ -166,41 +186,142 @@ function ssrfSafeLookupOrProxy(db, url) {
   } else if (httpsProxy && url.startsWith("https:")) {
     return { proxy: httpsProxy };
   } else {
-    return ssrfSafeLookup(db, url);
+    return await ssrfSafeLookup(db, url);
   }
 }
 
-function ssrfSafeHttp(originalHttpCall, db, method, url, options, callback) {
-  if (typeof options === "function") {
-    callback = options;
-    options = undefined;
-  }
+async function fetchWithTimeout(url, init = {}, timeoutMs = 30000) {
+  const fetchInit = { ...init };
+  delete fetchInit.timeoutMs;
+  const timeoutController = new AbortController();
+  const signal = init.signal
+    ? AbortSignal.any([init.signal, timeoutController.signal])
+    : timeoutController.signal;
+  const timeout = timeoutMs > 0
+    ? setTimeout(() => timeoutController.abort(new Error("HTTP request timed out")), timeoutMs)
+    : undefined;
 
-  if (!options) options = {};
-
-  if (options.npmRequestOptions && options.npmRequestOptions.proxy) {
-    // Request already specifies a different proxy.
-    return originalHttpCall(method, url, options, callback);
-  }
-
-  const safe = ssrfSafeLookupOrProxy(db, url);
-
-  if (safe.proxy) {
-    if (!options.npmRequestOptions) options.npmRequestOptions = {};
-    options.npmRequestOptions.proxy = safe.proxy;
-    return originalHttpCall(method, url, options, callback);
-  } else {
-    const safe = ssrfSafeLookup(db, url);
-    if (!options.headers) options.headers = {};
-    options.headers.host = safe.host;
-    options.servername = safe.host.split(":")[0];
-    return originalHttpCall(method, safe.url, options, callback);
+  try {
+    const fetchImpl = fetchInit.dispatcher ? undiciFetch : fetch;
+    return await fetchImpl(url, { ...fetchInit, signal });
+  } finally {
+    if (timeout) clearTimeout(timeout);
   }
 }
 
-function monkeyPatchHttp(db, HTTP) {
-  const original = HTTP.call.bind(HTTP);
-  HTTP.call = ssrfSafeHttp.bind(this, original, db);
+function redirectedRequest(response, currentUrl, method, headers, body) {
+  const location = response.headers.get("location");
+  if (!location) return null;
+
+  const nextUrl = new URL(location, currentUrl);
+  const currentOrigin = new URL(currentUrl).origin;
+  if (nextUrl.origin !== currentOrigin) {
+    headers.delete("authorization");
+    headers.delete("cookie");
+    headers.delete("proxy-authorization");
+  }
+
+  if (response.status === 303 && method !== "HEAD" ||
+      (response.status === 301 || response.status === 302) && method === "POST") {
+    method = "GET";
+    body = undefined;
+    headers.delete("content-length");
+    headers.delete("content-type");
+  }
+
+  return { url: nextUrl.href, method, headers, body };
 }
 
-export { ssrfSafeLookup, ssrfSafeLookupOrProxy, monkeyPatchHttp };
+function makePinnedLookup(address, family) {
+  return (_hostname, options, callback) => {
+    const result = { address, family };
+    if (options.all) {
+      callback(null, [result]);
+    } else {
+      callback(null, result.address, result.family);
+    }
+  };
+}
+
+async function withSsrfSafeFetch(db, url, init = {}, consume) {
+  if (typeof consume !== "function") {
+    throw new TypeError("withSsrfSafeFetch() requires a response consumer");
+  }
+
+  const timeoutMs = init.timeoutMs === undefined ? 30000 : init.timeoutMs;
+  const timeoutController = new AbortController();
+  const callerSignal = init.signal;
+  const signal = callerSignal
+    ? AbortSignal.any([callerSignal, timeoutController.signal])
+    : timeoutController.signal;
+  const timeout = timeoutMs > 0
+    ? setTimeout(() => timeoutController.abort(new Error("HTTP request timed out")), timeoutMs)
+    : undefined;
+
+  let currentUrl = new URL(url).href;
+  let method = (init.method || "GET").toUpperCase();
+  let headers = new Headers(init.headers);
+  let body = init.body;
+
+  try {
+    for (let redirects = 0; redirects <= 5; redirects++) {
+      const safe = await ssrfSafeLookupOrProxy(db, currentUrl);
+      let dispatcher;
+      if (safe.proxy) {
+        dispatcher = new ProxyAgent(safe.proxy);
+      } else {
+        dispatcher = new Agent({
+          connect: {
+            servername: safe.servername,
+            lookup: makePinnedLookup(safe.address, safe.family),
+          },
+        });
+      }
+
+      let response;
+      try {
+        response = await fetchWithTimeout(currentUrl, {
+          ...init,
+          body,
+          dispatcher,
+          headers,
+          method,
+          redirect: "manual",
+          signal,
+        }, 0);
+
+        if (![301, 302, 303, 307, 308].includes(response.status)) {
+          return await consume(response);
+        }
+
+        if (redirects === 5) {
+          throw new Error("HTTP redirect limit exceeded");
+        }
+
+        const redirected = redirectedRequest(response, currentUrl, method, headers, body);
+        if (!redirected) return await consume(response);
+        await response.body.cancel();
+        ({ url: currentUrl, method, headers, body } = redirected);
+      } finally {
+        if (response && !response.bodyUsed) {
+          await response.body.cancel().catch(() => {});
+        }
+
+        await dispatcher.close();
+      }
+    }
+  } finally {
+    if (timeout) clearTimeout(timeout);
+  }
+}
+
+export {
+  fetchWithTimeout,
+  makePinnedLookup,
+  parseCidr,
+  redirectedRequest,
+  selectSafeAddress,
+  ssrfSafeLookup,
+  ssrfSafeLookupOrProxy,
+  withSsrfSafeFetch,
+};

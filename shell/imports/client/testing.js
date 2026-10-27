@@ -16,6 +16,7 @@
 
 import { Meteor } from "meteor/meteor";
 import { isTesting } from "/imports/shared/testing";
+import { TAPi18n, templateI18nHelper } from "/imports/tapi18n";
 
 function mockLoginGithub() {
   Meteor.call("createMockGithubUser", function (err) {
@@ -75,4 +76,51 @@ if(isTesting) {
     mockLoginGoogle,
     clearMockGoogleUser,
   }
+
+  window.testI18nHelpers = {
+    runTapi18nRegression() {
+      const failures = [];
+      const expectEqual = (name, actual, expected) => {
+        if (actual !== expected) {
+          failures.push(name + ": expected " + JSON.stringify(expected) +
+              ", got " + JSON.stringify(actual));
+        }
+      };
+
+      TAPi18n.setLanguage("en");
+      expectEqual("english lookup",
+          TAPi18n.__("grains.grainTitlePopup.prompt"),
+          "Set new title:");
+      expectEqual("missing key fallback",
+          TAPi18n.__("missing.test.key"),
+          "missing.test.key");
+      expectEqual("positional interpolation",
+          TAPi18n.__("grains.grainCloneButton.copyTitle", "Budget"),
+          "Copy of Budget");
+      expectEqual("named interpolation",
+          TAPi18n.__("notifications.appUpdateNotificationItem.appUpdates", {
+            name: "Writer",
+            version: "2.0",
+          }),
+          "<strong>Writer</strong>: version 2.0 is available");
+
+      TAPi18n.setLanguage("fr-CA");
+      expectEqual("language prefix fallback",
+          TAPi18n.__("error", "Boom"),
+          "Erreur: Boom");
+
+      TAPi18n.setLanguage("en");
+      expectEqual("template helper wrapped key",
+          templateI18nHelper({ value: "grains.grainCloneButton.copyTitle" }, "Budget"),
+          "Copy of Budget");
+      expectEqual("template helper wrapped array key",
+          templateI18nHelper({ value: ["grains.", "grainCloneButton.", "copyTitle"] }, "Budget"),
+          "Copy of Budget");
+
+      return {
+        success: failures.length === 0,
+        failures,
+      };
+    },
+  };
 }

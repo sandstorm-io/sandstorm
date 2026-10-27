@@ -16,10 +16,9 @@
 
 import { Meteor } from "meteor/meteor";
 import { Match, check } from "meteor/check";
-import { HTTP } from "meteor/http";
-import { _ } from "meteor/underscore";
 
 import { inMeteor } from "/imports/server/async-helpers";
+import { httpCallAsync } from "/imports/server/http-helpers";
 import { PersistentImpl } from "/imports/server/persistent";
 import { ssrfSafeLookup } from "/imports/server/networking";
 import { REQUEST_HEADER_WHITELIST, RESPONSE_HEADER_WHITELIST }
@@ -58,7 +57,7 @@ function getOAuthServiceInfo(url) {
   }
 }
 
-function refreshOAuth(url, refreshToken) {
+async function refreshOAuth(url, refreshToken) {
   // TODO(perf): Cache access tokens until they expire? Currently we re-do the refresh on every
   //   restore. In particular, this means we always drop the first access token returned (which
   //   is returned together with the refresh token) and then immediately request a new one.
@@ -68,13 +67,15 @@ function refreshOAuth(url, refreshToken) {
     throw new Error("Don't know how to OAuth for: " + url);
   }
 
-  const config = ServiceConfiguration.configurations.findOne({ service: serviceInfo.service });
+  const config = await ServiceConfiguration.configurations
+      .findOneAsync({ service: serviceInfo.service });
   if (!config) {
     throw new Error("can't refresh OAuth token for service that isn't configured: " +
                     serviceInfo.service);
   }
 
-  const response = HTTP.post(serviceInfo.endpoint, {
+  const response = await httpCallAsync("POST", serviceInfo.endpoint, {
+    ssrfSafeDb: globalDb,
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
       "Accept": "application/json",
@@ -91,22 +92,14 @@ function refreshOAuth(url, refreshToken) {
 function newExternalHttpSession(url, auth, db, saveTemplate) {
   // `url` and `auth` are the corresponding members of `ApiToken.frontendRef.http`.
 
-  const createCap = authorization => {
+  const createCap = () => {
     return new Capnp.Capability(new ExternalWebSession(url,
-        authorization ? { headers: { authorization } } : {},
+        {},
+        auth,
         db, saveTemplate), PersistentApiSession);
   };
 
-  if (auth.refresh) {
-    return createCap("Bearer " + refreshOAuth(url, auth.refresh).access_token);
-  } else if (auth.bearer) {
-    return createCap("Bearer " + auth.bearer);
-  } else if (auth.basic) {
-    const userpass = [auth.basic.username, auth.basic.password].join(":");
-    return createCap("Basic " + new Buffer(userpass, "utf8").toString("base64"));
-  } else {
-    return createCap(null);
-  }
+  return createCap();
 }
 
 function registerHttpApiFrontendRef(registry) {
@@ -232,7 +225,7 @@ function registerHttpApiFrontendRef(registry) {
   });
 }
 
-Meteor.startup(() => { registerHttpApiFrontendRef(globalFrontendRefRegistry); });
+Meteor.startup(() => { registerHttpApiFrontendRef(globalThis.globalFrontendRefRegistry); });
 
 // =======================================================================================
 
@@ -271,30 +264,60 @@ function parseETag(input) {
 }
 
 class ExternalWebSession extends PersistentImpl {
-  constructor(url, options, db, saveTemplate) {
+  constructor(url, options, auth, db, saveTemplate) {
     super(db, saveTemplate);
 
-    // TODO(soon): Support HTTP proxy.
-    const safe = ssrfSafeLookup(db, url);
-
     if (!options) options = {};
-    if (!options.headers) options.headers = {};
-    options.headers.host = safe.host;
-    options.servername = safe.host.split(":")[0];
+    this.options = options;
+    this.auth = auth || { none: null };
+    this._url = url;
+    this._db = db;
+    this._resolvedTargetPromise = null;
+    this._authorizationPromise = null;
+  }
 
-    const parsedUrl = Url.parse(safe.url);
-    this.host = parsedUrl.hostname;
-    if (parsedUrl.path === "/") {
-      // The URL parser says path = "/" for both "http://foo" and "http://foo/". We want to be
-      // strict, though.
-      this.path = url.endsWith("/") ? "/" : "";
-    } else {
-      this.path = parsedUrl.path;
+  _ensureResolvedTarget() {
+    if (!this._resolvedTargetPromise) {
+      this._resolvedTargetPromise = ssrfSafeLookup(this._db, this._url).then((safe) => {
+        if (!this.options.headers) this.options.headers = {};
+        this.options.headers.host = safe.host;
+        this.options.servername = safe.host.split(":")[0];
+
+        const parsedUrl = Url.parse(safe.url);
+        this.host = parsedUrl.hostname;
+        if (parsedUrl.path === "/") {
+          // The URL parser says path = "/" for both "http://foo" and "http://foo/".
+          this.path = this._url.endsWith("/") ? "/" : "";
+        } else {
+          this.path = parsedUrl.path;
+        }
+
+        this.port = parsedUrl.port;
+        this.protocol = parsedUrl.protocol;
+      });
     }
 
-    this.port = parsedUrl.port;
-    this.protocol = parsedUrl.protocol;
-    this.options = options;
+    return this._resolvedTargetPromise;
+  }
+
+  _ensureAuthorization() {
+    if (!this._authorizationPromise) {
+      this._authorizationPromise = Promise.resolve().then(async () => {
+        if (this.auth.refresh) {
+          const refreshed = await refreshOAuth(this._url, this.auth.refresh);
+          return "Bearer " + refreshed.access_token;
+        } else if (this.auth.bearer) {
+          return "Bearer " + this.auth.bearer;
+        } else if (this.auth.basic) {
+          const userpass = [this.auth.basic.username, this.auth.basic.password].join(":");
+          return "Basic " + Buffer.from(userpass, "utf8").toString("base64");
+        } else {
+          return undefined;
+        }
+      });
+    }
+
+    return this._authorizationPromise;
   }
 
   get(path, context) {
@@ -327,8 +350,15 @@ class ExternalWebSession extends PersistentImpl {
     const _this = this;
     const session = _this;
     return new Promise((resolve, reject) => {
-      const options = _.clone(session.options);
+      Promise.resolve()
+          .then(() => session._ensureResolvedTarget())
+          .then(() => session._ensureAuthorization())
+          .then((authorization) => {
+      const options = { ...session.options };
       options.headers = options.headers || {};
+      if (authorization) {
+        options.headers.authorization = authorization;
+      }
 
       if (!options.headers["user-agent"]) {
         options.headers["user-agent"] = "sandstorm app";
@@ -544,6 +574,7 @@ class ExternalWebSession extends PersistentImpl {
       } else {
         req.end();
       }
+      }).catch(reject);
     });
   }
 }

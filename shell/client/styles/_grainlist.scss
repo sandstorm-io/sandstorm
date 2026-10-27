@@ -1,11 +1,16 @@
+@use "icons";
+@use "colors";
+@use "geometry";
+@use "partials";
+
 .grain-list {
   overflow: auto;
   padding: 32px;
-  @media #{$mobile} {
+  @media #{geometry.$mobile} {
     padding: 0px 8px;
   }
-  background-color: $grainlist-background-color;
-  color: $grainlist-foreground-color;
+  background-color: colors.$grainlist-background-color;
+  color: colors.$grainlist-foreground-color;
 
   .question-mark {
     @extend %button-base;
@@ -34,7 +39,7 @@
     margin-top: 0px;
     padding-top: 0px;
     padding-bottom: 12px;
-    border-bottom: 1px solid $default-rule-color;
+    border-bottom: 1px solid colors.$default-rule-color;
     margin-bottom: 12px;
 
     font-size: 24pt;
@@ -43,13 +48,13 @@
 
   >.maybe-row {
     margin-bottom: 12px;
-    @media #{$desktop} {
+    @media #{geometry.$desktop} {
       display: flex;
       flex-direction: row;
       align-items: flex-start;
       justify-content: space-between;
     }
-    @media #{$mobile} {
+    @media #{geometry.$mobile} {
       display: block;
     }
   }
@@ -61,7 +66,7 @@
     vertical-align: top;
     clear: both;
 
-    @media #{$mobile} {
+    @media #{geometry.$mobile} {
       display: block;
       margin-bottom: 12px;
     }
@@ -100,8 +105,8 @@
   font-size: 10pt;
 
   button.empty-trash {
-    @include unstyled-button();
-    color: $sandstorm-purple-color;
+    @include partials.unstyled-button();
+    color: colors.$sandstorm-purple-color;
     font-weight: bold;
   }
 }
@@ -130,20 +135,20 @@
   border-collapse: collapse;
   background-color: rgba(255, 255, 255, 0.5);
   >thead>tr {
-    background-color: $grainlist-table-header-background-color;
-    color: $grainlist-table-header-foreground-color;
+    background-color: colors.$grainlist-table-header-background-color;
+    color: colors.$grainlist-table-header-foreground-color;
     font-weight: 600;
     border-bottom: 1px solid #aaa;
     >td {
       border: 1px solid white;
       &.grain-name:hover, &.grain-size:hover, &.last-used:hover {
-        background-color: $grainlist-table-header-background-color-hover;
+        background-color: colors.$grainlist-table-header-background-color-hover;
         cursor: pointer;
       }
       &.grain-size {
         width: 70px;
         // The mobile viewport is too small to display this much text
-        @media #{$mobile} {
+        @media #{geometry.$mobile} {
           display: none;
         }
       }
@@ -153,7 +158,7 @@
       &.shared-or-owned {
         width: 110px;
         // The mobile viewport is too small to display this much text
-        @media #{$mobile} {
+        @media #{geometry.$mobile} {
           display: none;
         }
       }
@@ -169,14 +174,14 @@
   >tbody>tr {
     width: 100%;
     height: 32px;
-    background-color: $grainlist-table-row-background-color;
-    color: $grainlist-table-row-foreground-color;
-    border-bottom: 1px solid $grainlist-table-row-outline-color;
+    background-color: colors.$grainlist-table-row-background-color;
+    color: colors.$grainlist-table-row-foreground-color;
+    border-bottom: 1px solid colors.$grainlist-table-row-outline-color;
     border-left: 1px solid #fff;
     border-right: 1px solid #fff;
 
     &.unread {
-      background-color: $grainlist-table-row-background-color-unread;
+      background-color: colors.$grainlist-table-row-background-color-unread;
     }
 
     >td {
@@ -205,7 +210,7 @@
       &.grain-size {
         width: 70px;
         // The mobile viewport is too small to display this much text
-        @media #{$mobile} {
+        @media #{geometry.$mobile} {
           display: none;
         }
       }
@@ -215,16 +220,16 @@
       &.shared-or-owned {
         width: 110px;
         // The mobile viewport is too small to display this much text
-        @media #{$mobile} {
+        @media #{geometry.$mobile} {
           display: none;
         }
       }
     }
     &.action {
       cursor: pointer;
-      background-color: $grainlist-table-row-action-background-color;
+      background-color: colors.$grainlist-table-row-action-background-color;
       &:hover {
-        background-color: $grainlist-table-row-action-background-color-hover;
+        background-color: colors.$grainlist-table-row-action-background-color-hover;
         >td>.new-grain-icon {
           background-image: url("/plus-6A237C.svg");
         }
@@ -243,7 +248,7 @@
         }
       }
       button {
-        @include unstyled-button();
+        @include partials.unstyled-button();
         color: black;
         font-weight: bold;
       }
@@ -253,7 +258,7 @@
         cursor: pointer;
       }
       &:hover {
-        background-color: $grainlist-table-row-background-color-hover;
+        background-color: colors.$grainlist-table-row-background-color-hover;
       }
     }
   }

@@ -20,9 +20,9 @@ import { check } from "meteor/check";
 import { Template } from "meteor/templating";
 import { ReactiveVar } from "meteor/reactive-var";
 import { Session } from "meteor/session";
-import { Router } from "meteor/iron:router";
+import { Router } from "meteor/vlasky:galvanized-iron-router";
 import { Accounts } from "meteor/accounts-base"
-import { _ } from "meteor/underscore";
+import { groupBy } from "/imports/shared/collection-utils";
 
 import { SandstormDb } from "/imports/sandstorm-db/db";
 
@@ -187,8 +187,8 @@ Template.credentialLoginInterstitial.helpers({
 
   nonloginAccounts() {
     const credentials = LoginCredentialsOfLinkedAccounts.find().fetch();
-    const grouped = _.groupBy(credentials, "loginAccountId");
-    const accountIds = _.keys(grouped);
+    const grouped = groupBy(credentials, "loginAccountId");
+    const accountIds = Object.keys(grouped);
     const accounts = accountIds.map((accountId) => {
       return {
         accountId,
@@ -244,7 +244,7 @@ Template.credentialLoginInterstitial.events({
     Meteor.call("unlinkCredential", context.userId, context.credentialId, function (err, result) {
       if (err) {
         console.log("error: ", err);
-        const errorContext = _.extend({ error: err }, context);
+        const errorContext = Object.assign({ error: err }, context);
         instance.unlinkCredentialState.set({ error: errorContext });
       } else {
         instance.unlinkCredentialState.set({ success: context });

@@ -16,7 +16,6 @@
 
 "use strict";
 
-var _ = require("underscore");
 var execFile = require("child_process").execFile;
 var assert = require("chai").assert;
 var fs = require("fs");
@@ -49,5 +48,4 @@ module.exports = {
     assert.equal(result.stdout.slice(0, -1), expected, "`admin-token -q` contains the expected output");
   },
 };
-
 

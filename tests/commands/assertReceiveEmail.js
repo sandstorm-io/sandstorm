@@ -1,8 +1,7 @@
 var util = require("util");
 var events = require("events");
 var simpleParser = require("mailparser").simpleParser;
-var simplesmtp = require("simplesmtp");
-var _ = require("underscore");
+var SMTPServer = require("smtp-server").SMTPServer;
 
 var SMTP_OUTGOING_PORT = parseInt(process.env.SMTP_OUTGOING_PORT, 10) || 30026;
 
@@ -20,68 +19,66 @@ ReceiveEmail.prototype.command = function(selector, expectedMessage, timeout, cb
   }
   timeout = timeout || 10000;
 
+  var completed = false;
   var server;
-  var timeoutHandle = setTimeout(function() {
-    console.log("asesertReceiveEmail timed out.");
-    server.server.end(function () {});
-    // if we have a callback, call it right before the complete event
-    if (cb) {
-      cb.call(self.client.api, new Error("Timed out while trying to receive email"));
-    } else {
-      self.client.api.assert.equal("Timed out while waiting to receive email message", "");
-    }
 
-    self.emit("complete");
-  }, timeout);
+  function finish(err) {
+    if (completed) return;
+    completed = true;
+    clearTimeout(timeoutHandle);
 
-  var options = { SMTPBanner:"Sandstorm Testing Mail Server", timeout: 10000, disableSTARTTLS: true };
-  server = simplesmtp.createSimpleServer(options, function (req) {
-    req.accept();
-    simpleParser(req).then(function (mail) {
-      clearTimeout(timeoutHandle);
-      server.server.end(function () {
-        if (cb) {
-          cb.call(self.client.api);
-        }
-
-        self.emit("complete");
-      });
-
-      var expected = expectedMessage;
-
-      if ("to" in expected) {
-        self.client.api.assert.equal(mail.to.value[0].address, expected.to);
-        expected = _.omit(expected, "to");
-      }
-      Object.keys(expected).forEach(function (key) {
-        self.client.api.assert.equal(mail[key], expected[key]);
-      });
-    }).catch(function (err) {
-      clearTimeout(timeoutHandle);
-      server.server.end(function () {
-        if (cb) {
-          cb.call(self.client.api, err);
-        } else {
-          self.client.api.assert.equal("Failed to parse received email: " + err, "");
-        }
-        self.emit("complete");
-      });
-    });
-  });
-
-  server.listen(SMTP_OUTGOING_PORT, function (err) {
-    if (err) {
-      clearTimeout(timeoutHandle);
+    function report() {
       if (cb) {
         cb.call(self.client.api, err);
-      } else {
-        self.client.api.assert.equal("Failed to start listening for SMTP server " + err, "");
+      } else if (err) {
+        self.client.api.assert.equal(err.message, "");
       }
+
       self.emit("complete");
+    }
+
+    if (server && server.server && server.server.listening) {
+      server.close(report);
     } else {
-      if (selector) {
-        self.client.api.click(selector);
-      }
+      report();
+    }
+  }
+
+  var timeoutHandle = setTimeout(function() {
+    console.log("assertReceiveEmail timed out.");
+    finish(new Error("Timed out while waiting to receive email message"));
+  }, timeout);
+
+  server = new SMTPServer({
+    banner: "Sandstorm Testing Mail Server",
+    socketTimeout: 10000,
+    disabledCommands: ["AUTH", "STARTTLS"],
+    onData: function(stream, _session, done) {
+      simpleParser(stream).then(function(mail) {
+        var expected = Object.assign({}, expectedMessage);
+
+        if ("to" in expected) {
+          self.client.api.assert.equal(mail.to.value[0].address, expected.to);
+          delete expected.to;
+        }
+
+        Object.keys(expected).forEach(function(key) {
+          self.client.api.assert.equal(mail[key], expected[key]);
+        });
+
+        done();
+        finish();
+      }).catch(function(err) {
+        done(err);
+        finish(new Error("Failed to parse received email: " + err));
+      });
+    },
+  });
+
+  server.on("error", finish);
+  server.listen(SMTP_OUTGOING_PORT, "127.0.0.1", function() {
+    if (selector) {
+      self.client.api.click(selector);
     }
   });
 

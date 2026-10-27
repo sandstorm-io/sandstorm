@@ -25,10 +25,9 @@ import { Session } from "meteor/session";
 import { Random } from "meteor/random";
 import { ReactiveVar } from "meteor/reactive-var";
 import { SHA256 } from "meteor/sha";
-import { Router } from "meteor/iron:router";
-import { TAPi18n } from "meteor/tap:i18n";
-import { _ } from "meteor/underscore";
-import { $ } from "meteor/jquery";
+import { Router } from "meteor/vlasky:galvanized-iron-router";
+import { TAPi18n } from "/imports/tapi18n";
+import { findWhere, where } from "/imports/shared/collection-utils";
 
 import { introJs } from "intro.js";
 
@@ -43,11 +42,14 @@ import { globalDb } from "/imports/db-deprecated";
 import { SandstormPowerboxRequest } from "/imports/sandstorm-ui-powerbox/powerbox-client";
 
 // Pseudo-collections.
-TokenInfo = new Mongo.Collection("tokenInfo");
+const TokenInfo = new Mongo.Collection("tokenInfo");
+globalThis.TokenInfo = TokenInfo;
 // TokenInfo is used by grainview.js
-GrantedAccessRequests = new Mongo.Collection("grantedAccessRequests");
+const GrantedAccessRequests = new Mongo.Collection("grantedAccessRequests");
+globalThis.GrantedAccessRequests = GrantedAccessRequests;
 // Pseudo-collection about access requests
-GrainLog = new Mongo.Collection("grainLog");
+const GrainLog = new Mongo.Collection("grainLog");
+globalThis.GrainLog = GrainLog;
 // Pseudo-collection created by subscribing to "grainLog", implemented in proxy.js.
 
 const promptNewTitle = function (grain) {
@@ -162,7 +164,7 @@ Template.grainDeleteButton.events({
     const grainId = activeGrain.grainId();
     let confirmationMessage = TAPi18n.__("grains.grainDeletePopup.confirmationMessage");
     if (window.confirm(confirmationMessage)) {
-      Meteor.call("moveGrainsToTrash", [grainId]);
+      globalThis.callMeteor("moveGrainsToTrash", [grainId]);
       globalGrains.remove(grainId, true);
     }
   },
@@ -196,22 +198,19 @@ Template.grainClonePopup.onCreated(function() {
   }
 
   Meteor.call("backupGrain", oldGrain.grainId(), (err, token) => {
-    if(err !== undefined) {
+    if (err) {
       setError("backup", err);
       return;
     }
     Meteor.call("restoreGrain", token, (err, newGrainId) => {
-      if(err !== undefined) {
+      if (err) {
         setError("restore", err);
         return;
       }
       const mainContentElement = document.querySelector("body>.main-content");
       const newGrain = globalGrains.addNewGrainView(newGrainId, "/", undefined,
                                                     mainContentElement);
-      const newTitle = TAPi18n.__(
-        "grains.grainCloneButton.copyTitle",
-        { sprintf: [oldGrain.title()] },
-      );
+      const newTitle = TAPi18n.__("grains.grainCloneButton.copyTitle", oldGrain.title());
       newGrain.setTitle(newTitle);
       newGrain.openSession();
       globalGrains.setActive(newGrainId);
@@ -440,20 +439,21 @@ Template.shareWithOthers.events({
       event.preventDefault();
     }
 
-    const $focus = $(template.find(":focus"));
-    const $items = template.$("[role=tab]:visible");
-    const focusIndex = $items.index($focus);
+    const focusedElement = template.find(":focus");
+    const items = Array.from(template.findAll("[role=tab]"))
+        .filter(item => item.getClientRects().length > 0);
+    const focusIndex = items.indexOf(focusedElement);
     let newFocusIndex;
     if (event.keyCode == 37) { // left arrow
       event.preventDefault();
       newFocusIndex = focusIndex - 1;
       if (newFocusIndex == -1) {
-        newFocusIndex = $items.length - 1;
+        newFocusIndex = items.length - 1;
       }
     } else if (event.keyCode == 39) { // right arrow
       event.preventDefault();
       newFocusIndex = focusIndex + 1;
-      if (newFocusIndex >= $items.length) {
+      if (newFocusIndex >= items.length) {
         newFocusIndex = 0;
       }
     } else if (event.keyCode == 13) { // Enter key
@@ -462,10 +462,10 @@ Template.shareWithOthers.events({
     }
 
     if (newFocusIndex != null) {
-      $items.attr("tabindex", "-1");
-      const $newFocus = $($items[newFocusIndex]);
-      $newFocus.attr("tabindex", "0");
-      $newFocus.focus();
+      items.forEach(item => item.setAttribute("tabindex", "-1"));
+      const newFocus = items[newFocusIndex];
+      newFocus.setAttribute("tabindex", "0");
+      newFocus.focus();
     }
   },
 });
@@ -591,11 +591,16 @@ Template.grainShareButton.onRendered(() => {
   div.appendChild(document.createTextNode(unsafeCurrentNounPhrase));
   let escapedCurrentNounPhrase = div.innerHTML;
 
+  const shareButton = document.querySelector(".share");
+  if (!shareButton) {
+    return;
+  }
+
   const intro = templateData.intro = introJs();
   let introOptions = {
     steps: [
       {
-        element: document.querySelector(".share"),
+        element: shareButton,
         intro: "You've created your first " + escapedCurrentAppTitle + " " +
           escapedCurrentNounPhrase + ". When you're ready, you can share it with others. Enjoy!",
       },
@@ -619,7 +624,23 @@ Template.grainShareButton.onRendered(() => {
   intro.oncomplete(dismissHint);
   intro.onexit(dismissHint);
 
-  intro.start();
+  Meteor.defer(() => {
+    // The topbar can re-render between onRendered() and intro start, so re-check target element.
+    const liveShareButton = document.querySelector(".share");
+    if (!liveShareButton || !liveShareButton.isConnected) {
+      dismissHint();
+      return;
+    }
+
+    introOptions.steps[0].element = liveShareButton;
+    intro.setOptions(introOptions);
+    try {
+      intro.start();
+    } catch (err) {
+      console.error("Failed to start share-intro hint:", err);
+      dismissHint();
+    }
+  });
 
   // HACK: Resize after 2 seconds, in case the grain size arrived late and caused the UI to reflow.
   Meteor.setTimeout(() => window.dispatchEvent(new Event("resize")), 2000);
@@ -666,13 +687,11 @@ Template.grainInMyTrash.events({
   "click button.restore-from-trash": function (event, instance) {
     const grain = globalGrains.getActive();
     const data = Template.currentData();
-    Meteor.call("moveGrainsOutOfTrash", [data.grainId], function (err, result) {
-      if (err) {
-        console.error(err.stack);
-      } else {
-        grain.reset(!grain.isIncognito());
-        grain.openSession();
-      }
+    Meteor.callAsync("moveGrainsOutOfTrash", [data.grainId]).then(() => {
+      grain.reset(!grain.isIncognito());
+      grain.openSession();
+    }).catch((err) => {
+      console.error(err && err.stack || err);
     });
   },
 });
@@ -963,12 +982,12 @@ Template.whoHasAccessPopup.onCreated(function () {
           }
         });
 
-        let accountOwnedShares = _.values(sharesByAccountRecipient);
+        let accountOwnedShares = Object.values(sharesByAccountRecipient);
         if (accountOwnedShares.length == 0) {
           accountOwnedShares = { empty: true };
         }
 
-        let grainOwnedShares = _.values(sharesByGrainRecipient);
+        let grainOwnedShares = Object.values(sharesByGrainRecipient);
         if (grainOwnedShares.length == 0) {
           grainOwnedShares = { empty: true };
         }
@@ -1013,8 +1032,8 @@ Template.whoHasAccessPopup.events({
     const transitiveShares = instance.transitiveShares.get();
     const accountOwnedShares = transitiveShares.accountOwnedShares;
     const tokensById = instance.downstreamTokensById.get();
-    const recipientShares = _.findWhere(accountOwnedShares, { recipient: recipient });
-    const recipientTokens = _.where(recipientShares.allShares, { accountId: Meteor.userId() });
+    const recipientShares = findWhere(accountOwnedShares, { recipient: recipient });
+    const recipientTokens = where(recipientShares.allShares, { accountId: Meteor.userId() });
 
     // Two cases:
     // 1. All of the tokens are direct shares. Easy. Just revoke them.
@@ -1088,7 +1107,7 @@ Template.whoHasAccessPopup.events({
           "Unknown User";
       const singular = rootTokens.length == 1;
 
-      const tokenLabels = _.pluck(rootTokens, "petname")
+      const tokenLabels = rootTokens.map(token => token.petname)
           .map(petname => petname || "Unlabeled Link")
           .map(petname => "\"" + petname + "\"")
           .join(", ");
@@ -1137,8 +1156,8 @@ Template.whoHasAccessPopup.events({
     const transitiveShares = instance.transitiveShares.get();
     const grainOwnedShares = transitiveShares.grainOwnedShares;
     const tokensById = instance.downstreamTokensById.get();
-    const recipientShares = _.findWhere(grainOwnedShares, { recipient: recipient });
-    const recipientTokens = _.where(recipientShares.allShares, { accountId: Meteor.userId() });
+    const recipientShares = findWhere(grainOwnedShares, { recipient: recipient });
+    const recipientTokens = where(recipientShares.allShares, { accountId: Meteor.userId() });
 
     recipientTokens.forEach((token) => {
       Meteor.call("updateApiToken", token._id, { revoked: true });
@@ -1327,9 +1346,9 @@ Template.emailInviteTab.helpers({
   },
 
   invitationExplanation: function () {
-    const primaryEmail = globalDb.getPrimaryEmail(Meteor.userId());
+    const primaryEmail = findWhere(SandstormDb.getUserEmails(Meteor.user()), { primary: true });
     if (primaryEmail) {
-      return "Invitation will be from " + primaryEmail;
+      return "Invitation will be from " + primaryEmail.email;
     } else {
       return null;
     }
@@ -2133,7 +2152,7 @@ Meteor.startup(function () {
   if (isStandalone()) {
     // TODO(soon): delete all other routes (maybe change how they're created?)
     const route = Router.routes.root;
-    _.extend(route.options, {
+    Object.assign(route.options, {
       template: "grain",
       loadingTemplate: "loadingNoMessage",
 

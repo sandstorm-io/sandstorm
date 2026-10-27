@@ -16,12 +16,10 @@
 
 import { Meteor } from "meteor/meteor";
 import { check } from "meteor/check";
-import { _ } from "meteor/underscore";
+import { unique } from "/imports/shared/collection-utils";
 
 import { SandstormPermissions } from "/imports/sandstorm-permissions/permissions";
 import Capnp from "/imports/server/capnp";
-
-import { waitPromise } from '../server/async-helpers';
 
 const Powerbox = Capnp.importSystem("sandstorm/powerbox.capnp");
 const Grain = Capnp.importSystem("sandstorm/grain.capnp");
@@ -33,8 +31,22 @@ function encodePowerboxDescriptor(desc) {
               .replace(/\//g, "_");
 }
 
+const resolveAccountIdForPowerbox = async (userId) => {
+  if (!userId) return userId;
+
+  const account = await Meteor.users.findOneAsync({
+    type: "account",
+    $or: [
+      { "loginCredentials.id": userId },
+      { "nonloginCredentials.id": userId },
+    ],
+  }, { fields: { _id: 1 } });
+
+  return account ? account._id : userId;
+};
+
 Meteor.methods({
-  newFrontendRef(sessionId, frontendRefRequest) {
+  async newFrontendRef(sessionId, frontendRefRequest) {
     // Completes a powerbox request for a frontendRef capability.
     check(sessionId, String);
     // frontendRefRequest is type-checked by frontendRefRegistry.validate(), below.
@@ -42,14 +54,14 @@ Meteor.methods({
     const db = this.connection.sandstormDb;
     const frontendRefRegistry = this.connection.frontendRefRegistry;
 
-    const session = db.collections.sessions.findOne(
+    const session = await db.collections.sessions.findOneAsync(
         { _id: sessionId, userId: this.userId || { $exists: false } });
     if (!session) {
       throw new Meteor.Error(403, "Invalid session ID");
     }
 
     let { descriptor, requirements, frontendRef } =
-        frontendRefRegistry.validate(db, session, frontendRefRequest);
+        await frontendRefRegistry.validate(db, session, frontendRefRequest);
     descriptor = encodePowerboxDescriptor(descriptor);
 
     const grainId = session.grainId;
@@ -60,13 +72,17 @@ Meteor.methods({
       },
     };
 
-    const cap = frontendRefRegistry.create(db, frontendRef, requirements);
-    const sturdyRef = waitPromise(cap.save(apiTokenOwner)).sturdyRef.toString();
-    cap.close();
+    const cap = await frontendRefRegistry.create(db, frontendRef, requirements);
+    let sturdyRef;
+    try {
+      sturdyRef = (await cap.save(apiTokenOwner)).sturdyRef.toString();
+    } finally {
+      cap.close();
+    }
     return { sturdyRef, descriptor };
   },
 
-  fulfillUiViewRequest(sessionId, obsolete1, grainId, petname, roleAssignment, ownerGrainId) {
+  async fulfillUiViewRequest(sessionId, obsolete1, grainId, petname, roleAssignment, ownerGrainId) {
     const db = this.connection.sandstormDb;
     check(sessionId, String);
     check(grainId, String);
@@ -79,10 +95,10 @@ Meteor.methods({
     }
 
     const provider = {
-      accountId: this.userId,
+      accountId: await resolveAccountIdForPowerbox(this.userId),
     };
 
-    const title = db.userGrainTitle(grainId, this.userId);
+    const title = await db.userGrainTitle(grainId, this.userId);
 
     const descriptor = encodePowerboxDescriptor({
       tags: [
@@ -99,7 +115,7 @@ Meteor.methods({
       },
     };
 
-    const result = SandstormPermissions.createNewApiToken(
+    const result = await SandstormPermissions.createNewApiToken(
         db, provider, grainId, petname, roleAssignment, owner);
 
     return {
@@ -111,7 +127,7 @@ Meteor.methods({
 
 class PowerboxOption {
   constructor(fields) {
-    _.extend(this, fields);
+    Object.assign(this, fields);
   }
 
   intersect(other) {
@@ -197,15 +213,17 @@ function registerUiViewQueryHandler(frontendRefRegistry) {
   frontendRefRegistry.register({
     typeId: Grain.UiView.typeId,
 
-    query(db, userId, value) {
+    async query(db, userId, value) {
       if (!userId) return [];
 
       // TODO(someday): Allow `value` to specify app IDs to filter for.
 
-      const sharedGrainIds = db.userApiTokens(userId).map(token => token.grainId);
-      const ownedGrainIds = db.userGrains(userId).map(grain => grain._id);
+      const sharedGrainTokens = await db.userApiTokens(userId).fetchAsync();
+      const ownedGrains = await db.userGrains(userId).fetchAsync();
+      const sharedGrainIds = sharedGrainTokens.map(token => token.grainId);
+      const ownedGrainIds = ownedGrains.map(grain => grain._id);
 
-      return _.uniq(sharedGrainIds.concat(ownedGrainIds)).map(grainId => {
+      return unique(sharedGrainIds.concat(ownedGrainIds)).map(grainId => {
         return new PowerboxOption({
           _id: "grain-" + grainId,
           grainId: grainId,
@@ -259,12 +277,12 @@ Meteor.publish("powerboxOptions", function (requestId, descriptorList) {
   check(requestId, String);
   check(descriptorList, [String]);
 
-  const results = {};
   const db = this.connection.sandstormDb;
   const frontendRefRegistry = this.connection.frontendRefRegistry;
 
-  if (descriptorList.length > 0) {
-    const descriptorMatches = descriptorList.map(packedDescriptor => {
+  const runQuery = async () => {
+    if (descriptorList.length > 0) {
+      const descriptorMatches = await Promise.all(descriptorList.map(async packedDescriptor => {
       // Decode the descriptor.
       // TODO(now): Also single-segment? Canonical?
 
@@ -274,18 +292,20 @@ Meteor.publish("powerboxOptions", function (requestId, descriptorList) {
           new Buffer(packedDescriptor, "base64"),
           { packed: true });
 
-      if (!queryDescriptor.tags || queryDescriptor.tags.length === 0) return {};
+      if (!queryDescriptor.tags || queryDescriptor.tags.length === 0) {
+        return { descriptor: queryDescriptor, matches: {} };
+      }
 
       // Expand each tag into a match map.
-      const tagMatches = queryDescriptor.tags.map(tag => {
-        const result = {};
+        const tagMatches = await Promise.all(queryDescriptor.tags.map(async tag => {
+          const result = {};
+          const options = await frontendRefRegistry.query(db, this.userId, tag);
+          options.forEach(option => {
+            result[option._id] = new PowerboxOption(option);
+          });
 
-        frontendRefRegistry.query(db, this.userId, tag).forEach(option => {
-          result[option._id] = new PowerboxOption(option);
-        });
-
-        return result;
-      });
+          return result;
+        }));
 
       // Intersect two tags' matches.
       const matches = tagMatches.reduce((a, b) => {
@@ -307,20 +327,20 @@ Meteor.publish("powerboxOptions", function (requestId, descriptorList) {
       // Search among the user's grains for hosted objects that match.
 
       if (this.userId) {
-        const user = Meteor.users.findOne(this.userId);
-
         // Find all grains shared to this user.
-        const sharedGrainIds = db.userApiTokens(this.userId).map(token => token.grainId);
+        const sharedGrainTokens = await db.userApiTokens(this.userId).fetchAsync();
+        const sharedGrainIds = sharedGrainTokens.map(token => token.grainId);
 
         // Among all grains owned by the user or shared with the user, search for grains having
         // any powerbox tag IDs matching the tag IDs in the query.
-        db.collections.grains
+        const grains = await db.collections.grains
             .find({
               $or: [{ userId: this.userId }, { _id: { $in: sharedGrainIds } }],
               "cachedViewInfo.matchRequests.tags.id":
                   { $in: queryDescriptor.tags.map(tag => tag.id) },
             }, { fields: { "cachedViewInfo.matchRequests": 1 } })
-            .forEach(grain => {
+            .fetchAsync();
+        grains.forEach((grain) => {
           // Filter down to grains that actually have a matching descriptor.
           let alreadyMatched = false;
           grain.cachedViewInfo.matchRequests.forEach(grainDescriptor => {
@@ -368,8 +388,8 @@ Meteor.publish("powerboxOptions", function (requestId, descriptorList) {
         });
       }
 
-      return { descriptor: queryDescriptor, matches };
-    });
+        return { descriptor: queryDescriptor, matches };
+      }));
 
     // TODO(someday): The implementation of matchQuality here is not quite right. In theory, we're
     //   supposed to compare descriptors to determine which ones are more specific than which
@@ -379,48 +399,53 @@ Meteor.publish("powerboxOptions", function (requestId, descriptorList) {
     //   produce the same results as long as "unacceptable" descriptors are placed last in the
     //   list.
 
-    const matches = descriptorMatches.reduce((finalMatches, clause) => {
-      if (clause.matchQuality === "unacceptable") {
-        // Remove b's matches from a.
-        for (const id in clause.matches) {
-          if (id in finalMatches) {
-            if (!finalMatches[id].subtract(clause.matches[id])) {
-              delete finalMatches[id];
+      const matches = descriptorMatches.reduce((finalMatches, clause) => {
+        if (clause.matchQuality === "unacceptable") {
+          // Remove b's matches from a.
+          for (const id in clause.matches) {
+            if (id in finalMatches) {
+              if (!finalMatches[id].subtract(clause.matches[id])) {
+                delete finalMatches[id];
+              }
             }
           }
+
+          return finalMatches;
+        } else {
+          for (const id in clause.matches) {
+            if (id in finalMatches) {
+              finalMatches[id].union(clause.matches[id]);
+            } else {
+              finalMatches[id] = clause.matches[id];
+            }
+
+            if (clause.matchQuality === "preferred") {
+              finalMatches[id].matchQuality = "preferred";
+            }
+          }
+          return finalMatches;
+        }
+      }, {});
+
+      for (const id in matches) {
+        if (!matches[id].matchQuality) {
+          matches[id].matchQuality = "acceptable";
         }
 
-        return finalMatches;
-      } else {
-        for (const id in clause.matches) {
-          if (id in finalMatches) {
-            finalMatches[id].union(clause.matches[id]);
-          } else {
-            finalMatches[id] = clause.matches[id];
-          }
-
-          if (clause.matchQuality === "preferred") {
-            finalMatches[id].matchQuality = "preferred";
-          }
-        }
-
-        return finalMatches;
+        matches[id].requestId = requestId;
+        this.added("powerboxOptions", id, matches[id]);
       }
-    }, {});
-
-    for (const id in matches) {
-      if (!matches[id].matchQuality) {
-        matches[id].matchQuality = "acceptable";
-      }
-
-      matches[id].requestId = requestId;
-      this.added("powerboxOptions", id, matches[id]);
     }
-  }
 
-  // TODO(someday): Make reactive? Seems annoying.
+    // TODO(someday): Make reactive? Seems annoying.
 
-  this.ready();
+    this.ready();
+  };
+
+  runQuery().catch(err => {
+    console.error("powerboxOptions publish failed:", err);
+    this.error(err);
+  });
 });
 
-SandstormPowerbox = { registerUiViewQueryHandler };
+globalThis.SandstormPowerbox = { registerUiViewQueryHandler };

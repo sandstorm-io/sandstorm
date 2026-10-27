@@ -24,7 +24,7 @@ import { inMeteor } from "/imports/server/async-helpers";
 import { globalDb } from "/imports/db-deprecated";
 import ServerIdenticon from "/imports/sandstorm-identicons/identicon-server";
 import Url from "url";
-import Future from "fibers/future";
+import connect from "connect";
 
 const HOSTNAME = Url.parse(process.env.ROOT_URL).hostname;
 const DDP_HOSTNAME = process.env.DDP_DEFAULT_CONNECTION_URL &&
@@ -35,10 +35,6 @@ function isSandstormShell(hostname) {
 
   return (hostname === HOSTNAME || (DDP_HOSTNAME && hostname === DDP_HOSTNAME));
 }
-
-// We need to use connect. Let's make sure we're using the same version as Meteor's WebApp module
-// uses. Fortunately, they let us extract it.
-const connect = WebAppInternals.NpmModules.connect.module;
 
 function writeErrorResponse(res, err) {
   let status = 500;
@@ -70,7 +66,7 @@ function checkMagic(buf, magic) {
 }
 
 function serveStaticAsset(req, res) {
-  inMeteor(() => {
+  inMeteor(async () => {
     if (req.method === "GET") {
       const assetCspHeader = "default-src 'none'; style-src 'unsafe-inline'; sandbox";
       if (req.headers["if-none-match"] === "permanent") {
@@ -95,7 +91,7 @@ function serveStaticAsset(req, res) {
         const size = parseInt((url.query || {}).s);
         asset = new ServerIdenticon(pathname.slice("identicon/".length), size).asAsset();
       } else if (pathname.indexOf("/") == -1) {
-        asset = globalDb.getStaticAsset(pathname);
+        asset = await globalDb.getStaticAsset(pathname);
       }
 
       if (asset) {
@@ -139,7 +135,7 @@ function serveStaticAsset(req, res) {
       res.setHeader("Access-Control-Allow-Origin", "*");
 
       const url = Url.parse(req.url);
-      const purpose = globalDb.fulfillAssetUpload(url.pathname.slice(1));
+      const purpose = await globalDb.fulfillAssetUpload(url.pathname.slice(1));
 
       // Sanity check the purpose of this upload token.
       if (!purpose) {
@@ -159,16 +155,16 @@ function serveStaticAsset(req, res) {
 
       const buffers = [];
       let totalSize = 0;
-      const done = new Future();
       req.on("data", (buf) => {
         totalSize += buf.length;
         if (totalSize <= (64 * 1024)) {
           buffers.push(buf);
         }
       });
-      req.on("end", done.return.bind(done));
-      req.on("error", done.throw.bind(done));
-      done.wait();
+      await new Promise((resolve, reject) => {
+        req.on("end", resolve);
+        req.on("error", reject);
+      });
 
       if (totalSize > (64 * 1024)) {
         // TODO(soon): Resize the image ourselves.
@@ -189,46 +185,35 @@ function serveStaticAsset(req, res) {
         return;
       }
 
-      const assetId = globalDb.addStaticAsset({ mimeType: type }, content);
+      const assetId = await globalDb.addStaticAsset({ mimeType: type }, content);
 
       if (purpose.profilePicture) {
         const accountId = purpose.profilePicture.userId;
-        const result = Meteor.users.findAndModify({
-          query: { _id: accountId },
-          update: { $set: { "profile.picture": assetId } },
-          fields: { "profile.picture": 1 },
-        });
+        const result = await Meteor.users.rawCollection().findOneAndUpdate(
+            { _id: accountId },
+            { $set: { "profile.picture": assetId } },
+            { projection: { "profile.picture": 1 }, returnDocument: "before" });
+        const old = result && result.value !== undefined ? result.value : result;
 
-        if (result.ok) {
-          const old = result.value;
-          if (old && old.profile && old.profile.picture) {
-            globalDb.unrefStaticAsset(old.profile.picture);
-          }
-        } else {
+        if (old && old.profile && old.profile.picture) {
+          await globalDb.unrefStaticAsset(old.profile.picture);
+        } else if (!old) {
           res.writeHead(500, { "Content-Type": "text/plain" });
           res.end("Couldn't update profile picture.");
           return;
         }
       } else if (purpose.loginLogo) {
-        const result = globalDb.collections.settings.findAndModify({
-          query: { _id: "whitelabelCustomLogoAssetId" },
-          update: {
-            $setOnInsert: { _id: "whitelabelCustomLogoAssetId" },
-            $set: { value: assetId },
-          },
-          upsert: true,
-          fields: { value: 1 },
-        });
+        const result = await globalDb.collections.settings.rawCollection().findOneAndUpdate(
+            { _id: "whitelabelCustomLogoAssetId" },
+            {
+              $setOnInsert: { _id: "whitelabelCustomLogoAssetId" },
+              $set: { value: assetId },
+            },
+            { upsert: true, projection: { value: 1 }, returnDocument: "before" });
+        const old = result && result.value !== undefined ? result.value : result;
 
-        if (result.ok) {
-          const old = result.value;
-          if (old && old.value) {
-            globalDb.unrefStaticAsset(old.value);
-          }
-        } else {
-          res.writeHead(500, { "Content-Type": "text/plain" });
-          res.end("Couldn't update login logo.");
-          return;
+        if (old && old.value) {
+          await globalDb.unrefStaticAsset(old.value);
         }
       }
 
@@ -279,7 +264,7 @@ Meteor.startup(() => {
   // Construct the middleware chain for requests to non-DDP, non-shell hosts.
   const nonMeteorRequestHandler = connect();
   if (Meteor.settings.public.stripePublicKey) {
-    nonMeteorRequestHandler.use(BlackrockPayments.makeConnectHandler(globalDb));
+    nonMeteorRequestHandler.use(globalThis.BlackrockPayments.makeConnectHandler(globalDb));
   }
 
   nonMeteorRequestHandler.use(handleNonMeteorRequest);
@@ -307,15 +292,18 @@ Meteor.startup(() => {
               const redirectHostname = parsedRedirect.hostname;
               if (redirectHostname !== HOSTNAME) {
                 return inMeteor(function () {
-                  if (globalDb.hostIsStandalone(redirectHostname)) {
-                    res.writeHead(302, { "Location": parsedRedirect.protocol + "//" +
-                      parsedRedirect.host + req.url, });
-                    res.end();
-                    return;
-                  } else {
-                    throw new Meteor.Error(400, "redirectUrl in OAuth was for an unknown host: " +
-                      state.redirectUrl);
-                  }
+                  return globalDb.collections.standaloneDomains.findOneAsync({ _id: redirectHostname })
+                      .then((standaloneHost) => {
+                    if (standaloneHost) {
+                      res.writeHead(302, { "Location": parsedRedirect.protocol + "//" +
+                        parsedRedirect.host + req.url, });
+                      res.end();
+                      return;
+                    } else {
+                      throw new Meteor.Error(400, "redirectUrl in OAuth was for an unknown host: " +
+                        state.redirectUrl);
+                    }
+                  });
                 });
               }
             }
@@ -327,17 +315,19 @@ Meteor.startup(() => {
         }
       } else {
         return inMeteor(function () {
-          if (globalDb.hostIsStandalone(hostname)) {
+          return globalDb.collections.standaloneDomains.findOneAsync({ _id: hostname }).then((standaloneHost) => {
+            if (standaloneHost) {
             // If it's a standalone host, also pass on to meteor
-            for (let i = 0; i < meteorRequestListeners.length; i++) {
-              meteorRequestListeners[i](req, res);
-            }
-          } else {
+              for (let i = 0; i < meteorRequestListeners.length; i++) {
+                meteorRequestListeners[i](req, res);
+              }
+            } else {
             // Otherwise, dispatch to our own middleware proxy chain.
-            nonMeteorRequestHandler(req, res);
-            // Adjust timeouts on proxied requests to allow apps to long-poll if needed.
-            WebApp._timeoutAdjustmentRequestCallback(req, res);
-          }
+              nonMeteorRequestHandler(req, res);
+              // Adjust timeouts on proxied requests to allow apps to long-poll if needed.
+              WebApp._timeoutAdjustmentRequestCallback(req, res);
+            }
+          });
         });
       }
     }).catch(function (e) {

@@ -51,7 +51,7 @@
 </template>
 
 <template name="referralNotificationItem">
-  {{#linkTo route="referrals" class="notification-item"}}
+  {{#linkTo route="referrals" data=. class="notification-item"}}
     <div class="notification-icon">
     </div>
 
@@ -60,9 +60,9 @@
     {{else}}
       {{_ "notifications.referralNotificationItem.unpaidUser"}}
     {{/if}}
-    {{#linkTo route="referrals"}}
+    <span>
       {{_ "notifications.referralNotificationItem.link"}}
-    {{/linkTo}}
+    </span>
 
     <div class="notification-footer">
       <span title="{{timestamp}}" class="notification-timestamp">{{dateString timestamp}}</span>
@@ -92,7 +92,7 @@
 </template>
 
 <template name="backgroundedGrainNotificationItem">
-  {{#linkTo route="grain" class="notification-item"}}
+  {{#linkTo route="grain" data=. class="notification-item"}}
     <div class="notification-icon">
       <img src="{{grainIcon}}">
     </div>

@@ -3,9 +3,7 @@ import { Mongo } from "meteor/mongo";
 import { Template } from "meteor/templating";
 import { Tracker } from "meteor/tracker";
 import { ReactiveVar } from "meteor/reactive-var";
-import { _ } from "meteor/underscore";
-import { Router } from "meteor/iron:router";
-import { Iron } from "meteor/iron:core";
+import { Router, Iron } from "meteor/vlasky:galvanized-iron-router";
 
 import SandstormAccountSettingsUi from "/imports/client/accounts/account-settings-ui";
 import AccountsUi from "/imports/client/accounts/accounts-ui";
@@ -14,7 +12,8 @@ import downloadFile from "/imports/client/download-file";
 import { globalDb } from "/imports/db-deprecated";
 
 // Pseudocollection telling the client if there's an admin user yet.
-HasAdmin = new Mongo.Collection("hasAdmin");
+const HasAdmin = new Mongo.Collection("hasAdmin");
+globalThis.HasAdmin = HasAdmin;
 
 const AdminToken = new Mongo.Collection("adminToken"); // see Meteor.publish("adminToken")
 
@@ -149,6 +148,15 @@ Template.setupWizardProgressBarItem.helpers({
   linkClassName() {
     const instance = Template.instance();
     return instance.data.isCurrentStep ? "setup-current-step" : "setup-not-current-step";
+  },
+
+  linkRoute() {
+    const route = (Template.currentData() || {}).route;
+    if (!route) {
+      console.error("setupWizardProgressBarItem missing route:", Template.currentData());
+    }
+
+    return route;
   },
 });
 
@@ -539,7 +547,7 @@ Template.setupWizardEmailConfig.onCreated(function () {
     const portValue = parseInt(this.smtpPort.get());
     const smtpConfig = {
       hostname: this.smtpHostname.get().trim(),
-      port: _.isNaN(portValue) ? 25 : portValue,
+      port: Number.isNaN(portValue) ? 25 : portValue,
       auth: {
         user: this.smtpUsername.get(),
         pass: this.smtpPassword.get(),
@@ -727,7 +735,7 @@ Template.setupWizardPreinstalled.helpers({
     const appIndexCount = globalDb.collections.appIndex.find({}).count();
     const failedAppsCount = globalDb.collections.packages.find({
       _id: {
-        $in: _.pluck(apps, "packageId"),
+        $in: apps.map((app) => app.packageId),
       },
       status: "failed",
     }).count();
@@ -750,7 +758,7 @@ Template.setupWizardPreinstalled.helpers({
 
   isAppDownloading() {
     const pack = globalDb.collections.packages.findOne({ _id: this.packageId });
-    return pack && _.contains(["verify", "unpack", "analyze", "download"], pack.status);
+    return pack && ["verify", "unpack", "analyze", "download"].includes(pack.status);
   },
 
   isAppFailed() {
@@ -760,7 +768,7 @@ Template.setupWizardPreinstalled.helpers({
 
   progressFraction() {
     const pack = globalDb.collections.packages.findOne({ _id: this.packageId });
-    if (_.contains(["verify", "unpack", "analyze"], pack.status)) {
+    if (["verify", "unpack", "analyze"].includes(pack.status)) {
       // Downloading is done
       return 1;
     }

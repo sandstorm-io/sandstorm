@@ -6,7 +6,7 @@ import { globalDb } from "/imports/db-deprecated";
 
 const DEFAULT_APP_MARKET_URL = "https://apps.sandstorm.io";
 const DEFAULT_APP_UPDATES_ENABLED = true;
-const DEFAULT_APP_INDEX_URL = "https://app-index.sandstorm.io";
+const DEFAULT_APP_INDEX_URL = "https://apps.sandstorm.org";
 
 Template.newAdminAppSources.onCreated(function () {
   this.appMarketUrl = new ReactiveVar(globalDb.getSettingWithFallback("appMarketUrl", ""));

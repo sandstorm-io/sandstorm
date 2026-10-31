@@ -268,7 +268,7 @@ const splitUserIdsIntoAccountIdsAndIdentityIds = function (db, _backend) {
 
 const appUpdateSettings = function (db, _backend) {
   db.collections.settings.insert({ _id: "appMarketUrl", value: "https://apps.sandstorm.io" });
-  db.collections.settings.insert({ _id: "appIndexUrl", value: "https://app-index.sandstorm.io" });
+  db.collections.settings.insert({ _id: "appIndexUrl", value: "https://apps.sandstorm.org" });
   db.collections.settings.insert({ _id: "appUpdatesEnabled", value: true });
 };
 

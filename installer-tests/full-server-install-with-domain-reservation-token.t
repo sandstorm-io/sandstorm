@@ -20,7 +20,7 @@ $[slow]Congratulations! We have registered your
 Your credentials to use it are in /opt/sandstorm/var/sandcats; consider making a backup.
 $[slow]Now we're going to auto-configure HTTPS for your server.
 $[veryslow]Requesting certificate
-$[veryslow]Downloading: https://dl.sandstorm.io
+$[veryslow]Downloading: https://dl.sandstorm.org
 $[veryslow]GPG signature is valid.
 $[veryslow]Sandstorm started. PID =
 $[veryslow]Visit this link to start using it:

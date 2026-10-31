@@ -14,7 +14,7 @@ $[slow]We're going to:
 Press enter to accept defaults. Type 'no' to customize. [yes]$[type]
 Config written to /opt/sandstorm/sandstorm.conf.
 Finding latest build for dev channel...
-$[veryslow]Downloading: https://dl.sandstorm.io/
+$[veryslow]Downloading: https://dl.sandstorm.org/
 $[veryslow]GPG signature is valid.
 $[veryslow]Sandstorm started.
 $[veryslow]Your server is coming online. Waiting up to 90 seconds...

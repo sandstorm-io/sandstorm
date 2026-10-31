@@ -35,7 +35,7 @@ Wildcard host: [*.local.sandstorm.io:6080]$[type]
 
 Config written to
 Finding latest build for dev channel...
-$[veryslow]Downloading: https://dl.sandstorm.io/sandstorm-
+$[veryslow]Downloading: https://dl.sandstorm.org/sandstorm-
 $[veryslow]GPG signature is valid.
 $[slow]Installation complete. To start your server now, run:
 sandstorm start

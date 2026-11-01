@@ -3617,9 +3617,21 @@ private:
     args.add(hostArg.cStr());
     args.add("--eval");
     args.add("void disableTelemetry()");
-    args.add("--eval");
-    args.add(command.cStr());
+    args.add("--file");
+    args.add("/proc/self/fd/0");
     args.add(nullptr);
+
+    // Dev package manifests can exceed Linux's per-argument size limit. Feed the script through
+    // an unlinked temporary file instead of --eval. Using --file also preserves non-interactive
+    // execution and a nonzero exit status on script errors.
+    auto scriptFd = openTemporary("/tmp/sandstorm-mongo-script");
+    kj::FdOutputStream(scriptFd.get()).write(command.begin(), command.size());
+    KJ_SYSCALL(lseek(scriptFd, 0, SEEK_SET));
+    if (scriptFd.get() == STDIN_FILENO) {
+      KJ_SYSCALL(ioctl(scriptFd, FIONCLEX));
+    } else {
+      KJ_SYSCALL(dup2(scriptFd, STDIN_FILENO));
+    }
 
     KJ_SYSCALL(execv(args[0], const_cast<char**>(args.begin())));
     KJ_UNREACHABLE;

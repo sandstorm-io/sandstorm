@@ -167,10 +167,10 @@ rm -rf ${MONGO26_BASE}
 # Download MongoDB 7.0 for migration support.
 # Both versions are bundled - users run 'sandstorm migrate-mongo'
 # to upgrade their database from 2.6 to 7.0.
-MONGO7_VERSION=7.0.16
+MONGO7_VERSION=7.0.45
 MONGO7_FILENAME=mongodb-linux-x86_64-ubuntu2004-${MONGO7_VERSION}.tgz
 MONGO7_PATH="hack/$MONGO7_FILENAME"
-MONGO7_SHA256=3be980f61bf1eca1680ffdac73d765c857f4596ab678cc244b27f82ab9c404ff
+MONGO7_SHA256=9a9c20d284f91f12ba142b730085a97db7e86ad8d9676d71f88a0f0f005cfd2e
 if [ ! -e "$MONGO7_PATH" ] ; then
   echo "Fetching MongoDB 7.0..."
   secureCurlDownload "$MONGO7_PATH" "https://fastdl.mongodb.org/linux/$MONGO7_FILENAME"

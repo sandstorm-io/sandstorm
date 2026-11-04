@@ -24,9 +24,9 @@ cd "$THIS_DIR"
 
 export SANDSTORM_DIR="${SANDSTORM_DIR:-/opt/sandstorm}"
 
-test -e assets/ssjekyll5.spk || curl https://sandstorm.io/apps/ssjekyll5.spk > assets/ssjekyll5.spk
-test -e assets/ssjekyll6.spk || curl https://sandstorm.io/apps/ssjekyll6.spk > assets/ssjekyll6.spk
-test -e assets/ssjekyll7.spk || curl https://sandstorm.io/apps/ssjekyll7.spk > assets/ssjekyll7.spk
+test -e assets/ssjekyll5.spk || curl https://dl.sandstorm.org/testapps/ssjekyll5.spk > assets/ssjekyll5.spk
+test -e assets/ssjekyll6.spk || curl https://dl.sandstorm.org/testapps/ssjekyll6.spk > assets/ssjekyll6.spk
+test -e assets/ssjekyll7.spk || curl https://dl.sandstorm.org/testapps/ssjekyll7.spk > assets/ssjekyll7.spk
 
 NIGHTWATCH_PARAMS=()
 

@@ -2207,9 +2207,9 @@ private:
   kj::Maybe<appindex::SubmissionState> publishState = appindex::SubmissionState::PUBLISH;
   // By default `spk publish` publishes the package.
 
-  // https://alpha-api.sandstorm.io/#Rs-0TT13YrNSbv7Fiz5K9bBkLaJn3E5TB0PU1GSn1HE
-  kj::String appIndexEndpoint = kj::heapString("https://alpha-api.sandstorm.io");
-  kj::String appIndexToken = kj::heapString("Rs-0TT13YrNSbv7Fiz5K9bBkLaJn3E5TB0PU1GSn1HE");
+  // Legacy app-index.sandstorm.io endpoint: https://alpha-api.sandstorm.io/#Rs-0TT13YrNSbv7Fiz5K9bBkLaJn3E5TB0PU1GSn1HE
+  kj::String appIndexEndpoint = kj::heapString("https://api-b72c46193b266fd6c33e1299dccc9bfa.oasis.sandstorm.org");
+  kj::String appIndexToken = kj::heapString("iCDu7VYl4qZxVbDLXLIE2XSU0bEadaBgApEMqgCkLmP");
 
   kj::MainFunc getPublishMain() {
     return addCommonOptions(OptionSet::KEYS_READONLY,

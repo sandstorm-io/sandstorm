@@ -44,7 +44,7 @@ Enter your email address: [] $[type]install-script@asheesh.org
 Registering your domain.
 $[slow]Congratulations! We have registered your
 Your credentials to use it are in /opt/sandstorm/var/sandcats; consider making a backup.
-$[veryslow]Downloading: https://dl.sandstorm.io
+$[veryslow]Downloading: https://dl.sandstorm.org
 $[veryslow]GPG signature is valid.
 $[veryslow]Sandstorm started. PID =
 Visit this link to start using it:

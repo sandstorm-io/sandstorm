@@ -273,9 +273,10 @@ const splitUserIdsIntoAccountIdsAndIdentityIds = async function (db, _backend) {
   // form of API token.
 };
 
+
 const appUpdateSettings = async function (db, _backend) {
-  await db.collections.settings.insertAsync({ _id: "appMarketUrl", value: "https://apps.sandstorm.io" });
-  await db.collections.settings.insertAsync({ _id: "appIndexUrl", value: "https://app-index.sandstorm.io" });
+  await db.collections.settings.insertAsync({ _id: "appMarketUrl", value: "https://apps.sandstorm.org" });
+  await db.collections.settings.insertAsync({ _id: "appIndexUrl", value: "https://apps.sandstorm.org" });
   await db.collections.settings.insertAsync({ _id: "appUpdatesEnabled", value: true });
 };
 

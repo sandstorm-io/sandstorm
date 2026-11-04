@@ -20,7 +20,7 @@ $[slow]ok
 $[run]sudo CURL_USER_AGENT=testing REPORT=no bash /vagrant/install.sh -d
 $[slow]Config written to /opt/sandstorm/sandstorm.conf.
 Finding latest build for dev channel...
-$[veryslow]Downloading: https://dl.sandstorm.io/
+$[veryslow]Downloading: https://dl.sandstorm.org/
 $[veryslow]GPG signature is valid.
 $[veryslow]Sandstorm started.
 $[veryslow]Your server is coming online. Waiting up to 90 seconds...

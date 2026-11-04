@@ -88,8 +88,8 @@ fail() {
     if USE_DEFAULTS=no prompt-yesno "Hmm, installation failed. Would it be OK to send an anonymous error report to the Sandstorm team so we know something is wrong?
 It would only contain this error code: $error_code" "yes" ; then
       echo "Sending problem report..." >&2
-      local BEARER_TOKEN="4-Og3Ty2SPmpkZGnVc_8hnBGXK0JBBXDeBn_55FWixJ"
-      local API_ENDPOINT="https://alpha-api-df09d5faefd551337b59659de8ae7207.sandstorm.io"
+      local BEARER_TOKEN="jzQ6bX36ReLkUex-qezX9FxZr07qr8JyZJnPho7SIKV"
+      local API_ENDPOINT="https://api-d2480e4fbe9532c61d463d6c9d0bd481.oasis.sandstorm.org"
       local HTTP_STATUS=$(
         dotdotdot_curl \
           --silent \

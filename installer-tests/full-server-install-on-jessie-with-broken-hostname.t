@@ -32,7 +32,7 @@ Type the word none to skip this step, or help for help.
 What *.sandcats-dev.sandstorm.io subdomain would you like? []$[type]none
 URL users will enter in browser: [http://nonexistentbroken:6080]$[type]
 Wildcard host: [*.nonexistentbroken:6080]$[type]
-$[veryslow]Downloading: https://dl.sandstorm.io
+$[veryslow]Downloading: https://dl.sandstorm.org
 $[veryslow]GPG signature is valid.
 $[veryslow]Sandstorm started. PID =
 $[veryslow]Your server is coming online. Waiting up to 90 seconds...

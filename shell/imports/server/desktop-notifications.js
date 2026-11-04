@@ -17,7 +17,7 @@
 import { Match, check } from "meteor/check";
 import { globalDb } from "/imports/db-deprecated";
 
-const createAppActivityDesktopNotification = (options) => {
+const createAppActivityDesktopNotification = async (options) => {
   check(options, {
     userId: String,
     notificationId: String,
@@ -42,7 +42,7 @@ const createAppActivityDesktopNotification = (options) => {
     },
   });
 
-  globalDb.collections.desktopNotifications.insert({
+  await globalDb.collections.desktopNotifications.insertAsync({
     userId: options.userId,
     notificationId: options.notificationId,
     creationDate: new Date(),

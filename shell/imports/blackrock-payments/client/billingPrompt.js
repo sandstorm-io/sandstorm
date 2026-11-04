@@ -17,7 +17,7 @@
 import { Meteor } from "meteor/meteor";
 import { Template } from "meteor/templating";
 import { ReactiveVar } from "meteor/reactive-var";
-import { _ } from "meteor/underscore";
+import { findWhere } from "/imports/shared/collection-utils";
 
 import { SandstormDb } from "/imports/sandstorm-db/db";
 import { MAILING_LIST_BONUS } from "/imports/blackrock-payments/constants";
@@ -253,7 +253,7 @@ var helpers = {
   },
   checkoutData: function () {
     var title = this._id.charAt(0).toUpperCase() + this._id.slice(1);
-    var primaryEmail = _.findWhere(SandstormDb.getUserEmails(Meteor.user()), {primary: true});
+    var primaryEmail = findWhere(SandstormDb.getUserEmails(Meteor.user()), {primary: true});
     if (!primaryEmail) return;
 
     // Firefox will apparently automatically do some URI encoding if we don't do it ourselves.
@@ -295,7 +295,7 @@ var helpers = {
     });
 
     // Filter hidden plans, except for the user's own plan.
-    return _.filter(plans, function (plan) {
+    return plans.filter(function (plan) {
       return !plan.hidden || plan.isCurrent;
     });
   },

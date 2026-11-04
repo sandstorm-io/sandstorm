@@ -27,19 +27,33 @@ exports.command = function(grainId) {
 
   var self = this
       .frame(null)
-      .waitForElementPresent("iframe.grain-frame", short_wait);
+      .waitForElementPresent("iframe.grain-frame", medium_wait);
 
   if (grainId) {
-    return self.waitForElementVisible("#grain-frame-" + grainId, medium_wait)
+    return self.waitForElementPresent("#grain-frame-" + grainId, medium_wait)
       .frameSelector("#grain-frame-" + grainId);
-  } else {
-    return self.execute(function () {
-      return window.globalGrains.getActive().grainId();
-    }, [], function (result) {
-      var grainId = result.value;
-      self
-        .waitForElementVisible("#grain-frame-" + grainId, short_wait)
-        .frameSelector("#grain-frame-" + grainId)
-    });
   }
+
+  return self.perform(function (client, done) {
+    client.execute(function () {
+      var active = window.globalGrains && window.globalGrains.getActive &&
+          window.globalGrains.getActive();
+      if (active && active.grainId) {
+        return "#grain-frame-" + active.grainId();
+      }
+
+      return null;
+    }, [], function (result) {
+      var selector = result && result.value;
+      if (selector) {
+        client.waitForElementPresent(selector, medium_wait)
+          .frameSelector(selector);
+      } else {
+        client.waitForElementPresent(".grain-container.active-grain iframe.grain-frame", medium_wait)
+          .frameSelector(".grain-container.active-grain iframe.grain-frame");
+      }
+
+      done();
+    });
+  });
 };

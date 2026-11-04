@@ -28,12 +28,16 @@ Meteor.users.deny({
   fetch: [],
 });
 
-Meteor.publish("getMyUsage", function () {
+Meteor.publish("getMyUsage", async function () {
   const db = this.connection.sandstormDb;
   if (this.userId) {
     // TODO(someday): Make this reactive.
-    const user = Meteor.users.findOne(this.userId);
-    const usage = db.getMyUsage(user);
+    const user = await Meteor.users.findOneAsync(this.userId);
+    const usage = {
+      grains: await db.collections.grains.find({ userId: this.userId }).countAsync(),
+      storage: (user && user.storageUsage) || 0,
+      compute: 0,
+    };
     this.added("users", this.userId, {
       pseudoUsage: usage,
     });

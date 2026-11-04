@@ -106,15 +106,15 @@ export MONGO_PORT=9001
 export SMTP_LISTEN_PORT=9002
 export SMTP_OUTGOING_PORT=9003
 export IP_INTERFACE_TEST_PORT=9004
-export LAUNCH_URL="http://local.sandstorm.io:$PORT"
+export LAUNCH_URL="http://local.sandstorm.org:$PORT"
 
 rm -rf "$SANDSTORM_DIR"
 ../install.sh -d -u "$BUNDLE_PATH"
 
 echo "IS_TESTING=true
 ALLOW_DEMO_ACCOUNTS=true
-BASE_URL=http://local.sandstorm.io:$PORT
-WILDCARD_HOST=*.local.sandstorm.io:$PORT
+BASE_URL=http://local.sandstorm.org:$PORT
+WILDCARD_HOST=*.local.sandstorm.org:$PORT
 PORT=$PORT
 MONGO_PORT=$MONGO_PORT
 SMTP_LISTEN_PORT=${SMTP_LISTEN_PORT}
@@ -135,6 +135,19 @@ while ! curl -s localhost:$PORT > /dev/null; do
   echo -n .
   sleep .1
 done;
+echo
+
+echo -n "Waiting for front-end runtime to be ready."
+COUNT=0
+while ! curl -sf "$LAUNCH_URL/apps" | grep -q "__meteor_runtime_config__"; do
+  if [ "$COUNT" -gt 1800 ]; then  # wait up to 180 seconds for front-end startup/migrations
+    echo "Sandstorm front-end failed to become ready"
+    cleanExit 1
+  fi
+  COUNT=$(($COUNT+1))
+  echo -n .
+  sleep .1
+done
 echo
 
 set +e

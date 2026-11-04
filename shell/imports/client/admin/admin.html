@@ -7,9 +7,13 @@
       class: String
 --}}
 <li class="nav-item">
-  {{#linkTo route=routeName class=class data=data}}
+  {{#if linkRoute}}
+    {{#linkTo route=linkRoute class=linkClass data=linkData}}
+      {{> Template.contentBlock}}
+    {{/linkTo}}
+  {{else}}
     {{> Template.contentBlock}}
-  {{/linkTo}}
+  {{/if}}
 </li>
 </template>
 

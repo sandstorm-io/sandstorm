@@ -16,30 +16,38 @@
 
 import { Meteor } from "meteor/meteor";
 import { check } from "meteor/check";
-import { _ } from "meteor/underscore";
+import { findWhere } from "/imports/shared/collection-utils";
 
 import { send } from "/imports/server/email";
 import { SandstormDb } from "/imports/sandstorm-db/db";
 
-function sendDeletionEmails(db, deletedUserId, byAdminUserId, feedback) {
-  const deletedUser = db.getUser(deletedUserId);
+let accountSuspensionEmailSender = send;
 
-  const userEmail = _.findWhere(SandstormDb.getUserEmails(deletedUser), { primary: true });
+export function setAccountSuspensionEmailSenderForTests(sender) {
+  accountSuspensionEmailSender = sender || send;
+}
+
+async function sendDeletionEmails(db, deletedUserId, byAdminUserId, feedback) {
+  const deletedUser = await db.getUser(deletedUserId);
+
+  const userEmail = findWhere(await SandstormDb.getUserEmailsAsync(deletedUser), { primary: true });
+  const serverTitle = await db.getServerTitleAsync();
+  const returnAddress = await db.getReturnAddressAsync();
   if (!byAdminUserId) { // This was initiated by the user, send them an email
     if (!userEmail) {
       console.error("Couldn't send deletion email. No address found for user with userId:",
         deletedUser._id);
     } else {
       const emailOptions = {
-        from: db.getReturnAddress(),
-        subject: `Your account on ${db.getServerTitle()} will be deleted in 7 days.`,
-        text: `You have requested that your Sandstorm account on ${db.getServerTitle()} be deleted. Your account has been suspended and will be fully deleted in seven days. If you change your mind, log into ${process.env.ROOT_URL} to cancel the process.
+        from: returnAddress,
+        subject: `Your account on ${serverTitle} will be deleted in 7 days.`,
+        text: `You have requested that your Sandstorm account on ${serverTitle} be deleted. Your account has been suspended and will be fully deleted in seven days. If you change your mind, log into ${process.env.ROOT_URL} to cancel the process.
 
 If you did not request this deletion, please contact the server administrator immediately.`,
       };
       try {
         emailOptions.to = userEmail.email;
-        send(emailOptions);
+        await accountSuspensionEmailSender(emailOptions);
       } catch (err) {
         console.error(
           `Failed to send deletion email to user (id=${deletedUser._id}) with error: ${err}`);
@@ -49,99 +57,101 @@ If you did not request this deletion, please contact the server administrator im
 
   const deleteUserString = (userEmail && userEmail.email) || ("userId=" + deletedUser._id);
   const emailOptions = {
-    from: db.getReturnAddress(),
-    subject: `Account for ${deleteUserString} on ${db.getServerTitle()} will be deleted in 7 days`,
+    from: returnAddress,
+    subject: `Account for ${deleteUserString} on ${serverTitle} will be deleted in 7 days`,
   };
 
   if (byAdminUserId) {
-    const initiatingAdmin = db.getUser(byAdminUserId);
+    const initiatingAdmin = await db.getUser(byAdminUserId);
     const adminName = initiatingAdmin.profile.name;
-    emailOptions.text = `${adminName} has requested that the Sandstorm account held by ${deleteUserString} on ${db.getServerTitle()} be deleted. The account has been suspended and will be fully deleted in seven days. To cancel the deletion, go to: ${process.env.ROOT_URL}/admin/users/${deletedUser._id}`;
+    emailOptions.text = `${adminName} has requested that the Sandstorm account held by ${deleteUserString} on ${serverTitle} be deleted. The account has been suspended and will be fully deleted in seven days. To cancel the deletion, go to: ${process.env.ROOT_URL}/admin/users/${deletedUser._id}`;
   } else {
-    emailOptions.text = `${deleteUserString} has requested that their account be deleted on ${db.getServerTitle()}. The account has been suspended and will be fully deleted in seven days. To cancel the deletion, go to: ${process.env.ROOT_URL}/admin/users/${deletedUser._id}`;
+    emailOptions.text = `${deleteUserString} has requested that their account be deleted on ${serverTitle}. The account has been suspended and will be fully deleted in seven days. To cancel the deletion, go to: ${process.env.ROOT_URL}/admin/users/${deletedUser._id}`;
     if (feedback) {
       emailOptions.text += "\nUser gave the following feedback: " + feedback;
     }
   }
 
-  Meteor.users.find({ isAdmin: true }).forEach((user) => {
-    const email = _.findWhere(SandstormDb.getUserEmails(user), { primary: true });
+  const admins = await Meteor.users.find({ isAdmin: true }).fetchAsync();
+  for (const user of admins) {
+    const email = findWhere(await SandstormDb.getUserEmailsAsync(user), { primary: true });
     if (!email) {
       console.error("No email found for admin with userId:", user._id);
-      return;
+      continue;
     }
 
     try {
       emailOptions.to = email.email;
-      send(emailOptions);
+      await accountSuspensionEmailSender(emailOptions);
     } catch (err) {
       console.error(
         `Failed to send deletion email to admin (id=${user._id}) with error: ${err}`);
     }
-  });
+  }
 }
 
 Meteor.methods({
-  suspendAccount(userId, willDelete) {
+  async suspendAccount(userId, willDelete) {
     check(userId, String);
     check(willDelete, Boolean);
 
-    if (!isAdmin()) {
+    if (!await this.connection.sandstormDb.isAdminById(this.userId)) {
       throw new Meteor.Error(403, "Only admins can suspend other users.");
     }
 
-    if (userId === Meteor.userId()) {
+    if (userId === this.userId) {
       throw new Meteor.Error(400, "Admins cannot suspend their own accounts from the admin page. Please go to your account setttings.");
     }
 
     const db = this.connection.sandstormDb;
 
     if (Meteor.settings.public.stripePublicKey) {
-      BlackrockPayments.suspendAccount(db, userId);
+      await globalThis.BlackrockPayments.suspendAccount(db, userId);
     }
 
-    db.suspendAccount(userId, Meteor.userId(), willDelete);
+    await db.suspendAccount(userId, this.userId, willDelete);
 
     if (willDelete) {
-      sendDeletionEmails(db, userId, Meteor.userId());
+      await sendDeletionEmails(db, userId, this.userId);
     }
   },
 
-  deleteOwnAccount(feedback) {
+  async deleteOwnAccount(feedback) {
     const db = this.connection.sandstormDb;
-    if (!Meteor.userId()) {
+    if (!this.userId) {
       throw new Meteor.Error(403, "Must be logged in to delete an account");
     }
 
-    if (db.isUserInOrganization(Meteor.user())) {
+    const account = await Meteor.users.findOneAsync({ _id: this.userId });
+    if (await db.isUserInOrganizationAsync(account)) {
       throw new Meteor.Error(403, "Users in an organization cannot delete their own account. " +
         "Please ask your admin to do it for you.");
     }
 
     if (Meteor.settings.public.stripePublicKey) {
-      BlackrockPayments.suspendAccount(db, Meteor.userId());
+      await globalThis.BlackrockPayments.suspendAccount(db, this.userId);
     }
 
-    db.suspendAccount(Meteor.userId(), null, true);
+    await db.suspendAccount(this.userId, null, true);
 
-    sendDeletionEmails(db, Meteor.userId(), null, feedback);
+    await sendDeletionEmails(db, this.userId, null, feedback);
   },
 
-  unsuspendAccount(userId) {
+  async unsuspendAccount(userId) {
     check(userId, String);
 
-    if (!isAdmin()) {
+    if (!await this.connection.sandstormDb.isAdminById(this.userId)) {
       throw new Meteor.Error(403, "Only admins can unsuspend other users.");
     }
 
-    this.connection.sandstormDb.unsuspendAccount(userId, Meteor.userId());
+    await this.connection.sandstormDb.unsuspendAccount(userId, this.userId);
   },
 
-  unsuspendOwnAccount() {
-    if (!Meteor.userId()) {
+  async unsuspendOwnAccount() {
+    if (!this.userId) {
       throw new Meteor.Error(403, "Must be logged in to unsuspend an account");
     }
 
-    this.connection.sandstormDb.unsuspendAccount(Meteor.userId());
+    await this.connection.sandstormDb.unsuspendAccount(this.userId);
   },
 });

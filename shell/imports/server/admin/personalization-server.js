@@ -1,6 +1,6 @@
 import { Meteor } from "meteor/meteor";
 import { check } from "meteor/check";
-import { checkAuth } from "/imports/server/auth";
+import { checkAuthAsync } from "/imports/server/auth";
 import { globalDb } from "/imports/db-deprecated";
 
 const personalizationMessageShape = {
@@ -18,51 +18,45 @@ const personalizationMessageShape = {
 };
 
 Meteor.methods({
-  setPersonalizationSettings(params) {
-    checkAuth(undefined);
+  async setPersonalizationSettings(params) {
+    await checkAuthAsync(this.connection.sandstormDb, this.userId);
     check(params, personalizationMessageShape);
     const db = this.connection.sandstormDb;
     // TODO(soon): make this a single write to a single settings object
-    db.collections.settings.upsert({ _id: "serverTitle" }, { value: params.serverTitle });
-    db.collections.settings.upsert({ _id: "splashUrl" }, { value: params.splashUrl });
-    db.collections.settings.upsert({ _id: "signupDialog" }, { value: params.signupDialog });
-    db.collections.settings.upsert({ _id: "termsUrl" }, { value: params.termsOfServiceUrl });
-    db.collections.settings.upsert({ _id: "privacyUrl" }, { value: params.privacyPolicyUrl });
+    await db.collections.settings.upsertAsync({ _id: "serverTitle" }, { value: params.serverTitle });
+    await db.collections.settings.upsertAsync({ _id: "splashUrl" }, { value: params.splashUrl });
+    await db.collections.settings.upsertAsync({ _id: "signupDialog" }, { value: params.signupDialog });
+    await db.collections.settings.upsertAsync({ _id: "termsUrl" }, { value: params.termsOfServiceUrl });
+    await db.collections.settings.upsertAsync({ _id: "privacyUrl" }, { value: params.privacyPolicyUrl });
 
-    db.collections.settings.upsert({ _id: "whitelabelCustomLoginProviderName" },
+    await db.collections.settings.upsertAsync({ _id: "whitelabelCustomLoginProviderName" },
       { value: params.whitelabelCustomLoginProviderName });
-    db.collections.settings.upsert({ _id: "whitelabelHideSendFeedback" },
+    await db.collections.settings.upsertAsync({ _id: "whitelabelHideSendFeedback" },
       { value: params.whitelabelHideSendFeedback });
-    db.collections.settings.upsert({ _id: "whitelabelHideTroubleshooting" },
+    await db.collections.settings.upsertAsync({ _id: "whitelabelHideTroubleshooting" },
       { value: params.whitelabelHideTroubleshooting });
-    db.collections.settings.upsert({ _id: "whiteLabelHideAbout" },
+    await db.collections.settings.upsertAsync({ _id: "whiteLabelHideAbout" },
       { value: params.whiteLabelHideAbout });
-    db.collections.settings.upsert({ _id: "whitelabelUseServerTitleForHomeText" },
+    await db.collections.settings.upsertAsync({ _id: "whitelabelUseServerTitleForHomeText" },
       { value: params.whitelabelUseServerTitleForHomeText });
   },
 
-  getWhitelabelLogoUploadToken() {
-    checkAuth(undefined);
+  async getWhitelabelLogoUploadToken() {
+    await checkAuthAsync(this.connection.sandstormDb, this.userId);
     const db = this.connection.sandstormDb;
-    return db.newAssetUpload({ loginLogo: {} });
+    return await db.newAssetUpload({ loginLogo: {} });
   },
 
-  resetWhitelabelLogo() {
-    checkAuth(undefined);
+  async resetWhitelabelLogo() {
+    await checkAuthAsync(this.connection.sandstormDb, this.userId);
     const db = this.connection.sandstormDb;
-    const result = globalDb.collections.settings.findAndModify({
-      query: { _id: "whitelabelCustomLogoAssetId" },
-      remove: true,
-      fields: { value: 1 },
-    });
+    const result = await globalDb.collections.settings.rawCollection().findOneAndDelete(
+        { _id: "whitelabelCustomLogoAssetId" },
+        { projection: { value: 1 } });
+    const old = result && result.value !== undefined ? result.value : result;
 
-    if (result.ok) {
-      const old = result.value;
-      if (old) {
-        db.unrefStaticAsset(old.value);
-      }
-    } else {
-      throw new Meteor.Error(500, "Couldn't remove whitelabelCustomLogoAssetId");
+    if (old) {
+      await db.unrefStaticAsset(old.value);
     }
   },
 });

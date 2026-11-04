@@ -16,8 +16,8 @@
 
 import { Meteor } from "meteor/meteor";
 import { Template } from "meteor/templating";
-import { Router } from "meteor/iron:router";
-import { TAPi18n } from "meteor/tap:i18n";
+import { Router } from "meteor/vlasky:galvanized-iron-router";
+import { TAPi18n } from "/imports/tapi18n";
 
 import { SandstormDb } from "/imports/sandstorm-db/db";
 import { globalDb } from "/imports/db-deprecated";

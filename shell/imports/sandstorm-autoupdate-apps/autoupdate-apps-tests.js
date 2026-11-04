@@ -21,9 +21,8 @@ import Crypto from "crypto";
 
 import { Meteor } from "meteor/meteor";
 import { Accounts } from "meteor/accounts-base";
-import { HTTP } from "meteor/http";
 
-import { SandstormDb } from "/imports/sandstorm-db/db";
+import { SandstormDb, setAppIndexHttpCallForTests } from "/imports/sandstorm-db/db";
 import { SandstormAutoupdateApps } from "/imports/sandstorm-autoupdate-apps/autoupdate-apps";
 
 const globalDb = new SandstormDb();
@@ -100,7 +99,7 @@ function stubUser(test, userId) {
   });
 }
 
-Tinytest.add("test update notifications", function (test) {
+Tinytest.addAsync("test update notifications", function (test, onComplete) {
   globalDb.collections.appIndex.remove({});
   globalDb.collections.userActions.remove({});
   globalDb.collections.notifications.remove({});
@@ -109,7 +108,7 @@ Tinytest.add("test update notifications", function (test) {
     this.stub(Meteor, "call", function () {});
 
     stubUser(this, aliceUserId);
-    this.stub(HTTP, "get", function () {
+    setAppIndexHttpCallForTests(async function () {
       return {
         data: {
           apps: [
@@ -126,14 +125,20 @@ Tinytest.add("test update notifications", function (test) {
     });
 
     Meteor.call("addUserActions", "mock-package-id1");
-    SandstormAutoupdateApps.updateAppIndex(globalDb);
+    SandstormAutoupdateApps.updateAppIndex(globalDb).then(() => {
+      // This blocking call to findOne was having some weird interaction with sinon.test. I've moved it,
+      // and the rest of the test out of the sinon.test block.
+      const notification = globalDb.collections.notifications.findOne();
+      const appUpdate = notification.appUpdates["mock-app-id"];
+      test.isNotNull(appUpdate);
+      test.equal(appUpdate.name, "Mock App");
+      test.equal(appUpdate.marketingVersion, "0.2");
+      setAppIndexHttpCallForTests(undefined);
+      onComplete();
+    }).catch((err) => {
+      setAppIndexHttpCallForTests(undefined);
+      test.fail(err && err.stack || err);
+      onComplete();
+    });
   })(test);
-
-  // This blocking call to findOne was having some weird interaction with sinon.test. I've moved it,
-  // and the rest of the test out of the sinon.test block.
-  const notification = globalDb.collections.notifications.findOne();
-  const appUpdate = notification.appUpdates["mock-app-id"];
-  test.isNotNull(appUpdate);
-  test.equal(appUpdate.name, "Mock App");
-  test.equal(appUpdate.marketingVersion, "0.2");
 });

@@ -17,7 +17,6 @@
 'use strict';
 
 var utils = require('../utils'),
-    short_wait = utils.short_wait,
     medium_wait = utils.medium_wait;
 
 exports.command = function(callback) {
@@ -25,9 +24,7 @@ exports.command = function(callback) {
     .init()
     .execute('window.Meteor.logout()')
     .execute("window.testLoginHelpers.clearMockGithubUser()")
-    .pause(short_wait)
     .execute('window.testLoginHelpers.mockLoginGithub()')
-    .pause(short_wait)
     .init()
     .waitForElementVisible('#applist-apps', medium_wait)
     .resizeWindow(utils.default_width, utils.default_height);

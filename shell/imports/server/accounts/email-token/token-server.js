@@ -22,9 +22,14 @@ const V1_HASHFUNC = "sha512";
 const V1_CIPHER = "AES-256-CTR"; // cipher used
 
 const TOKEN_EXPIRATION_MS = 60 * 60 * 1000;
+let tokenEmailSender = sendEmail;
 
-const cleanupExpiredTokens = function () {
-  Meteor.users.update({
+export function setTokenEmailSenderForTests(sender) {
+  tokenEmailSender = sender || sendEmail;
+}
+
+const cleanupExpiredTokens = async function () {
+  await Meteor.users.updateAsync({
     "services.email.tokens.createdAt": {
       $lt: new Date(Date.now() - TOKEN_EXPIRATION_MS),
     },
@@ -39,9 +44,17 @@ const cleanupExpiredTokens = function () {
   });
 };
 
-Meteor.startup(cleanupExpiredTokens);
+Meteor.startup(() => {
+  cleanupExpiredTokens().catch((err) => {
+    console.error("Failed to clean up expired email tokens:", err);
+  });
+});
 // Tokens can actually last up to 2 * TOKEN_EXPIRATION_MS
-SandstormDb.periodicCleanup(TOKEN_EXPIRATION_MS, cleanupExpiredTokens);
+SandstormDb.periodicCleanup(TOKEN_EXPIRATION_MS, () => {
+  cleanupExpiredTokens().catch((err) => {
+    console.error("Failed to clean up expired email tokens:", err);
+  });
+});
 
 const hashToken = (token) => {
   return {
@@ -64,12 +77,13 @@ const checkToken = function (tokens, token) {
   return foundToken;
 };
 
-const consumeToken = function (user, token) {
+const consumeToken = async function (user, token) {
   const hashedToken = hashToken(token);
   const foundToken = checkToken(user.services.email.tokens, hashedToken);
 
   if (foundToken !== undefined) {
-    Meteor.users.update({ _id: user._id }, { $pull: { "services.email.tokens": hashedToken } });
+    await Meteor.users.updateAsync({ _id: user._id },
+        { $pull: { "services.email.tokens": hashedToken } });
   }
 
   return foundToken;
@@ -115,7 +129,7 @@ const tryUnbox = function (box, secret) {
 };
 
 // Handler to login with a token.
-Accounts.registerLoginHandler("email", function (options) {
+export const emailTokenLoginHandler = async function (options) {
   if (!options.email) {
     return undefined; // don't handle
   }
@@ -130,7 +144,7 @@ Accounts.registerLoginHandler("email", function (options) {
     token: String,
   });
 
-  const user = Meteor.users.findOne({
+  const user = await Meteor.users.findOneAsync({
     "services.email.email": options.email,
   }, {
     fields: {
@@ -153,7 +167,7 @@ Accounts.registerLoginHandler("email", function (options) {
   }
 
   const tokenString = options.token.trim();
-  const maybeToken = consumeToken(user, tokenString);
+  const maybeToken = await consumeToken(user, tokenString);
   if (!maybeToken) {
     console.error("Token not found:", options.email);
     return {
@@ -170,7 +184,9 @@ Accounts.registerLoginHandler("email", function (options) {
       resumePath,
     },
   };
-});
+};
+
+Accounts.registerLoginHandler("email", emailTokenLoginHandler);
 
 const makeTokenUrl = function (email, token, options) {
   if (options.linking) {
@@ -185,7 +201,7 @@ const makeTokenUrl = function (email, token, options) {
 ///
 /// EMAIL VERIFICATION
 ///
-const sendTokenEmail = function (db, email, token, options) {
+const sendTokenEmail = async function (db, email, token, options) {
   let subject;
   let text;
 
@@ -206,12 +222,12 @@ const sendTokenEmail = function (db, email, token, options) {
 
   const sendOptions = {
     to:  email,
-    from: { name: globalDb.getServerTitle(), address: db.getReturnAddress() },
+    from: { name: await globalDb.getServerTitleAsync(), address: await db.getReturnAddressAsync() },
     subject: subject,
     text: text,
   };
 
-  sendEmail(sendOptions);
+  await tokenEmailSender(sendOptions);
 };
 
 const parsedRootUrl = Url.parse(process.env.ROOT_URL);
@@ -219,7 +235,7 @@ const parsedRootUrl = Url.parse(process.env.ROOT_URL);
 /// CREATING USERS
 ///
 // returns the user id
-const createAndEmailTokenForUser = function (db, email, options) {
+const createAndEmailTokenForUser = async function (db, email, options) {
   check(email, String);
   check(options, {
     resumePath: String,
@@ -228,9 +244,10 @@ const createAndEmailTokenForUser = function (db, email, options) {
   });
 
   const parsedUrl = Url.parse(options.rootUrl);
+  const standaloneHost = await db.collections.standaloneDomains.findOneAsync({ _id: parsedUrl.hostname });
   if ((parsedUrl.hostname !== parsedRootUrl.hostname ||
        parsedUrl.protocol !== parsedRootUrl.protocol) &&
-      !db.hostIsStandalone(parsedUrl.hostname)) {
+      !standaloneHost) {
     // Ignore port and only check hostname/protocol since IE will differ from other browsers and
     // sometimes include port 80/443 and sometimes won't
     throw new Meteor.Error(400, "rootUrl is not valid");
@@ -241,8 +258,8 @@ const createAndEmailTokenForUser = function (db, email, options) {
     throw new Meteor.Error(400, "No @ symbol was found in your email");
   }
 
-  let user = Meteor.users.findOne({ "services.email.email": email },
-                                  { fields: { "services.email": 1 } });
+  let user = await Meteor.users.findOneAsync({ "services.email.email": email },
+                                              { fields: { "services.email": 1 } });
   let userId;
 
   // TODO(someday): make this shorter, and handle requests that try to brute force it.
@@ -263,7 +280,7 @@ const createAndEmailTokenForUser = function (db, email, options) {
 
     userId = user._id;
 
-    Meteor.users.update({ _id: user._id }, { $push: { "services.email.tokens": tokenObj } });
+    await Meteor.users.updateAsync({ _id: user._id }, { $push: { "services.email.tokens": tokenObj } });
   } else {
     const options = {};
     user = {
@@ -278,13 +295,13 @@ const createAndEmailTokenForUser = function (db, email, options) {
     userId = Accounts.insertUserDoc(options, user);
   }
 
-  sendTokenEmail(db, email, token, options);
+  await sendTokenEmail(db, email, token, options);
 
   return userId;
 };
 
 Meteor.methods({
-  createAndEmailTokenForUser: function (email, options) {
+  createAndEmailTokenForUser: async function (email, options) {
     // method for create user. Requests come from the client.
     // This method will create a user if it doesn't exist, otherwise it will generate a token.
     // It will always send an email to the user
@@ -300,33 +317,33 @@ Meteor.methods({
       throw new Meteor.Error(403, "Email login service is disabled.");
     }
     // Create user. result contains id and token.
-    const user = createAndEmailTokenForUser(this.connection.sandstormDb, email, options);
+    await createAndEmailTokenForUser(this.connection.sandstormDb, email, options);
   },
 
-  linkEmailCredentialToAccount: function (email, token, allowLogin) {
+  linkEmailCredentialToAccount: async function (email, token, allowLogin) {
     // Links the email credential with address `email` and login token `token` to the current
     // account.
     check(email, String);
     check(token, String);
     check(allowLogin, Boolean);
-    const account = Meteor.user();
+    const account = await Meteor.users.findOneAsync({ _id: this.userId });
     if (!account || !account.loginCredentials) {
       throw new Meteor.Error(403, "Must be logged in to an account to link an email credential.");
     }
 
-    const credential = Meteor.users.findOne({ "services.email.email": email },
-                                            { fields: { "services.email": 1 } });
+    const credential = await Meteor.users.findOneAsync({ "services.email.email": email },
+                                                       { fields: { "services.email": 1 } });
     if (!credential) {
       throw new Meteor.Error(403, "Invalid authentication code.");
     }
 
-    const maybeToken = consumeToken(credential, token.trim());
+    const maybeToken = await consumeToken(credential, token.trim());
     if (!maybeToken) {
       throw new Meteor.Error(403, "Invalid authentication code.");
     }
 
-    Accounts.linkCredentialToAccount(this.connection.sandstormDb, this.connection.sandstormBackend,
-                                     credential._id, account._id, allowLogin);
+    await Accounts.linkCredentialToAccount(this.connection.sandstormDb, this.connection.sandstormBackend,
+                                           credential._id, account._id, allowLogin);
 
     // Return the resume path, if we have one.
     const resumePath = tryUnbox(maybeToken.secureBox, token);

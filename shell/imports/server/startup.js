@@ -22,13 +22,13 @@ import { SandstormPermissions } from "/imports/sandstorm-permissions/permissions
 
 const ROOT_URL = process.env.ROOT_URL;
 
-Meteor.startup(() => {
-  let baseUrlRow = globalDb.collections.misc.findOne({ _id: "BASE_URL" });
+Meteor.startup(async () => {
+  let baseUrlRow = await globalDb.collections.misc.findOneAsync({ _id: "BASE_URL" });
 
   if (!baseUrlRow) {
     // Fill data with current value in the case this is a first run
     baseUrlRow = { _id: "BASE_URL", value: ROOT_URL };
-    globalDb.collections.misc.insert(baseUrlRow);
+    await globalDb.collections.misc.insertAsync(baseUrlRow);
   } else if (baseUrlRow.value !== ROOT_URL) {
     // If the only thing that happened is some trailing slashes got removed, then don't reset OAuth
     // providers.
@@ -40,16 +40,18 @@ Meteor.startup(() => {
 
     if (resetOAuth) {
       console.log("resetting oauth");
-      globalDb.collections.settings.find({ _id: { $in: ["google", "github"] } }).forEach((setting) => {
+      const settings = await globalDb.collections.settings.find({ _id: { $in: ["google", "github"] } })
+          .fetchAsync();
+      await Promise.all(settings.map(async (setting) => {
         if (setting.value) {
-          globalDb.collections.settings.update({ _id: setting._id },
+          await globalDb.collections.settings.updateAsync({ _id: setting._id },
                           { $set: { value: false,
                                     automaticallyReset: { baseUrlChangedFrom: baseUrlRow.value }, }, });
         }
-      });
+      }));
     }
 
     baseUrlRow = { _id: "BASE_URL", value: ROOT_URL };
-    globalDb.collections.misc.update({ _id: "BASE_URL" }, { $set: { value: ROOT_URL } });
+    await globalDb.collections.misc.updateAsync({ _id: "BASE_URL" }, { $set: { value: ROOT_URL } });
   }
 });

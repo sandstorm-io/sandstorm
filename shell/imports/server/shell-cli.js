@@ -14,7 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { inMeteor, waitPromise } from "/imports/server/async-helpers";
+import { inMeteor } from "/imports/server/async-helpers";
 import { createAcmeAccount, renewCertificateNow } from "/imports/server/acme";
 import { SandstormDb } from "/imports/sandstorm-db/db";
 import { globalDb } from "/imports/db-deprecated";
@@ -24,22 +24,22 @@ const ShellCli = Capnp.importSystem("sandstorm/backend.capnp").ShellCli;
 
 class ShellCliImpl {
   createAcmeAccount(directory, email, agreeToTerms) {
-    return inMeteor(() => {
-      createAcmeAccount(directory, email, agreeToTerms);
+    return inMeteor(async () => {
+      await createAcmeAccount(directory, email, agreeToTerms);
     });
   }
 
   setAcmeChallenge(module, options) {
-    return inMeteor(() => {
+    return inMeteor(async () => {
       options = SandstormDb.escapeMongoObject(JSON.parse(options));
-      globalDb.collections.settings.upsert({_id: "acmeChallenge"},
-          {$set: { value: { module, options } }});
+      await globalDb.collections.settings.upsertAsync({ _id: "acmeChallenge" },
+          { $set: { value: { module, options } } });
     });
   }
 
   renewCertificateNow() {
-    return inMeteor(() => {
-      renewCertificateNow();
+    return inMeteor(async () => {
+      await renewCertificateNow();
     });
   }
 }

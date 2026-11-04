@@ -17,7 +17,6 @@
 import { Meteor } from "meteor/meteor";
 import { Template } from "meteor/templating";
 import { Tracker } from "meteor/tracker";
-import { _ } from "meteor/underscore";
 
 import { computeTitleFromTokenOwnerUser } from "/imports/client/model-helpers";
 import { iconSrcForPackage, iconSrcForDenormalizedGrainMetadata } from "/imports/sandstorm-identicons/helpers";
@@ -25,12 +24,13 @@ import { SandstormDb } from "/imports/sandstorm-db/db";
 import { globalDb } from "/imports/db-deprecated";
 import { MAILING_LIST_BONUS } from "/imports/blackrock-payments/constants";
 
-testNotifications = () => {
+const testNotifications = () => {
   // Run on console to create some dummy notifications for the purpose of seeing what they look
   // like.
 
-  Meteor.call("testNotifications");
+  globalThis.callMeteor("testNotifications");
 };
+globalThis.testNotifications = testNotifications;
 
 const getNotificationPath = (notification) => {
   if (notification.admin) {
@@ -52,6 +52,26 @@ const removeTrailingSlash = (path) => {
   return path;
 };
 
+const resolveNotificationId = (context) => {
+  if (context && typeof context._id === "string") return context._id;
+  for (let depth = 1; depth <= 4; depth++) {
+    const parent = Template.parentData(depth);
+    if (parent && typeof parent._id === "string") return parent._id;
+  }
+
+  return null;
+};
+
+const dismissNotificationFromContext = (context) => {
+  const notificationId = resolveNotificationId(context);
+  if (!notificationId) {
+    console.warn("Skipping dismissNotification(): missing notification id");
+    return;
+  }
+
+  globalThis.callMeteor("dismissNotification", notificationId);
+};
+
 Tracker.autorun(function () {
   // While the tab is visible, automatically dismiss any notifications that link to the current
   // URL.
@@ -63,7 +83,7 @@ Tracker.autorun(function () {
         const npath = getNotificationPath(notification);
         if (npath) {
           if (removeTrailingSlash(getNotificationPath(notification)) === path) {
-            Meteor.call("dismissNotification", notification._id);
+            dismissNotificationFromContext(notification);
           }
         }
       }
@@ -73,7 +93,7 @@ Tracker.autorun(function () {
 
 Template.notificationsPopup.helpers({
   notifications: function () {
-    Meteor.call("readAllNotifications");
+    globalThis.callMeteor("readAllNotifications");
     return globalDb.collections.notifications.find({ userId: Meteor.userId() }, { sort: { timestamp: -1 } })
         .map(function (row) {
       if (row.initiatingAccount) {
@@ -179,7 +199,7 @@ Template.notificationItem.helpers({
 
 Template.appUpdateNotificationItem.helpers({
   appUpdatesList() {
-    return _.values(this.appUpdates);
+    return Object.values(this.appUpdates);
   },
 });
 
@@ -187,19 +207,19 @@ Template.appUpdateNotificationItem.events({
   "submit form"(evt) {
     evt.preventDefault();
     evt.stopPropagation();
-    const packages = _.map(this.appUpdates, app => app.packageId);
+    const packages = Object.values(this.appUpdates).map(app => app.packageId);
 
     Meteor.call("updateApps", packages, (err) => {
       if (err) {
         window.alert(err.message);
       } else {
-        Meteor.call("dismissNotification", this._id);
+        dismissNotificationFromContext(this);
       }
     });
   },
 
   "click button[name=dismissUpdates]"(evt) {
-    Meteor.call("dismissNotification", this._id);
+    dismissNotificationFromContext(this);
   },
 });
 
@@ -238,13 +258,13 @@ Template.mailingListBonusNotificationItem.events({
       if (err) {
         window.alert("Error subscribing to list: " + err.message);
       } else {
-        Meteor.call("dismissNotification", this._id);
+        dismissNotificationFromContext(this);
       }
     });
   },
 
   "click button[type=button]"(evt) {
-    Meteor.call("dismissNotification", this._id);
+    dismissNotificationFromContext(this);
   },
 });
 
@@ -258,13 +278,13 @@ Template.referralNotificationItem.helpers({
 Template.referralNotificationItem.events({
   "click button[type=button]"(evt) {
     evt.preventDefault();
-    Meteor.call("dismissNotification", this._id);
+    dismissNotificationFromContext(this);
   },
 });
 
 Template.identityChangesNotificationItem.events({
   "click .notification-item"(evt) {
-    Meteor.call("dismissNotification", this._id);
+    dismissNotificationFromContext(this);
   },
 });
 
@@ -298,7 +318,7 @@ Template.backgroundedGrainNotificationItem.helpers({
 Template.backgroundedGrainNotificationItem.events({
   "click button[type=button]"(evt) {
     // Drops the backgrounded grain's wakelock.
-    Meteor.call("dismissNotification", this._id);
+    dismissNotificationFromContext(this);
     evt.preventDefault();
     evt.stopPropagation();
   },
@@ -314,7 +334,7 @@ Template.grainActivityNotificationItem.events({
   "click button[type=button]"(evt) {
     evt.preventDefault();
     evt.stopPropagation();
-    Meteor.call("dismissNotification", this._id);
+    dismissNotificationFromContext(this);
   },
 });
 

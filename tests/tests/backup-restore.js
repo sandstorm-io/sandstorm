@@ -16,9 +16,7 @@
 
 "use strict";
 
-var FirefoxProfile = require('firefox-profile');
 var utils = require('../utils');
-var Promise = require('es6-promise').Promise;
 var JSZip = require('jszip');
 var fs = require('fs');
 var path = require('path');
@@ -56,13 +54,6 @@ function rm_rfSync(pathToRemove) {
 function makeCleanDownloadsDirSync() {
   rm_rfSync(downloadsPath);
   fs.mkdirSync(downloadsPath);
-}
-
-function setProfile(browser, profile, callback) {
-  profile.encoded(function (encodedProfile) {
-    browser.options.desiredCapabilities['firefox_profile'] = encodedProfile;
-    callback();
-  });
 }
 
 function configureAutoDownload(browser) {
@@ -131,7 +122,7 @@ module.exports["Test backup and restore"] = function(browser) {
       });
       done();
     })
-    .click('#backupGrain', function() {
+    .clickTopbarButton("#backupGrain", function() {
       downloadPromise = new Promise(function(resolve, reject) {
         watcherPromise.then(resolve);
         // Expect the zip download to complete within 5 seconds of clicking the button.

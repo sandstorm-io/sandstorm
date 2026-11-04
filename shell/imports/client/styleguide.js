@@ -1,5 +1,5 @@
 import { Template } from "meteor/templating";
-import { Router } from "meteor/iron:router";
+import { Router } from "meteor/vlasky:galvanized-iron-router";
 
 Template.styleguide.events({
   "submit form"(evt) {

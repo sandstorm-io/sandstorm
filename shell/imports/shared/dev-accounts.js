@@ -15,11 +15,38 @@
 // limitations under the License.
 
 import { Accounts } from "meteor/accounts-base";
+import { Meteor } from "meteor/meteor";
 
 import { globalDb } from "/imports/db-deprecated";
 
+let serverDevAccountsEnabled = !!(Meteor.settings && Meteor.settings.public &&
+    Meteor.settings.public.allowDevAccounts);
+
+if (Meteor.isServer) {
+  Meteor.startup(() => {
+    globalDb.collections.settings.find({ _id: "devAccounts" }).observeAsync({
+      added(doc) {
+        serverDevAccountsEnabled = !!doc.value;
+      },
+      changed(newDoc) {
+        serverDevAccountsEnabled = !!newDoc.value;
+      },
+      removed() {
+        serverDevAccountsEnabled = !!(Meteor.settings && Meteor.settings.public &&
+            Meteor.settings.public.allowDevAccounts);
+      },
+    }).catch((err) => {
+      console.error("Failed to observe devAccounts setting:", err);
+    });
+  });
+}
+
 Accounts.loginServices.dev = {
   isEnabled: function () {
+    if (Meteor.isServer) {
+      return serverDevAccountsEnabled;
+    }
+
     return globalDb.allowDevAccounts();
   },
 

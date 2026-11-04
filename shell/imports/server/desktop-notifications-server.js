@@ -23,16 +23,14 @@ SandstormDb.periodicCleanup(120000, () => {
   // periodicCleanup doesn't like runs more frequent than once every two minutes
   const now = Date.now();
   const then = new Date(now - 30000); // Clear tokens older than 30 seconds.
-  globalDb.collections.desktopNotifications.find({
+  globalDb.collections.desktopNotifications.removeAsync({
     creationDate: { $lt: then },
-  }).forEach((doc) => {
-    globalDb.collections.desktopNotifications.remove({
-      _id: doc._id,
-    });
+  }).catch((err) => {
+    console.error("Failed cleaning desktop notifications:", err);
   });
 });
 
-Meteor.publish("desktopNotifications", function () {
+Meteor.publish("desktopNotifications", async function () {
   const subscribeTime = new Date();
 
   if (!this.userId) {
@@ -55,15 +53,17 @@ Meteor.publish("desktopNotifications", function () {
     },
   };
 
-  const sub = db.collections.desktopNotifications.find({
+  const sub = await db.collections.desktopNotifications.find({
     userId: this.userId,
     creationDate: { $gt: subscribeTime },
-  }).observe(callbacks);
+  }).observeAsync(callbacks);
 
   this.onStop(() => {
-    if (sub) {
-      sub.stop();
-    }
+    Promise.resolve(sub).then((s) => {
+      if (typeof s === "function") { s(); } else if (s && typeof s.stop === "function") s.stop();
+    }).catch((err) => {
+      console.error("Failed to stop desktopNotifications observer:", err);
+    });
   });
 
   this.ready();

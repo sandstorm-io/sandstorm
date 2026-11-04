@@ -1,3 +1,5 @@
+@use "sass:color";
+
 // Colors, mostly for the toolbar/navbar, but perhaps reusable elsewhere.
 
 // The purple that we use for
@@ -10,7 +12,7 @@ $focus-outline-color: $sandstorm-purple-color;
 $half-focus-outline-color: rgba(118, 47, 135, 0.5);
 
 // The color to use for your border when you want to faintly outline something.
-$generic-border-color: darken(white, 30%);
+$generic-border-color: color.adjust(white, $lightness: -30%);
 
 // Colors for success/error message box backgrounds.
 $error-background-color: #ffdddd;
@@ -70,8 +72,8 @@ $default-table-header-border-color: #ffffff;
 $default-table-row-background-color: #ffffff;
 $default-table-row-foreground-color: #000000;
 $default-table-row-background-color-hover: #e8e8e8;
-$default-table-row-action-background-color: lighten($sandstorm-purple-color, 53%);
-$default-table-row-action-background-color-hover: lighten($sandstorm-purple-color, 40%);
+$default-table-row-action-background-color: color.adjust($sandstorm-purple-color, $lightness: 53%);
+$default-table-row-action-background-color-hover: color.adjust($sandstorm-purple-color, $lightness: 40%);
 
 // Default text input field colors
 $default-textinput-background-color: #ffffff;

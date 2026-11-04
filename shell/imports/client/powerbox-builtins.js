@@ -17,11 +17,10 @@
 import { Meteor } from "meteor/meteor";
 import { Template } from "meteor/templating";
 import { ReactiveVar } from "meteor/reactive-var";
-import { _ } from "meteor/underscore";
 import { Accounts } from "meteor/accounts-base";
 
 const prepareViewInfoForDisplay = function (viewInfo) {
-  const result = _.clone(viewInfo || {});
+  const result = { ...(viewInfo || {}) };
   if (result.permissions) indexElements(result.permissions);
   // It's essential that we index the roles *before* hiding obsolete roles,
   // or else we'll produce the incorrect roleAssignment for roles that are
@@ -43,7 +42,7 @@ const indexElements = function (arr) {
 
 const removeObsolete = function (arr) {
   // remove entries from the list that are flagged as obsolete
-  return _.filter(arr, function (el) {
+  return arr.filter(function (el) {
     return !el.obsolete;
   });
 };

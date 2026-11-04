@@ -20,11 +20,11 @@ import Url from "url";
 
 import { Meteor } from "meteor/meteor";
 import { Match, check } from "meteor/check";
-import { _ } from "meteor/underscore";
+import { pick, findWhere } from "/imports/shared/collection-utils";
 import { Random } from "meteor/random";
 
 import { hashSturdyRef, checkRequirements, fetchApiToken } from "/imports/server/persistent";
-import { inMeteor, waitPromise } from "/imports/server/async-helpers";
+import { inMeteor } from "/imports/server/async-helpers";
 import { ssrfSafeLookup } from "/imports/server/networking";
 import Capnp from "/imports/server/capnp";
 import { SandstormDb } from "/imports/sandstorm-db/db";
@@ -48,20 +48,27 @@ class SessionContextImpl {
   }
 
   claimRequest(sturdyRef, requiredPermissions) {
-    return inMeteor(() => {
+    return inMeteor(async () => {
       if (!this.sessionId) throw new Error("API sessions can't use powerbox");
 
-      const token = fetchApiToken(globalDb, sturdyRef,
-        { "owner.clientPowerboxRequest.sessionId": this.sessionId });
+      const session = await globalDb.collections.sessions.findOneAsync({ _id: this.sessionId });
+      if (!session) {
+        throw new Error("no such session");
+      }
+
+      let token = await fetchApiToken(globalDb, sturdyRef,
+          { "owner.clientPowerboxRequest.sessionId": this.sessionId });
+
+      if (!token) {
+        // Meteor 3 reconnection timing can rotate UI sessions between offer and claim.
+        // Allow claim when the token targets the same requesting grain.
+        token = await fetchApiToken(globalDb, sturdyRef, {
+          "owner.clientPowerboxRequest.grainId": this.grainId,
+        });
+      }
 
       if (!token) {
         throw new Error("no such token");
-      }
-
-      const session = globalDb.collections.sessions.findOne({ _id: this.sessionId });
-
-      if (!session) {
-        throw new Error("no such session");
       }
 
       // Honor `requiredPermissions`.
@@ -94,7 +101,7 @@ class SessionContextImpl {
                         "doesn't have a token.");
       }
 
-      return restoreInternal(
+      return await globalThis.restoreInternal(
           globalDb, sturdyRef,
           { clientPowerboxRequest: Match.ObjectIncluding({ sessionId: this.sessionId }) },
           requirements, token);
@@ -102,10 +109,10 @@ class SessionContextImpl {
   }
 
   _offerOrFulfill(isFulfill, cap, requiredPermissions, descriptor, displayInfo) {
-    return inMeteor(() => {
+    return inMeteor(async () => {
       if (!this.sessionId) throw new Error("API sessions can't use powerbox");
 
-      const session = globalDb.collections.sessions.findOne({ _id: this.sessionId });
+      const session = await globalDb.collections.sessions.findOneAsync({ _id: this.sessionId });
 
       if (!session.identityId && !session.hashedToken) {
         throw new Error("Session has neither an identityId nor a hashedToken.");
@@ -172,11 +179,12 @@ class SessionContextImpl {
 
       const requirement = { permissionsHeld };
 
-      checkRequirements(globalDb, [requirement]);
+      await checkRequirements(globalDb, [requirement]);
 
       const save = castedCap.save(apiTokenOwner);
-      const sturdyRef = waitPromise(save).sturdyRef;
-      globalDb.collections.apiTokens.update({ _id: hashSturdyRef(sturdyRef) }, { $push: { requirements: requirement } });
+      const sturdyRef = (await save).sturdyRef;
+      await globalDb.collections.apiTokens.updateAsync(
+          { _id: hashSturdyRef(sturdyRef) }, { $push: { requirements: requirement } });
 
       let powerboxView;
       if (isFulfill) {
@@ -190,18 +198,18 @@ class SessionContextImpl {
       } else if (isUiView) {
         if (session.identityId) {
           // Deduplicate.
-          const newApiToken = fetchApiToken(globalDb, sturdyRef.toString());
+          const newApiToken = await fetchApiToken(globalDb, sturdyRef.toString());
           let tokenId = newApiToken._id;
-          const dupeQuery = _.pick(newApiToken, "grainId", "roleAssignment", "requirements",
+          const dupeQuery = pick(newApiToken, "grainId", "roleAssignment", "requirements",
                                    "parentToken", "parentTokenKey", "accountId", "accountId");
           dupeQuery._id = { $ne: newApiToken._id };
           dupeQuery["owner.user.accountId"] = this.accountId;
           dupeQuery.trashed = { $exists: false };
           dupeQuery.revoked = { $exists: false };
 
-          const dupeToken = globalDb.collections.apiTokens.findOne(dupeQuery);
+          const dupeToken = await globalDb.collections.apiTokens.findOneAsync(dupeQuery);
           if (dupeToken) {
-            globalDb.removeApiTokens({ _id: tokenId });
+            await globalDb.removeApiTokens({ _id: tokenId });
             tokenId = dupeToken._id;
           }
 
@@ -217,7 +225,7 @@ class SessionContextImpl {
         };
       }
 
-      globalDb.collections.sessions.update({ _id: this.sessionId },
+      await globalDb.collections.sessions.updateAsync({ _id: this.sessionId },
         {
           $set: {
             powerboxView: powerboxView,
@@ -237,13 +245,13 @@ class SessionContextImpl {
 
   activity(event) {
     return inMeteor(() => {
-      logActivity(this.grainId, this.accountId || "anonymous", event);
+      return globalThis.logActivity(this.grainId, this.accountId || "anonymous", event);
     });
   }
 }
 
 Meteor.methods({
-  finishPowerboxRequest(sessionId, webkeyUrl, saveLabel, obsolete, grainId) {
+  async finishPowerboxRequest(sessionId, webkeyUrl, saveLabel, obsolete, grainId) {
     check(sessionId, String);
     check(webkeyUrl, String);
     check(saveLabel, Match.OneOf(undefined, null, String));
@@ -277,8 +285,8 @@ Meteor.methods({
       throw new Meteor.Error(400, "Invalid webkey: token doesn't match hostname.");
     }
 
-    const cap = restoreInternal(db, token,
-                                Match.Optional({ webkey: Match.Optional(Match.Any) }), []).cap;
+    const cap = (await globalThis.restoreInternal(db, token,
+        Match.Optional({ webkey: Match.Optional(Match.Any) }), [])).cap;
     const castedCap = cap.castAs(SystemPersistent);
     const owner = {
       clientPowerboxRequest: {
@@ -293,24 +301,24 @@ Meteor.methods({
     }
 
     const save = castedCap.save(owner);
-    const sturdyRef = waitPromise(save).sturdyRef;
+    const sturdyRef = (await save).sturdyRef;
     return sturdyRef.toString();
   },
 
-  finishPowerboxOffer(sessionId) {
+  async finishPowerboxOffer(sessionId) {
     check(sessionId, String);
 
-    globalDb.collections.sessions.update({ _id: sessionId }, { $unset: { powerboxView: null } });
+    await globalDb.collections.sessions.updateAsync({ _id: sessionId }, { $unset: { powerboxView: null } });
   },
 
-  getViewInfoForApiToken(apiTokenId) {
+  async getViewInfoForApiToken(apiTokenId) {
     check(apiTokenId, String);
-    const token = globalDb.collections.apiTokens.findOne(apiTokenId);
+    const token = await globalDb.collections.apiTokens.findOneAsync(apiTokenId);
     if (!token) {
       throw new Meteor.Error(400, "No such token.");
     }
 
-    const grain = globalDb.collections.grains.findOne(token.grainId);
+    const grain = await globalDb.collections.grains.findOneAsync(token.grainId);
     if (!grain) {
       throw new Meteor.Error(500, "No grain found for token.");
     }
@@ -324,14 +332,14 @@ class HackSessionContextImpl extends SessionContextImpl {
     super(grainId, sessionId, accountId, tabId);
   }
 
-  _getPublicId() {
+  async _getPublicId() {
     // Get the grain's public ID, assigning a new one if it doesn't yet have one.
     //
     // Must be called in a Meteor context.
 
     while (!this.publicId) {
       // We haven't looked up the public ID yet.
-      const grain = globalDb.collections.grains.findOne(this.grainId, { fields: { publicId: 1 } });
+      const grain = await globalDb.collections.grains.findOneAsync(this.grainId, { fields: { publicId: 1 } });
       if (!grain) throw new Error("Grain does not exist.");
 
       if (grain.publicId) {
@@ -340,7 +348,7 @@ class HackSessionContextImpl extends SessionContextImpl {
         // The grain doesn't have a public ID yet. Generate one.
         const candidate = generateRandomHostname(20);
 
-        if (globalDb.collections.grains.findOne({ publicId: candidate })) {
+        if (await globalDb.collections.grains.findOneAsync({ publicId: candidate })) {
           // This should never ever happen.
           console.error("CRITICAL PROBLEM: Public ID collision. " +
                         "CSPRNG is bad or has insufficient entropy.");
@@ -349,8 +357,9 @@ class HackSessionContextImpl extends SessionContextImpl {
 
         // Carefully perform an update that becomes a no-op if anyone else has assigned a public ID
         // simultaneously.
-        if (globalDb.collections.grains.update({ _id: this.grainId, publicId: { $exists: false } },
-                          { $set: { publicId: candidate } }) > 0) {
+        if (await globalDb.collections.grains.updateAsync(
+            { _id: this.grainId, publicId: { $exists: false } },
+            { $set: { publicId: candidate } }) > 0) {
           // We won the race.
           this.publicId = candidate;
         }
@@ -360,24 +369,24 @@ class HackSessionContextImpl extends SessionContextImpl {
     return this.publicId;
   }
 
-  _getAddress() {
+  async _getAddress() {
     // Get the grain's outgoing e-mail address.
     //
     // Must be called in a Meteor context.
 
-    return this._getPublicId() + "@" + HOSTNAME;
+    return (await this._getPublicId()) + "@" + HOSTNAME;
   }
 
-  _getUserAddress() {
+  async _getUserAddress() {
     // Get the user's e-mail address.
     //
     // Must be called in a Meteor context.
 
-    const grain = globalDb.collections.grains.findOne(this.grainId, { fields: { userId: 1 } });
+    const grain = await globalDb.collections.grains.findOneAsync(this.grainId, { fields: { userId: 1 } });
 
-    const user = Meteor.users.findOne({_id: grain.userId});
+    const user = await Meteor.users.findOneAsync({_id: grain.userId});
 
-    const email = _.findWhere(SandstormDb.getUserEmails(user), { primary: true });
+    const email = findWhere(await SandstormDb.getUserEmailsAsync(user), { primary: true });
 
     const result = {};
     if (email) {
@@ -392,27 +401,29 @@ class HackSessionContextImpl extends SessionContextImpl {
   }
 
   send(email) {
-    return hackSendEmail(this, email);
+    return globalThis.hackSendEmail(this, email);
   }
 
   getPublicId() {
-    return inMeteor((function () {
+    return inMeteor((async function () {
       const result = {};
 
-      result.publicId = this._getPublicId();
+      result.publicId = await this._getPublicId();
       result.hostname = HOSTNAME;
       result.autoUrl = ROOT_URL.protocol + "//" + makeWildcardHost(result.publicId);
 
-      const grain = globalDb.collections.grains.findOne(this.grainId, { fields: { userId: 1 } });
-      result.isDemoUser = Meteor.users.findOne(grain.userId).expires ? true : false;
+      const grain = await globalDb.collections.grains
+          .findOneAsync(this.grainId, { fields: { userId: 1 } });
+      const user = await Meteor.users.findOneAsync(grain.userId);
+      result.isDemoUser = user.expires ? true : false;
 
       return result;
     }).bind(this));
   }
 
   getUserAddress() {
-    return inMeteor((function () {
-      return this._getUserAddress();
+    return inMeteor((async function () {
+      return await this._getUserAddress();
     }).bind(this));
   }
 
@@ -445,7 +456,7 @@ export const makeHackSessionContext = (grainId, sessionId, accountId, tabId) => 
 
 const HOSTNAME_CHARS = "abcdefghijklmnopqrstuvwxyz0123456789";
 
-generateRandomHostname = (length) => {
+const generateRandomHostname = (length) => {
   // Generate a random unique name suitable for use in a hostname.
 
   const digits = [];

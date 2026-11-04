@@ -7,11 +7,46 @@ import { globalDb } from "/imports/db-deprecated";
 
 const ADMIN_TOKEN_EXPIRATION_TIME = 60 * 60 * 1000;
 const SANDSTORM_ADMIN_TOKEN = SANDSTORM_VARDIR + "/adminToken";
+let currentSetupSession = null;
 
-function clearAdminToken(token) {
-  if (tokenIsSetupSession(token)) {
+Meteor.startup(() => {
+  globalDb.collections.setupSession.find({ _id: "current-session" }).observeAsync({
+    added(doc) {
+      currentSetupSession = doc;
+    },
+    changed(newDoc) {
+      currentSetupSession = newDoc;
+    },
+    removed() {
+      currentSetupSession = null;
+    },
+  }).catch((err) => {
+    console.error("Failed to observe setup session state:", err);
+  });
+});
+
+async function tokenIsSetupSessionAsync(token) {
+  if (!token) return false;
+
+  const setupSession = await globalDb.collections.setupSession.findOneAsync({ _id: "current-session" });
+  if (setupSession) {
     const hash = Crypto.createHash("sha256").update(token).digest("base64");
-    globalDb.collections.setupSession.remove({
+    const now = new Date();
+    const sessionLifetime = 24 * 60 * 60 * 1000; // length of setup session validity, in milliseconds: 1 day
+    return setupSession.hashedSessionId === hash && ((now - setupSession.creationDate) < sessionLifetime);
+  }
+
+  return false;
+}
+
+async function clearAdminToken(token) {
+  if (token) {
+    const hash = Crypto.createHash("sha256").update(token).digest("base64");
+    if (currentSetupSession && currentSetupSession.hashedSessionId === hash) {
+      currentSetupSession = null;
+    }
+
+    await globalDb.collections.setupSession.removeAsync({
       _id: "current-session",
       hashedSessionId: hash,
     });
@@ -39,7 +74,7 @@ function tokenIsValid(token) {
 
 function tokenIsSetupSession(token) {
   if (token) {
-    const setupSession = globalDb.collections.setupSession.findOne({ _id: "current-session" });
+    const setupSession = currentSetupSession;
     if (setupSession) {
       const hash = Crypto.createHash("sha256").update(token).digest("base64");
       const now = new Date();
@@ -53,11 +88,12 @@ function tokenIsSetupSession(token) {
   return false;
 }
 
-function checkAuth(token) {
+async function checkAuthAsync(db, userId, token) {
   check(token, Match.OneOf(undefined, null, String));
-  if (!isAdmin() && !tokenIsValid(token) && !tokenIsSetupSession(token)) {
+  if (!(userId && await db.isAdminById(userId)) && !tokenIsValid(token) &&
+      !await tokenIsSetupSessionAsync(token)) {
     throw new Meteor.Error(403, "User must be admin or provide a valid token");
   }
 }
 
-export { checkAuth, clearAdminToken, tokenIsValid, tokenIsSetupSession };
+export { checkAuthAsync, clearAdminToken, tokenIsValid, tokenIsSetupSession, tokenIsSetupSessionAsync };

@@ -2,7 +2,6 @@ import { Meteor } from "meteor/meteor";
 import { Template } from "meteor/templating";
 import { ReactiveVar } from "meteor/reactive-var";
 import { Random } from "meteor/random";
-import { _ } from "meteor/underscore";
 
 import { ContactProfiles } from "/imports/client/contacts";
 
@@ -33,11 +32,11 @@ const generateAutoCompleteContacts = function (template) {
   let results;
   if (currentText.lastIndexOf("@", 0) === 0) {
     const textWithoutAt = currentText.slice(1);
-    results = _.filter(contacts, function (contact) {
+    results = contacts.filter(function (contact) {
       return contact.profile.handle.toLowerCase().indexOf(textWithoutAt) !== -1;
     });
   } else {
-    results = _.filter(contacts, function (contact) {
+    results = contacts.filter(function (contact) {
       const intrinsicNames = contact.intrinsicNames;
       for (let i = 0; i < intrinsicNames.length; i++) {
         if (intrinsicNames[i].service.toLowerCase().indexOf(currentText) !== -1) return true;
@@ -82,12 +81,12 @@ const selectContact = function (template, highlightedContact, inputBox) {
 
 const deleteSelected = function (contact, template) {
   const contacts = template.selectedContacts.get();
-  template.selectedContacts.set(_.filter(contacts, function (selectedContact) {
+  template.selectedContacts.set(contacts.filter(function (selectedContact) {
     return selectedContact._id !== contact._id;
   }));
 
   const selectedContactsIds = template.selectedContactsIds.get();
-  template.selectedContactsIds.set(_.filter(selectedContactsIds, function (selectedContactId) {
+  template.selectedContactsIds.set(selectedContactsIds.filter(function (selectedContactId) {
     return selectedContactId !== contact._id;
   }));
 
@@ -213,7 +212,7 @@ Template.contactInputBox.events({
       }
 
       const contactId = template.highlightedContact.get()._id;
-      const ids = _.pluck(contacts, "_id");
+      const ids = contacts.map(contact => contact._id);
       const index = ids.indexOf(contactId);
       let newContact = null;
       if (index >= 0) {
@@ -239,7 +238,7 @@ Template.contactInputBox.events({
       }
 
       const contactId = template.highlightedContact.get()._id;
-      const ids = _.pluck(contacts, "_id");
+      const ids = contacts.map(contact => contact._id);
       const index = ids.indexOf(contactId);
       let newContact = null;
       if (index >= 0) {

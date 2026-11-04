@@ -40,6 +40,7 @@
 
 // sandstorm-db.
 import "../imports/sandstorm-db/db";
+import "../imports/server/configure-http";
 import "../imports/sandstorm-db/profile";
 import "../imports/sandstorm-db/scheduled-jobs-db";
 
@@ -80,13 +81,13 @@ import "../imports/server/drivers/external-ui-view";
 import "../imports/server/drivers/ip";
 import "../imports/server/drivers/mail";
 import "../imports/db-deprecated";
+import "../imports/server/core";
 import "../imports/server/00-startup";
 import "../imports/server/account-suspension";
 import "../imports/server/acme";
 import "../imports/server/admin-server";
 import "../imports/server/backup";
 import "../imports/server/contacts-server";
-import "../imports/server/core";
 import "../imports/server/demo-server";
 import "../imports/server/desktop-notifications-server";
 import "../imports/server/dev-accounts-server";

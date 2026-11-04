@@ -20,7 +20,7 @@ import { Random } from "meteor/random";
 import { Mongo } from "meteor/mongo";
 import { Template } from "meteor/templating";
 import { ReactiveVar } from "meteor/reactive-var";
-import { _ } from "meteor/underscore";
+import { sortBy } from "/imports/shared/collection-utils";
 
 import { identiconForApp } from "/imports/sandstorm-identicons/helpers";
 import { SandstormDb } from "/imports/sandstorm-db/db";
@@ -160,10 +160,10 @@ export class SandstormPowerboxRequest {
     });
 
     const now = new Date();
-    return _.chain(cards)
-        .filter(compileMatchFilter(this._filter.get()))
-        .sortBy(card => -((card.grainInfo || {}).lastUsed || now).getTime())
-        .value();
+    return sortBy(
+      cards.filter(compileMatchFilter(this._filter.get())),
+      card => -((card.grainInfo || {}).lastUsed || now).getTime()
+    );
   }
 
   collectGrainInfo(grainId) {
@@ -270,10 +270,9 @@ const compileMatchFilter = function (searchString) {
 
   return function matchFilter(item) {
     if (searchKeys.length === 0) return true;
-    return _.chain(searchKeys)
-        .map((searchKey) => matchesCard(searchKey, (item || {}).grainInfo, item.option.searchTerms))
-        .reduce(function (a, b) { return a && b; })
-        .value();
+    return searchKeys.every(
+      searchKey => matchesCard(searchKey, (item || {}).grainInfo, item.option.searchTerms)
+    );
   };
 };
 

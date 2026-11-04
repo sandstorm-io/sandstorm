@@ -2,15 +2,15 @@ import { Meteor } from "meteor/meteor";
 import { Template } from "meteor/templating";
 import { ReactiveVar } from "meteor/reactive-var";
 import { Session } from "meteor/session";
-import { Router } from "meteor/iron:router";
-import { _ } from "meteor/underscore";
-import { TAPi18n } from "meteor/tap:i18n";
+import { Router } from "meteor/vlasky:galvanized-iron-router";
+import { countBy, groupBy, indexBy, sortBy } from "/imports/shared/collection-utils";
+import { TAPi18n } from "/imports/tapi18n";
 
 import { introJs } from "intro.js";
 import { isDevelopmentServer } from "/imports/client/dev-mode";
 import { SandstormDb } from "/imports/sandstorm-db/db";
 
-SandstormAppList = function (db, quotaEnforcer) {
+const SandstormAppList = function (db, quotaEnforcer) {
   this._filter = new ReactiveVar("");
   this._sortOrder = new ReactiveVar([["appTitle", 1]]);
   this._staticHost = db.makeWildcardHost("static");
@@ -18,6 +18,7 @@ SandstormAppList = function (db, quotaEnforcer) {
   this._quotaEnforcer = quotaEnforcer;
   this._uninstalling = new ReactiveVar(false);
 };
+globalThis.SandstormAppList = SandstormAppList;
 
 const matchesApp = function (needle, app) {
   const pkg = app && app.pkg;
@@ -43,10 +44,7 @@ const compileMatchFilter = function (searchString) {
 
   return function matchFilter(item) {
     if (searchKeys.length === 0) return true;
-    return _.chain(searchKeys)
-        .map(function (searchKey) {return matchesApp(searchKey, item); })
-        .reduce(function (a, b) {return a && b; })
-        .value();
+    return searchKeys.every(searchKey => matchesApp(searchKey, item));
   };
 };
 
@@ -66,10 +64,9 @@ const matchApps = function (searchString) {
 
   const db = Template.instance().data._db;
   const allActions = db.currentUserActions().fetch();
-  const appsFromUserActionsByAppId = _.chain(allActions)
-      .groupBy("packageId")
-      .pairs()
-      .map(function (pair) {
+  const actionsByPackageId = groupBy(allActions, "packageId");
+  const appsFromUserActionsByAppId = indexBy(
+    Object.entries(actionsByPackageId).map(function (pair) {
         const pkg = db.collections.packages.findOne(pair[0]);
         return {
           packageId: pair[0],
@@ -78,11 +75,11 @@ const matchApps = function (searchString) {
           pkg: pkg,
           dev: false,
         };
-      })
-      .indexBy("appId")
-      .value();
-  const devPackagesByAppId = _.chain(db.collections.devPackages.find().fetch())
-      .map(function (devPackage) {
+      }),
+    "appId"
+  );
+  const devPackagesByAppId = indexBy(
+    db.collections.devPackages.find().fetch().map(function (devPackage) {
         return {
           packageId: devPackage._id,
           actions: devPackage.manifest.actions,
@@ -90,24 +87,18 @@ const matchApps = function (searchString) {
           pkg: devPackage,
           dev: true,
         };
-      })
-      .indexBy("appId")
-      .value();
+      }),
+    "appId"
+  );
   // Merge, making sure that dev apps overwrite user actions if they share appId
-  const allApps = _.chain({})
-                 .extend(appsFromUserActionsByAppId, devPackagesByAppId)
-                 .values()
-                 .value();
-
-  const matchingApps = _.chain(allApps)
-                      .filter(filter)
-                      .value();
-  return matchingApps;
+  return Object.values(Object.assign({}, appsFromUserActionsByAppId, devPackagesByAppId))
+      .filter(filter);
 };
 
 Template.sandstormAppListPage.helpers({
   setDocumentTitle: function () {
     const ref = Template.instance().data;
+    if (!ref || !ref._db) return;
     document.title = "Apps · " + ref._db.getServerTitle();
   },
 
@@ -156,16 +147,14 @@ Template.sandstormAppListPage.helpers({
     const ref = Template.instance().data;
     // Count the number of grains owned by this user created by each app.
     const actions = ref._db.currentUserActions().fetch();
-    const appIds = _.pluck(actions, "appId");
+    const appIds = actions.map(action => action.appId);
     const grains = ref._db.currentUserGrains().fetch();
-    const appCounts = _.countBy(grains, function (x) { return x.appId; });
+    const appCounts = countBy(grains, function (x) { return x.appId; });
     // Sort apps by the number of grains created, descending.
     const apps = matchApps(ref._filter.get());
-    return _.chain(apps)
-        .sortBy(function (app) { return appCounts[app.appId] || 0; })
+    return sortBy(apps, function (app) { return appCounts[app.appId] || 0; })
         .reverse()
-        .map(appToTemplateObject)
-        .value();
+        .map(appToTemplateObject);
   },
 
   assetPath: function (assetId) {
@@ -231,7 +220,7 @@ Template.sandstormAppListPage.events({
     const db = Template.instance().data._db;
     const appId = this.appId;
     db.collections.userActions.find({ appId: this.appId }).forEach(function (action) {
-      Meteor.call("removeUserAction", action._id);
+      globalThis.callMeteor("removeUserAction", action._id);
     });
   },
 
@@ -267,7 +256,9 @@ Template.sandstormAppListPage.onDestroyed(() => {
 
 Template.sandstormAppListPage.onRendered(() => {
   const instance = Template.instance();
-  const db = instance.data._db;
+  const ref = instance && instance.data;
+  const db = ref && ref._db;
+  if (!db) return;
   // Set up automatically-opening hint explaining what installing is, if zero apps installed.
   // Only show it if the user is allowed to install apps.
   if (!isDevelopmentServer() &&

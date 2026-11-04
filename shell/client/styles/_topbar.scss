@@ -1,3 +1,10 @@
+@use "icons";
+@use "sass:color";
+@use "sass:math";
+@use "colors";
+@use "geometry";
+@use "partials";
+
 @mixin webfont-icon ($color, $mobile-color, $font-size, $mobile-font-size) {
   text-align: center;
   &:before {
@@ -5,17 +12,17 @@
     color: $color;
     font-family: "icons";
 
-    @media #{$mobile} {
+    @media #{geometry.$mobile} {
       font-size: $mobile-font-size;
       color: $mobile-color;
     }
   }
 }
 
-@media #{$mobile} {
+@media #{geometry.$mobile} {
   // Only show the menu button on mobile
   body>.menu-button {
-    background-color: $topbar-background-color;
+    background-color: colors.$topbar-background-color;
     display: inline-block;
     vertical-align: top;
     background-image:url(/menu.svg);
@@ -32,7 +39,7 @@
     left: 0;
     top: 0;
     &:hover {
-      background-color: $topbar-background-color-hover;
+      background-color: colors.$topbar-background-color-hover;
     }
     &.expanded {
       z-index: 101;
@@ -41,7 +48,7 @@
 }
 
 body>.topbar-update {
-  @include unstyled-button();
+  @include partials.unstyled-button();
   position: fixed;
   width: 100%;
   height: 32px;
@@ -53,7 +60,7 @@ body>.topbar-update {
   font-weight: bold;
   line-height: 32px;
 
-  @media #{$mobile} {
+  @media #{geometry.$mobile} {
     line-height: 24px;
     height: 48px;
     left: 0;
@@ -71,7 +78,7 @@ body>.topbar {
 
   line-height: 32px;
   height: 32px;
-  background-color: $topbar-background-color;
+  background-color: colors.$topbar-background-color;
   color: #ccc;
 
   // Using 0 rather than CSS default ("auto") allows introjs to highlight elements in the topbar.
@@ -81,7 +88,7 @@ body>.topbar {
     display: none;
   }
 
-  @media #{$mobile} {
+  @media #{geometry.$mobile} {
     line-height: 48px;
     height: 48px;
     // TODO(now): figure out if these colors should be different
@@ -102,9 +109,9 @@ body>.topbar {
   %topbar-button {
     // Common styling for buttons in the topbar (on desktop).
 
-    @include unstyled-button();
+    @include partials.unstyled-button();
 
-    @media #{$desktop} {
+    @media #{geometry.$desktop} {
       display: block;
       height: 100%;
       margin: 0;
@@ -112,7 +119,7 @@ body>.topbar {
       overflow: hidden;
 
       &:hover {
-        background-color: $topbar-background-color-hover;
+        background-color: colors.$topbar-background-color-hover;
       }
     }
   }
@@ -123,7 +130,7 @@ body>.topbar {
 
     @extend %topbar-button;
 
-    @media #{$desktop} {
+    @media #{geometry.$desktop} {
       background-position: center;
       background-repeat: no-repeat;
       background-size: 24px 24px;
@@ -138,9 +145,9 @@ body>.topbar {
     // Common styling for topbar buttons that are displayed as a bare icon with no text label
     // (on mobile).
 
-    @include unstyled-button();
+    @include partials.unstyled-button();
 
-    @media #{$mobile} {
+    @media #{geometry.$mobile} {
       display: block;
       margin: 0;
       padding: 0;
@@ -153,18 +160,18 @@ body>.topbar {
       height: 48px;
 
       &:hover {
-        background-color: $topbar-background-color-hover;
+        background-color: colors.$topbar-background-color-hover;
       }
     }
   }
 
   %hamburger-menu-item {
     // Common styling for topbar items that are displayed as a hamburger menu item on mobile.
-    @media #{$desktop} {
-      height: $topbar-height-desktop;
+    @media #{geometry.$desktop} {
+      height: geometry.$topbar-height-desktop;
     }
 
-    @media #{$mobile} {
+    @media #{geometry.$mobile} {
       display: block;
       width: 100%;
       background-position: 8px center;
@@ -174,12 +181,12 @@ body>.topbar {
       text-align: left;
       padding-left: 48px;
       font-size: 14pt;
-      height: $topbar-height-mobile;
+      height: geometry.$topbar-height-mobile;
       font-weight: normal;
       text-decoration: none;
 
       &:hover {
-        background-color: $topbar-background-color-hover;
+        background-color: colors.$topbar-background-color-hover;
       }
     }
   }
@@ -195,7 +202,7 @@ body>.topbar {
       @extend %topbar-button;
     }
 
-    @media #{$mobile} {
+    @media #{geometry.$mobile} {
       display: block;
       float: none;
       width: 100%;
@@ -208,15 +215,15 @@ body>.topbar {
   >.menubar {
     padding-left: 0;
     margin-left: 0;
-    border-bottom: 1px solid $topbar-border-color;
+    border-bottom: 1px solid colors.$topbar-border-color;
     overflow: hidden;
-    @media #{$desktop} {
-      height: $topbar-height-desktop;
+    @media #{geometry.$desktop} {
+      height: geometry.$topbar-height-desktop;
       &.shrink-desktop {
         >.home-button {
-          width: $navbar-width-desktop-shrunk !important;
+          width: geometry.$navbar-width-desktop-shrunk !important;
           >a {
-            width: $navbar-width-desktop-shrunk !important;
+            width: geometry.$navbar-width-desktop-shrunk !important;
             padding-right: 0;
           }
         }
@@ -224,19 +231,19 @@ body>.topbar {
     }
 
     >.home-button {
-      @media #{$desktop} {
-        width: $navbar-width-desktop;
+      @media #{geometry.$desktop} {
+        width: geometry.$navbar-width-desktop;
         transition: width 0.2s;
         float:left;
         overflow: hidden;
 
         >a {
-          @include overflow-ellipsis();
+          @include partials.overflow-ellipsis();
           color: inherit;
           margin: 0px;
           text-decoration: none;
-          height: $topbar-height-desktop;
-          padding-left: $navbar-width-desktop-shrunk;
+          height: geometry.$topbar-height-desktop;
+          padding-left: geometry.$navbar-width-desktop-shrunk;
           padding-right: 8px;
 
           background-image: url("/icon.png");
@@ -245,13 +252,13 @@ body>.topbar {
           background-size: auto, 16px 8px;
 
           &:hover {
-            background-color: $topbar-background-color-hover;
-            color: $topbar-foreground-color-hover;
+            background-color: colors.$topbar-background-color-hover;
+            color: colors.$topbar-foreground-color-hover;
           }
         }
       }
 
-      @media #{$mobile} {
+      @media #{geometry.$mobile} {
         // Hide home link -- it's not very useful anyway.
         display: none;
       }
@@ -260,17 +267,17 @@ body>.topbar {
     >.title {
       padding-left: 8px;
       overflow: hidden;
-      @media #{$desktop} {
+      @media #{geometry.$desktop} {
         // Heuristically try to prevent the title from bumping everything else off the top bar.
         // The size of 700px was empirically found to provide enough space for "everything else".
         max-width: calc(100% - 700px);
         border-left: 1px solid #666;
       }
-      @media #{$mobile} {
+      @media #{geometry.$mobile} {
         width: 100%; // needs to span the whole row because the border-bottom is needed to draw
                      // the horizontal rule when the menu is expanded
-        background-color: $topbar-background-color;
-        color: $topbar-foreground-color;
+        background-color: colors.$topbar-background-color;
+        color: colors.$topbar-foreground-color;
         padding-left: 56px;
         font-size: 120%;
         position: fixed;
@@ -284,26 +291,26 @@ body>.topbar {
         display: inline-block;
         padding: 0 8px;
         margin-left: -8px;
-        @media #{$desktop} {
-          min-height: $topbar-height-desktop;
+        @media #{geometry.$desktop} {
+          min-height: geometry.$topbar-height-desktop;
         }
-        @media #{$mobile} {
-          min-height: $topbar-height-mobile;
+        @media #{geometry.$mobile} {
+          min-height: geometry.$topbar-height-mobile;
           max-width: calc(100% - 150px);
         }
 
         &:hover {
           cursor: pointer;
-          color: $topbar-foreground-color-hover;
-          background-color: $topbar-background-color-hover;
+          color: colors.$topbar-foreground-color-hover;
+          background-color: colors.$topbar-background-color-hover;
         }
 
         .main-title {
-          height: $topbar-height-desktop - 8px;
-          line-height: $topbar-height-desktop - 8px;
-          @media #{$mobile} {
-            height: $topbar-height-mobile - 12px;
-            line-height: $topbar-height-mobile - 12px;
+          height: geometry.$topbar-height-desktop - 8px;
+          line-height: geometry.$topbar-height-desktop - 8px;
+          @media #{geometry.$mobile} {
+            height: geometry.$topbar-height-mobile - 12px;
+            line-height: geometry.$topbar-height-mobile - 12px;
           }
         }
 
@@ -314,7 +321,7 @@ body>.topbar {
           font-size: 10px;
           margin-top: -4px;
 
-          @media #{$mobile} {
+          @media #{geometry.$mobile} {
             height: 12px;
             line-height: 12px;
             font-size: 12px;
@@ -325,7 +332,7 @@ body>.topbar {
     }
 
     >.grain-size {
-      @media #{$mobile} {
+      @media #{geometry.$mobile} {
         display: none;
       }
     }
@@ -339,7 +346,7 @@ body>.topbar {
         @extend .icon;
       }
 
-      @media #{$desktop} {
+      @media #{geometry.$desktop} {
         background-position: 2px center;
         color: #cccccc; // Have the text match the icon.
                         // This is the single place the button text is visible.
@@ -353,7 +360,7 @@ body>.topbar {
           vertical-align: top;
         }
       }
-      @media #{$mobile} {
+      @media #{geometry.$mobile} {
         background-position: 10px center;
         position: relative;
         &::before {
@@ -380,11 +387,11 @@ body>.topbar {
     >.who-has-access img { width: 20px; }
 
     >.admin-alert {
-      @media #{$desktop} {
+      @media #{geometry.$desktop} {
         float: right;
       }
 
-      @media #{$mobile} {
+      @media #{geometry.$mobile} {
         position: fixed;
         top: 0;
         right: 48px;
@@ -399,7 +406,7 @@ body>.topbar {
       }
 
       .alert {
-        background-color: $sandstorm-purple-color;
+        background-color: colors.$sandstorm-purple-color;
         color: white;
         text-decoration: none;
 
@@ -421,17 +428,17 @@ body>.topbar {
     }
 
     >.notifications {
-      @media #{$desktop} {
+      @media #{geometry.$desktop} {
         float: right;
       }
 
-      @media #{$mobile} {
+      @media #{geometry.$mobile} {
         position: fixed;
         top: 0;
         right: 0;
         width: 48px;
         height: 49px;
-        background-color: $topbar-background-color; // needed to cover an overflowing title
+        background-color: colors.$topbar-background-color; // needed to cover an overflowing title
         z-index: 3; /* above the title and rest of menu */
       }
 
@@ -455,7 +462,7 @@ body>.topbar {
           text-align: center;
           font-size: 8pt;
 
-          @media #{$mobile} {
+          @media #{geometry.$mobile} {
             top: 24px;
             left: 24px;
           }
@@ -473,13 +480,13 @@ body>.topbar {
           background-size: contain;
           background-repeat: no-repeat;
           background-position: center;
-          @media #{$desktop} {
+          @media #{geometry.$desktop} {
             width: 24px;
             height: 24px;
             top: 4px;
             left: 4px;
           }
-          @media #{$mobile} {
+          @media #{geometry.$mobile} {
             width: 32px;
             height: 32px;
             left: 8px;
@@ -488,7 +495,7 @@ body>.topbar {
         }
       }
 
-      @media #{$desktop} {
+      @media #{geometry.$desktop} {
         float: right;
         display: block;
 
@@ -502,7 +509,7 @@ body>.topbar {
         }
       }
 
-      @media #{$mobile} {
+      @media #{geometry.$mobile} {
         >button.show-popup {
           font-weight: normal;
         }
@@ -511,7 +518,7 @@ body>.topbar {
   }
 
   >.navbar {
-    @media #{$desktop} {
+    @media #{geometry.$desktop} {
       .navbar-shrink-item {
         &:hover {
           button.navbar-shrink {
@@ -522,17 +529,17 @@ body>.topbar {
       }
 
       button.navbar-shrink {
-        @include unstyled-button();
+        @include partials.unstyled-button();
         @include webfont-icon(#CCCCCC, #CCCCCC, 28px, 28px);
         display: block;
         width: 100%;
-        height: $navbar-shrink-button-height;
+        height: geometry.$navbar-shrink-button-height;
         border: 0px solid #303030;
-        border-left-width: ($navbar-width-desktop - $navbar-width-desktop-shrunk);
+        border-left-width: (geometry.$navbar-width-desktop - geometry.$navbar-width-desktop-shrunk);
         background-color: #606060;
         color: #ddd;
         text-align: center;
-        line-height: $navbar-shrink-button-height;
+        line-height: geometry.$navbar-shrink-button-height;
         padding: 0;
 
         transition: border-left-width 0.2s;
@@ -547,7 +554,7 @@ body>.topbar {
 
       &.shrink-desktop {
         // !important used to override other classes that might assign e.g. display: block
-        width: $navbar-width-desktop-shrunk !important;
+        width: geometry.$navbar-width-desktop-shrunk !important;
 
         button.navbar-shrink {
           border-left-width: 0;
@@ -574,24 +581,24 @@ body>.topbar {
 
       transition: width 0.2s;
     }
-    @media #{$mobile} {
+    @media #{geometry.$mobile} {
       li.navbar-shrink-item {
         display: none;
       }
     }
-    @media #{$desktop} {
+    @media #{geometry.$desktop} {
       position: fixed;
-      top: $topbar-height-desktop;
+      top: geometry.$topbar-height-desktop;
       bottom: 0px;
       left: 0px;
-      width: $navbar-width-desktop;
+      width: geometry.$navbar-width-desktop;
       background-color: #303030;
       color: #606060;
       overflow-y: auto;
       li {
         display: block;
         position: relative;
-        border-bottom: 1px solid $topbar-border-color;
+        border-bottom: 1px solid colors.$topbar-border-color;
         margin: 0;
         list-style-type: none;
 
@@ -599,7 +606,7 @@ body>.topbar {
           a {
             display: block;
             min-height: 32px;
-            padding-left: $navbar-width-desktop-shrunk;
+            padding-left: geometry.$navbar-width-desktop-shrunk;
             text-decoration: none;
             text-overflow: ellipsis;
             overflow: hidden;
@@ -617,20 +624,20 @@ body>.topbar {
           display: block;
           position: relative;
           background-repeat: no-repeat;
-          background-position: (($navbar-width-desktop-shrunk - 24px) / 2) center;
+          background-position: math.div(geometry.$navbar-width-desktop-shrunk - 24px, 2) center;
           background-size: 24px 24px;
           font-size: 150%;
           line-height: 48px;
           height: 48px;
-          background-color: $topbar-background-color;
-          color: $topbar-foreground-color;
+          background-color: colors.$topbar-background-color;
+          color: colors.$topbar-foreground-color;
           &:hover {
-            background-color: $topbar-background-color-hover;
-            color: $topbar-foreground-color-hover;
+            background-color: colors.$topbar-background-color-hover;
+            color: colors.$topbar-foreground-color-hover;
           }
           &.current, &.current:hover {
-            background-color: $topbar-background-color-active;
-            color: $topbar-foreground-color-active;
+            background-color: colors.$topbar-background-color-active;
+            color: colors.$topbar-foreground-color-active;
           }
         }
         &.navitem-open-grain {
@@ -659,7 +666,7 @@ body>.topbar {
         }
       }
     }
-    @media #{$mobile} {
+    @media #{geometry.$mobile} {
       position: relative;
       li {
         font-size: 14pt;
@@ -717,32 +724,32 @@ body>.topbar {
           position: relative;
           z-index: 1;
         }
-        background-color: $topbar-background-color;
-        color: $topbar-foreground-color;
+        background-color: colors.$topbar-background-color;
+        color: colors.$topbar-foreground-color;
         &:hover {
-          background-color: $topbar-background-color-hover;
-          color: $topbar-foreground-color-hover;
+          background-color: colors.$topbar-background-color-hover;
+          color: colors.$topbar-foreground-color-hover;
         }
         &.unread {
-          background-color: $topbar-background-color-unread;
-          color: $topbar-foreground-color-unread;
+          background-color: colors.$topbar-background-color-unread;
+          color: colors.$topbar-foreground-color-unread;
         }
         &.unread:hover {
-          background-color: $topbar-background-color-unread-hover;
+          background-color: colors.$topbar-background-color-unread-hover;
         }
         &.current, &.current:hover {
-          background-color: $topbar-background-color-active;
-          color: $topbar-foreground-color-active;
+          background-color: colors.$topbar-background-color-active;
+          color: colors.$topbar-foreground-color-active;
         }
         .app-icon {
           @extend %pseudo-img-tag;
           position: absolute;
           top: 4px;
-          left: (($navbar-width-desktop-shrunk - 24px) / 2);
+          left: math.div(geometry.$navbar-width-desktop-shrunk - 24px, 2);
           width: 24px;
           height: 24px;
-          @media #{$mobile} {
-            left: (($navbar-width-desktop-shrunk - 40px) / 2);
+          @media #{geometry.$mobile} {
+            left: math.div(geometry.$navbar-width-desktop-shrunk - 40px, 2);
             width: 40px;
             height: 40px;
           }
@@ -764,14 +771,14 @@ body>.topbar {
           text-align: center;
         }
         .close-button {
-          @include unstyled-button();
+          @include partials.unstyled-button();
           @extend %pseudo-img-tag;
           position: absolute;
           top: 1px;
           right: 0px;
           width: 24px;
           height: 24px;
-          @media #{$mobile} {
+          @media #{geometry.$mobile} {
             height: 40px;
             width: 40px;
           }
@@ -781,7 +788,7 @@ body>.topbar {
           border: 1px solid transparent;
           border-radius: 4px;
           &:hover {
-            border: 1px solid $topbar-foreground-color-hover;
+            border: 1px solid colors.$topbar-foreground-color-hover;
           }
           z-index: 2;  // Stack above <a>.
         }
@@ -828,7 +835,7 @@ body>.topbar {
 
     .subtext {
       font-size: 12px;
-      color: $topbar-foreground-color;
+      color: colors.$topbar-foreground-color;
     }
   }
 
@@ -836,7 +843,7 @@ body>.topbar {
     p {
       margin: 0;
       padding: 4px;
-      color: $topbar-foreground-color;
+      color: colors.$topbar-foreground-color;
       font-size: 14px;
     }
   }
@@ -847,7 +854,7 @@ body>.topbar {
     font-weight: bold;
     color: #a0a0a0;
     text-align: center;
-    border: 1px solid $topbar-foreground-color;
+    border: 1px solid colors.$topbar-foreground-color;
     border-radius: 4px;
 
     &.urgent {
@@ -857,7 +864,7 @@ body>.topbar {
 }
 
 body>.topbar .share {
-  @media #{$mobile} {
+  @media #{geometry.$mobile} {
     margin-top: 48px;
   }
 }
@@ -950,7 +957,7 @@ body>.popup {
   right: 0;
   z-index: 100000;
 
-  @media #{$mobile} {
+  @media #{geometry.$mobile} {
     // Gray the background on mobile.
     background-color: rgba(0, 0, 0, 0.5);
   }
@@ -998,27 +1005,27 @@ body>.popup {
         width: 100%;
         margin: 0px;
         font-size: 14px;
-        padding-left: $topbar-popup-padding;
+        padding-left: geometry.$topbar-popup-padding;
         line-height: 32px;
         border-bottom: 1px solid #ccc;
         margin-bottom: 16px;
 
-        @media #{$mobile} {
+        @media #{geometry.$mobile} {
           font-size: 14pt;
         }
       }
 
       >* {
-        margin-left: $topbar-popup-padding;
-        margin-right: $topbar-popup-padding;
+        margin-left: geometry.$topbar-popup-padding;
+        margin-right: geometry.$topbar-popup-padding;
       }
 
       >*:last-child {
-        margin-bottom: $topbar-popup-padding;
+        margin-bottom: geometry.$topbar-popup-padding;
       }
     }
 
-    @media #{$desktop} {
+    @media #{geometry.$desktop} {
       // Adds a small white arrow pointing at the element this popup "descends" from.
       position: fixed;
       top: 32px;
@@ -1044,7 +1051,7 @@ body>.popup {
       }
     }
 
-    @media #{$mobile} {
+    @media #{geometry.$mobile} {
       position: static;
       margin: 64px auto 32px;
       font-size: 20px;
@@ -1054,7 +1061,7 @@ body>.popup {
     }
 
     &.centered {
-      @media #{$desktop} {
+      @media #{geometry.$desktop} {
         margin: 0px auto;
         width: 600px;
         margin-left: calc(50% - 300px);
@@ -1074,7 +1081,7 @@ body>.popup {
         display: inline;
         >li {
           display: inline-block;
-          background-color: $sandstorm-purple-color;
+          background-color: colors.$sandstorm-purple-color;
           color: white;
           border-radius: 8px;
           padding: 2px 4px;
@@ -1104,10 +1111,10 @@ body>.popup {
                 cursor: pointer;
               }
             }
-            background-color: lighten($sandstorm-purple-color, 30%);
+            background-color: color.adjust(colors.$sandstorm-purple-color, $lightness: 30%);
           }
           &:hover {
-            background-color: darken($sandstorm-purple-color, 10%);
+            background-color: color.adjust(colors.$sandstorm-purple-color, $lightness: -10%);
           }
           .picture {
             width: 14px;
@@ -1139,7 +1146,7 @@ body>.popup {
           cursor: pointer;
 
           &.selected {
-            border: $focus-outline-color solid 1px;
+            border: colors.$focus-outline-color solid 1px;
           }
           &:hover {
             background-color: #999;
@@ -1160,7 +1167,7 @@ body>.popup {
         width: 100%;
       }
       &.active {
-        outline: $focus-outline-color solid 1px;
+        outline: colors.$focus-outline-color solid 1px;
       }
     }
   }
@@ -1179,7 +1186,7 @@ body>.popup {
       text-transform: uppercase;
       background-color: $popup-background-color;
       margin-bottom: 0;
-      padding: $topbar-popup-padding 20px;
+      padding: geometry.$topbar-popup-padding 20px;
     }
 
     >h4.share-with-others {
@@ -1187,17 +1194,17 @@ body>.popup {
       padding-bottom: 30px;
     }
     >h4.who-has-access {
-      padding-bottom: $topbar-popup-padding;
+      padding-bottom: geometry.$topbar-popup-padding;
       border-bottom: 1px solid #ccc;
     }
 
     button.who-has-access {
-      @include unstyled-button();
+      @include partials.unstyled-button();
     }
 
     .share-tabs {
       width: 100%;
-      padding: $topbar-popup-padding;
+      padding: geometry.$topbar-popup-padding;
       border-top: 1px solid #ccc;
       position: relative;
       margin: 0;
@@ -1222,7 +1229,7 @@ body>.popup {
           background-repeat: no-repeat;
           cursor: pointer;
           &:focus {
-            outline: $focus-outline-color solid 1px;
+            outline: colors.$focus-outline-color solid 1px;
           }
         }
         #send-invite-tab-header {
@@ -1261,7 +1268,7 @@ body>.popup {
     }
 
     button.reset-invite, button.reset-share-token, button.start-over-invite {
-      @include unstyled-button();
+      @include partials.unstyled-button();
       border: 1px solid #ccc;
       border-radius: 4px;
       padding: 5px 16px;
@@ -1369,7 +1376,7 @@ body>.popup {
       border-top: 1px solid #ccc;
       margin: 0px;
       padding-top: 5px;
-      padding-bottom: $topbar-popup-padding;
+      padding-bottom: geometry.$topbar-popup-padding;
       text-align: right;
       font-size: 10pt;
       >.who-has-access {
@@ -1411,18 +1418,18 @@ body>.popup {
         font-weight: inherit;
         color: inherit;
 
-        padding-left: $topbar-popup-padding + $topbar-popup-padding + 64px;
-        padding-right: $topbar-popup-padding;
-        padding-top: $topbar-popup-padding;
-        padding-bottom: $topbar-popup-padding;
+        padding-left: geometry.$topbar-popup-padding + geometry.$topbar-popup-padding + 64px;
+        padding-right: geometry.$topbar-popup-padding;
+        padding-top: geometry.$topbar-popup-padding;
+        padding-bottom: geometry.$topbar-popup-padding;
 
         position: relative;
 
         // Guarantee position-absolute icons don't get cut off
-        min-height: $topbar-popup-padding + $topbar-popup-padding + 64px;
+        min-height: geometry.$topbar-popup-padding + geometry.$topbar-popup-padding + 64px;
 
         &.urgent {
-          background-color: $error-background-color;
+          background-color: colors.$error-background-color;
         }
 
         &[href]:hover {
@@ -1433,8 +1440,8 @@ body>.popup {
           width: 64px;
           height: 64px;
           position: absolute;
-          top: $topbar-popup-padding;
-          left: $topbar-popup-padding;
+          top: geometry.$topbar-popup-padding;
+          left: geometry.$topbar-popup-padding;
 
           >img {
             display: block;

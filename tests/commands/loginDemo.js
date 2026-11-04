@@ -17,14 +17,12 @@
 'use strict';
 
 var utils = require('../utils'),
-    short_wait = utils.short_wait,
     medium_wait = utils.medium_wait;
 
 exports.command = function(callback) {
   var ret = this
     .url(this.launchUrl + "/demo")
     .execute('window.Meteor.logout()')
-    .pause(short_wait)
     .waitForElementVisible(".demo-startup-modal .start", medium_wait)
     .click(".demo-startup-modal .start")
     .url(this.launch_url + "/apps")

@@ -1,7 +1,6 @@
 import { Meteor } from "meteor/meteor";
 import { Template } from "meteor/templating";
 import { ReactiveVar } from "meteor/reactive-var";
-import { _ } from "meteor/underscore";
 
 import { SandstormDb } from "/imports/sandstorm-db/db";
 import { globalDb } from "/imports/db-deprecated";
@@ -201,10 +200,7 @@ Template.newAdminNetworkCapabilitiesSection.onCreated(function () {
 
     return function matchFilter(item) {
       if (searchKeys.length === 0) return true;
-      return _.chain(searchKeys)
-          .map((searchKey) => { return matchesCap(searchKey, item); })
-          .reduce((a, b) => a && b)
-          .value();
+      return searchKeys.every(searchKey => matchesCap(searchKey, item));
     };
   };
 

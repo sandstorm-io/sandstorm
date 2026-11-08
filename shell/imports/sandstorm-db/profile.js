@@ -102,6 +102,15 @@ if (Meteor.isServer) {
         "services.saml.id": 1,
         "services.saml.email": 1,
         "services.saml.displayName": 1,
+
+        "services.passkey.userHandle": 1,
+        "services.passkey.keys.credentialId": 1,
+        "services.passkey.keys.friendlyName": 1,
+        "services.passkey.keys.createdAt": 1,
+        "services.passkey.keys.lastUsedAt": 1,
+        "services.passkey.keys.transports": 1,
+        "services.passkey.keys.deviceType": 1,
+        "services.passkey.keys.backedUp": 1,
       },
     });
   }),
@@ -245,6 +254,9 @@ SandstormDb.fillInProfileDefaults = function (credential, profile) {
   } else if (services.saml) {
     profile.handle = profile.handle || emailToHandle(services.saml.email);
     profile.name = profile.name || services.saml.displayName || profile.handle;
+  } else if (services.passkey) {
+    profile.name = profile.name || "Passkey User";
+    profile.handle = profile.handle || filterHandle("passkey_" + services.passkey.userHandle.slice(0, 8));
   } else {
     throw new Error("unrecognized authentication service: " +
                     SandstormDb.getServiceName(credential));
@@ -274,6 +286,8 @@ SandstormDb.getIntrinsicName = function (credential, usePrivate) {
     return services.ldap.username;
   } else if (services.saml) {
     return services.saml.id;
+  } else if (services.passkey) {
+    return services.passkey.userHandle;
   } else {
     throw new Error("unrecognized authentication service: " +
                     SandstormDb.getServiceName(credential));

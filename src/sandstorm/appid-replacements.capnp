@@ -130,5 +130,12 @@ const appIdReplacementList :List(AppIdReplacement) = [
 
   # ---- end MediaWiki entry ----
 
+  # ---- Dillinger entry ----
+
+  (original = "fq057t4ek3yt96xsfje6c1wv61pkjkqm9hs1539x4jqxjwzdp7fh",
+     replacement = "rh0rw9j3wp3ts3yma3ftea5rnqw9uvmykjesvmwagwtjndr85xe0"),
+  # Original key was held by by Cem Kocagil. App has not been updated since 2015, so Michael Nutt
+  # repackaged a modern version.
+
   # Add your entry here!
 ];
